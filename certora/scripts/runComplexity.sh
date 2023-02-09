@@ -1,5 +1,5 @@
 #!/bin/sh
-certoraRun src/StaticATokenLM.sol:StaticATokenLM \
+certoraRun src/StaticATokenLM.sol \
     --verify StaticATokenLM:certora/specs/complexity.spec \
     --solc solc8.10 \
     --optimistic_loop \
