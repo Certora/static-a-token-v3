@@ -15,7 +15,7 @@ methods
     /*******************************
     *     RewardsController.sol    *
     ********************************/
-    claimRewards(address[],uint256,address,address) => NONDET
+   // claimRewards(address[],uint256,address,address) => NONDET
      
    /*****************************
     *     OZ ERC20Permit.sol     *
@@ -33,6 +33,12 @@ methods
     **********************************/
     getRewardsList() returns (address[]) => NONDET
 
+    
+    //ScaledBalanceTokenBase.sol
+    //debug -- todo fix packages path
+    getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => NONDET
+    //debug
+    performTransfer(address,address,uint256) returns (bool) => NONDET
 }
 rule sanity(method f)
 {
