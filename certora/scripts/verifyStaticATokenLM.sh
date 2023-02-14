@@ -1,8 +1,8 @@
 #!/bin/sh
 certoraRun src/StaticATokenLM.sol \
     lib/aave-v3-periphery/contracts/rewards/RewardsController.sol \
-    lib/aave-v3-periphery/contracts/rewards/transfer-strategies/PullRewardsTransferStrategy.sol \
-    lib/aave-v3-periphery/contracts/rewards/transfer-strategies/StakedTokenTransferStrategy.sol \
+    certora/harness/TransferStrategyHarness.sol \
+    certora/harness/DummyERC20A.sol certora/harness/DummyERC20B.sol \
     --verify StaticATokenLM:certora/specs/StaticATokenLM.spec \
     --link StaticATokenLM:_incentivesController=RewardsController \
     --solc solc8.10 \
@@ -14,3 +14,8 @@ certoraRun src/StaticATokenLM.sol \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
     --msg "StaticATokenLM rules"
+
+#    certora/harness/ScaledBalanceTokenHarness.sol \
+#    lib/aave-v3-periphery/contracts/rewards/transfer-strategies/StakedTokenTransferStrategy.sol \
+#    lib/aave-v3-periphery/contracts/rewards/transfer-strategies/PullRewardsTransferStrategy.sol \
+    

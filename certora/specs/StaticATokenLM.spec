@@ -1,6 +1,5 @@
 import "erc20.spec"
 
-
 methods
 {
 
@@ -33,13 +32,23 @@ methods
     **********************************/
     getRewardsList() returns (address[]) => NONDET
 
-    
-    //ScaledBalanceTokenBase.sol
-    //debug -- todo fix packages path
+    /**********************************
+    *     RewardsController.sol     *
+    **********************************/
+    //call by RewardsController.IncentivizedERC20.sol and also by StaticATokenLM.sol
+    handleAction(address,uint256,uint256) => DISPATCHER(true)
+
+    // called by  StaticATokenLM.claimRewardsToSelf  -->  RewardsController._getUserAssetBalances
+    // get balanceOf and totalSupply of _aToken
+    // todo - link to the actual token.
     getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => NONDET
-    //debug
-    performTransfer(address,address,uint256) returns (bool) => NONDET
-}
+
+    // called by StaticATokenLM.collectAndUpdateRewards --> RewardsController._transferRewards()
+    //implemented as simple transfer() in TransferStrategyHarness
+    performTransfer(address,address,uint256) returns (bool) =>  DISPATCHER(true)
+
+ }
+
 rule sanity(method f)
 {
 	env e;
