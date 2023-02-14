@@ -6,10 +6,15 @@ methods
     /*******************
     *     Pool.sol     *
     ********************/
-    getReserveNormalizedIncome(address) returns (uint256) => NONDET
+    getReserveNormalizedIncome(address) returns (uint256) => DISPATCHER(true)
     getAssetIndex(address, address) returns (uint256, uint256) => NONDET
-    deposit(address,uint256,address,uint16) => NONDET
-    withdraw(address,uint256,address) returns (uint256) => NONDET
+    deposit(address,uint256,address,uint16) => DISPATCHER(true)
+    withdraw(address,uint256,address) returns (uint256) => DISPATCHER(true)
+    finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET    
+    
+    //IAToken.sol
+    mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
+    burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
 
     /*******************************
     *     RewardsController.sol    *
