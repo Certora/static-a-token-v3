@@ -6,11 +6,17 @@ methods
     /*******************
     *     Pool.sol     *
     ********************/
-    getReserveNormalizedIncome(address) returns (uint256) => DISPATCHER(true)
-    getAssetIndex(address, address) returns (uint256, uint256) => NONDET
-    deposit(address,uint256,address,uint16) => DISPATCHER(true)
-    withdraw(address,uint256,address) returns (uint256) => DISPATCHER(true)
-    finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET    
+    // can we assume a fixed index? 1 ray?
+    // getReserveNormalizedIncome(address) returns (uint256) => DISPATCHER(true)
+
+    //in RewardsDistributor.sol called by RewardsController.sol
+    getAssetIndex(address, address) returns (uint256, uint256) =>  DISPATCHER(true)
+    //deposit(address,uint256,address,uint16) => DISPATCHER(true)
+    //withdraw(address,uint256,address) returns (uint256) => DISPATCHER(true)
+    finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET  
+
+    //in ScaledBalanceTokenBase.sol called by getAssetIndex
+    scaledTotalSupply() returns (uint256)  => DISPATCHER(true) 
     
     //IAToken.sol
     mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
