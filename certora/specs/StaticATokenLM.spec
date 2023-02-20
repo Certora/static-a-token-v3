@@ -60,6 +60,94 @@ methods
 
  }
 
+rule getClaimableRewards_stable_after_transfer(){
+
+    env e;
+    address to;
+    uint256 amount;
+
+    address user;
+
+    require (to != 0);
+    require (e.msg.sender != 0);
+
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    transfer(e, to, amount);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter == claimableRewardsBefore;
+
+}
+
+//debug fail of deposit()
+rule getClaimableRewards_decrease_after_mint(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    mint(e, args);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter <= claimableRewardsBefore;
+
+}
+
+rule getClaimableRewards_increase_after_mint(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    mint(e, args);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter >= claimableRewardsBefore;
+
+}
+//under debug
+rule getClaimableRewards_increase(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    f(e, args);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter >= claimableRewardsBefore;
+
+}
+rule getClaimableRewards_stable(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    f(e, args);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter == claimableRewardsBefore;
+
+}
+//under debug
+rule getClaimableRewards_zero(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    f(e, args);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter == 0;
+
+}
+rule getClaimableRewards_decrease(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    f(e, args);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter <= claimableRewardsBefore;
+
+}
+
 rule sanity(method f)
 {
 	env e;
@@ -68,3 +156,47 @@ rule sanity(method f)
 	assert false;
 }
 
+
+//
+// Examples for development
+//keep these rules until a Jira ticket is opened
+//
+
+rule sanity_metawDeposit    ()
+{
+	env e;
+	calldataarg args;
+	metaDeposit(e,args);
+	assert false;
+}
+rule sanity_metaWithdraw()
+{
+	env e;
+	calldataarg args;
+	metaWithdraw(e,args);
+	assert false;
+}
+
+rule getClaimableRewards_stable_after_metaWithdraw(){
+
+    env e;
+    calldataarg args;
+    address user;
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    metaWithdraw(e, args);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter == claimableRewardsBefore;
+
+}
+
+rule getClaimableRewards_stable_after_withdraw(){
+
+    env e;
+    calldataarg args;
+    address user;
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    withdraw(e, args);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter == claimableRewardsBefore;
+
+}
