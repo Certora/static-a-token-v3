@@ -22,4 +22,4 @@ certoraRun src/StaticATokenLM.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --msg "verify StaticATokenLM amounts shares conversion"
+    --msg "verify StaticATokenLM amounts shares conversion" 

@@ -128,3 +128,22 @@ rule sharesConversionPreserved(uint256 shares) {
 	// That converted <= mathshare was proved in sharesConversionRoundedDown.
 	assert mathshares - converted <= 1 + RAY() / rate(), "Too few converted shares";
 }
+
+
+/* Joining and splitting accounts provides limited advantage.
+ * This rule verifies that joining accounts (by combining shares), and splitting accounts
+ * (by splitting shares between accounts) provides limited advantage when converting to
+ * asset amounts.
+ */
+rule accountsJoiningSplittingIsLimited(uint256 shares1, uint256 shares2) {
+    uint256 amount1 = convertToAssets(shares1);
+    uint256 amount2 = convertToAssets(shares2);
+    uint256 jointShares = shares1 + shares2;
+    require jointShares >= shares1 + shares2;
+    uint256 jointAmount = convertToAssets(jointShares);
+
+    assert jointAmount >= amount1 + amount2, "Found advantage in combining accounts";
+    assert jointAmount < amount1 + amount2 + 2, "Found advantage in splitting accounts";
+    // The following assertion fails (as expected):
+    // assert jointAmount < amount1 + amount2 + 1, "Found advantage in splitting accounts";
+}
