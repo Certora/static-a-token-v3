@@ -1,4 +1,14 @@
-#!/bin/sh
+
+if [[ "$1" ]]
+then
+    RULE="--rule $1"
+fi
+
+if [[ "$2" ]]
+then
+    MSG="- $2"
+fi
+
 certoraRun certora/harness/StaticATokenLMHarness.sol \
     lib/aave-v3-periphery/contracts/rewards/RewardsController.sol \
     certora/harness/SymbolicLendingPoolL1.sol \
@@ -14,6 +24,8 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
             StaticATokenLMHarness:_aToken=AToken \
            StaticATokenLMHarness:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
            StaticATokenLMHarness:_rewardToken=DummyERC20_rewardToken \
+    --hashing_length_bound 224\
+    --optimistic_hashing \
     --solc solc8.10 \
     --optimistic_loop \
     --staging \
@@ -22,7 +34,9 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --msg "aToken=AToken _rewardToken _aTokenUnderlying.  "
+    --rule_sanity basic \
+    $RULE \
+    --msg "StaticAToken - $RULE $MSG  "
 
 #link _aToken _aTokenUnderlying _aToken
 #           StaticATokenLM:_aToken=DummyERC20_aToken \
