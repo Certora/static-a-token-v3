@@ -71,6 +71,23 @@ methods
 definition RAY() returns uint256 = (10 ^ 27);
 
 
+/* A not on the conversion functions
+ * ---------------------------------
+ * The conversion functions are:
+ * - assets to shares = S(a) = (a * R) // r
+ * - shares to assets = A(s) = (s * r) // R
+ * where a=assets, s=shares, R=RAY, r=rate
+ * 
+ * These imply:
+ *   a * R - r <= S(a) * r <= a * R    a*R/r - 1 <= S(a) <= a*R/r
+ *   s * r - R <= A(s) * R <= s * r    s*r/R - 1 <= A(s) <= s*r/R
+ * 
+ * Hence:
+ *   A(S(a)) >= S(a)*r/R - 1 >= (a*R/r - 1)*r/R - 1 = (a*R - r)/R - 1 = a - r/R - 1
+ *   S(A(s)) >= A(s)*R/r - 1 >= (s*r/R - 1)*R/r - 1 = (s*r - R)/r - 1 = s - R/r - 1
+ */
+
+
 // Converting amount to shares is rounded down.
 rule amountConversionRoundedDown(uint256 amount) {
 	uint256 shares = convertToShares(amount);
@@ -88,8 +105,7 @@ rule sharesConversionRoundedDown(uint256 shares) {
 
 
 // Converting amount to shares and back to amount is preserved (up to rounding).
-/* NOTE: This fails when rate() > RAY, since conversion to shares formula is:
- * (a * R) // r, where a=amount, R=RAY and r=rate().
+/* NOTE: The precision depends on the ratio rate/ray.
  */
 rule amountConversionPreserved(uint256 amount) {
  	require rate() <= RAY();
@@ -97,15 +113,12 @@ rule amountConversionPreserved(uint256 amount) {
  	mathint converted = to_mathint(convertToAssets(convertToShares(amount)));
 
 	// That converted <= mathamount was proved in amountConversionRoundedDown,
- 	assert mathamount - converted <= 1, "Too few converted assets";
+ 	assert mathamount - converted <= 1 + rate() / RAY(), "Too few converted assets";
  }
  
 
 // Converting shares to amount and back to shares is preserved up to RAY.
-/* NOTE: This implies that convertToAssets(shares)==0 whenever shares<RAY.
- * So this is probably A BUG OR A MISTAKE. This happens because the formula
- * for converting shares to assets is: (s * r) // R, where a=amount, R=RAY
- * and r=rate().
+/* NOTE: The precision depends on the ratio RAY/rate.
  */
 rule sharesConversionPreserved(uint256 shares) {
 	mathint mathshares = to_mathint(shares);
@@ -113,5 +126,24 @@ rule sharesConversionPreserved(uint256 shares) {
 	mathint converted = to_mathint(convertToShares(amount));
 
 	// That converted <= mathshare was proved in sharesConversionRoundedDown.
-	assert mathshares - converted < RAY(), "Too few converted shares";
+	assert mathshares - converted <= 1 + RAY() / rate(), "Too few converted shares";
+}
+
+
+/* Joining and splitting accounts provides limited advantage.
+ * This rule verifies that joining accounts (by combining shares), and splitting accounts
+ * (by splitting shares between accounts) provides limited advantage when converting to
+ * asset amounts.
+ */
+rule accountsJoiningSplittingIsLimited(uint256 shares1, uint256 shares2) {
+    uint256 amount1 = convertToAssets(shares1);
+    uint256 amount2 = convertToAssets(shares2);
+    uint256 jointShares = shares1 + shares2;
+    require jointShares >= shares1 + shares2;
+    uint256 jointAmount = convertToAssets(jointShares);
+
+    assert jointAmount >= amount1 + amount2, "Found advantage in combining accounts";
+    assert jointAmount < amount1 + amount2 + 2, "Found advantage in splitting accounts";
+    // The following assertion fails (as expected):
+    // assert jointAmount < amount1 + amount2 + 1, "Found advantage in splitting accounts";
 }
