@@ -68,6 +68,7 @@ rule getClaimableRewards_stable_after_transfer(){
 
     address user;
 
+    //todo: review assumption
     require (to != 0);
     require (e.msg.sender != 0);
 
@@ -78,8 +79,44 @@ rule getClaimableRewards_stable_after_transfer(){
 
 }
 
-//debug fail of deposit()
-rule getClaimableRewards_decrease_after_mint(method f){
+//under debugging
+rule getClaimableRewards_decrease_after_deposit(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter <= claimableRewardsBefore;
+
+}
+
+//bug report sent to customer Feb. 21 , 2022
+rule getClaimableRewards_increase_after_deposit(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter >= claimableRewardsBefore;
+
+}
+
+
+rule getClaimableRewards_decrease_after_mint(){
 
     env e;
     calldataarg args;
@@ -91,7 +128,7 @@ rule getClaimableRewards_decrease_after_mint(method f){
 
 }
 
-rule getClaimableRewards_increase_after_mint(method f){
+rule getClaimableRewards_increase_after_mint(){
 
     env e;
     calldataarg args;
@@ -136,6 +173,8 @@ rule getClaimableRewards_zero(method f){
     assert claimableRewardsAfter == 0;
 
 }
+
+//debug fail of deposit()
 rule getClaimableRewards_decrease(method f){
 
     env e;
