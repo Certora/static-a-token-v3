@@ -1,7 +1,19 @@
 import "erc20.spec"
 
+using AToken as ATOKEN
+using RewardsController as REWARDSCONTROLLER
+
+
 methods
 {
+
+    totalSupply() returns uint256 envfree
+	balanceOf(address) returns (uint256) envfree
+    ATOKEN.totalSupply() returns uint256 envfree
+	ATOKEN.balanceOf(address) returns (uint256) envfree
+	ATOKEN.scaledTotalSupply() returns (uint256) envfree
+    ATOKEN.scaledBalanceOf(address) returns (uint256) envfree
+    
 
     /*******************
     *     Pool.sol     *
@@ -16,7 +28,7 @@ methods
     finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET  
 
     //in ScaledBalanceTokenBase.sol called by getAssetIndex
-    scaledTotalSupply() returns (uint256)  => DISPATCHER(true) 
+    scaledTotalSupply() returns (uint256) envfree => DISPATCHER(true) 
     
     //IAToken.sol
     mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
@@ -60,6 +72,63 @@ methods
 
  }
 
+/**
+ * @title Sum of balances of underlying asset 
+ **/
+ghost sumAllBalance() returns mathint {
+    init_state axiom sumAllBalance() == 0;
+}
+
+hook Sstore balanceOf[KEY address a] uint256 balance (uint256 old_balance) STORAGE {
+  havoc sumAllBalance assuming sumAllBalance@new() == sumAllBalance@old() + balance - old_balance;
+}
+
+hook Sload uint256 balance balanceOf[KEY address a] STORAGE {
+    require balance <= sumAllBalance();
+} 
+
+ghost sumAllATokenBalance() returns mathint {
+    init_state axiom sumAllATokenBalance() == 0;
+}
+
+hook Sstore ATOKEN._userState[KEY address a] .(offset 0) uint128 balance (uint128 old_balance) STORAGE {
+  havoc sumAllATokenBalance assuming sumAllATokenBalance@new() == sumAllATokenBalance@old() + balance - old_balance;
+}
+
+hook Sload uint128 balance ATOKEN._userState[KEY address a] .(offset 0) STORAGE {
+    require balance <= sumAllATokenBalance();
+} 
+
+
+// INV #2
+/**
+* @title User's balance not greater than totalSupply()
+*/
+invariant inv_balanceOf_leq_totalSupply(address user)
+	balanceOf(user) <= totalSupply()
+	{
+		preserved {
+			requireInvariant sumAllBalance_eq_totalSupply();
+		}
+	}
+
+
+invariant inv_atoken_balanceOf_leq_totalSupply(address user)
+	ATOKEN.balanceOf(user) <= ATOKEN.totalSupply()
+    {
+		preserved {
+			requireInvariant sumAllATokenBalance_eq_totalSupply();
+		}
+	}
+
+invariant inv_atoken_scaled_balanceOf_leq_totalSupply(address user)
+	ATOKEN.scaledBalanceOf(user) <= ATOKEN.scaledTotalSupply()
+
+invariant sumAllBalance_eq_totalSupply()
+	sumAllBalance() == totalSupply()
+invariant sumAllATokenBalance_eq_totalSupply()
+	sumAllATokenBalance() == ATOKEN.totalSupply()
+
 rule getClaimableRewards_stable_after_transfer(){
 
     env e;
@@ -90,6 +159,26 @@ rule getClaimableRewards_decrease_after_deposit(method f){
     uint16 referralCode;
     bool fromUnderlying;
 
+    requireInvariant inv_balanceOf_leq_totalSupply(user);
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter <= claimableRewardsBefore;
+
+}
+rule getClaimableRewards_decrease_after_deposit_1(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+    requireInvariant inv_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
+    
     mathint claimableRewardsBefore = getClaimableRewards(e, user);
     deposit(e, assets, recipient, referralCode, fromUnderlying);
     mathint claimableRewardsAfter = getClaimableRewards(e, user);
@@ -97,7 +186,97 @@ rule getClaimableRewards_decrease_after_deposit(method f){
 
 }
 
-//bug report sent to customer Feb. 21 , 2022
+rule getClaimableRewards_decrease_after_deposit_2(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+    requireInvariant inv_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
+    //require totalSupply() <= ATOKEN.scaledTotalSupply();
+    require totalSupply() <= ATOKEN.totalSupply();
+    
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter <= claimableRewardsBefore;
+
+}
+
+rule getClaimableRewards_decrease_after_deposit_3(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+    requireInvariant inv_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
+    //require totalSupply() <= ATOKEN.scaledTotalSupply();
+    require totalSupply() <= ATOKEN.totalSupply();
+    require ATOKEN.balanceOf(user) <= ATOKEN.totalSupply();
+    require ATOKEN.balanceOf(recipient) <= ATOKEN.totalSupply();
+    
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter <= claimableRewardsBefore;
+
+}
+rule getClaimableRewards_decrease_after_deposit_7(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+    require currentContract != e.msg.sender;
+    require ATOKEN != e.msg.sender;
+    require REWARDSCONTROLLER != e.msg.sender;
+
+
+    requireInvariant inv_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_balanceOf_leq_totalSupply(recipient);
+    require ((balanceOf(user) + balanceOf(recipient) ) <= totalSupply());
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
+    require ((ATOKEN.balanceOf(user) + ATOKEN.balanceOf(recipient) + ATOKEN.balanceOf(currentContract) ) <= ATOKEN.totalSupply());
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
+    require ((ATOKEN.scaledBalanceOf(user) + ATOKEN.scaledBalanceOf(recipient) + ATOKEN.scaledBalanceOf(currentContract) ) <= ATOKEN.scaledTotalSupply());
+    
+    require totalSupply() <= ATOKEN.scaledTotalSupply();
+    require totalSupply() <= ATOKEN.totalSupply();
+
+    requireInvariant sumAllBalance_eq_totalSupply();
+    requireInvariant sumAllATokenBalance_eq_totalSupply();
+
+    require getUnclaimedRewards(e, user) == 0; 
+    require getUnclaimedRewards(e, recipient) == 0; 
+    
+  
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying); 
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter <= claimableRewardsBefore;
+
+}
+
+
+//bug report sent to customer Feb. 21 , 2023
 rule getClaimableRewards_increase_after_deposit(method f){
 
     env e;
@@ -109,7 +288,208 @@ rule getClaimableRewards_increase_after_deposit(method f){
     bool fromUnderlying;
 
     mathint claimableRewardsBefore = getClaimableRewards(e, user);
-    deposit(e, assets, recipient, referralCode, fromUnderlying);
+    deposit(e, assets, recipient, referralCode, fromUnderlying); 
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter >= claimableRewardsBefore;
+
+}
+
+rule getClaimableRewards_increase_after_deposit_3(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+    require user != REWARDSCONTROLLER;
+    require recipient != REWARDSCONTROLLER;
+    
+    requireInvariant inv_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
+    //require totalSupply() <= ATOKEN.scaledTotalSupply();
+    require totalSupply() <= ATOKEN.totalSupply();
+    require ATOKEN.balanceOf(user) <= ATOKEN.totalSupply();
+    require ATOKEN.balanceOf(recipient) <= ATOKEN.totalSupply();
+
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying); 
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter >= claimableRewardsBefore;
+
+}
+
+rule getClaimableRewards_increase_after_deposit_1(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+    requireInvariant inv_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
+    
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying); 
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter >= claimableRewardsBefore;
+
+}
+
+rule getClaimableRewards_increase_after_deposit_4(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+      requireInvariant inv_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
+    
+    require totalSupply() <= ATOKEN.scaledTotalSupply();
+    require totalSupply() <= ATOKEN.totalSupply();
+
+    requireInvariant sumAllBalance_eq_totalSupply();
+    requireInvariant sumAllATokenBalance_eq_totalSupply();
+
+    require getUnclaimedRewards(e, user) < 20; 
+    require getUnclaimedRewards(e, recipient) < 20; 
+    
+  
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying); 
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter >= claimableRewardsBefore;
+
+}
+
+rule getClaimableRewards_increase_after_deposit_5(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+      requireInvariant inv_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
+    
+    require totalSupply() <= ATOKEN.scaledTotalSupply();
+    require totalSupply() <= ATOKEN.totalSupply();
+
+    requireInvariant sumAllBalance_eq_totalSupply();
+    requireInvariant sumAllATokenBalance_eq_totalSupply();
+
+    require getUnclaimedRewards(e, user) == 0; 
+    require getUnclaimedRewards(e, recipient) == 0; 
+    
+  
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying); 
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter >= claimableRewardsBefore;
+
+}
+
+rule getClaimableRewards_increase_after_deposit_6(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+    require currentContract != e.msg.sender;
+      requireInvariant inv_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
+    
+    require totalSupply() <= ATOKEN.scaledTotalSupply();
+    require totalSupply() <= ATOKEN.totalSupply();
+
+    requireInvariant sumAllBalance_eq_totalSupply();
+    requireInvariant sumAllATokenBalance_eq_totalSupply();
+
+    require getUnclaimedRewards(e, user) == 0; 
+    require getUnclaimedRewards(e, recipient) == 0; 
+    
+  
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying); 
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter >= claimableRewardsBefore;
+
+}
+
+//counter example sent to customer on Feb, 23, 2023
+rule getClaimableRewards_increase_after_deposit_7(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+    require currentContract != e.msg.sender;
+    require ATOKEN != e.msg.sender;
+    require REWARDSCONTROLLER != e.msg.sender;
+
+
+    requireInvariant inv_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_balanceOf_leq_totalSupply(recipient);
+    require ((balanceOf(user) + balanceOf(recipient) ) <= totalSupply());
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
+    require ((ATOKEN.balanceOf(user) + ATOKEN.balanceOf(recipient) + ATOKEN.balanceOf(currentContract) ) <= ATOKEN.totalSupply());
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
+    require ((ATOKEN.scaledBalanceOf(user) + ATOKEN.scaledBalanceOf(recipient) + ATOKEN.scaledBalanceOf(currentContract) ) <= ATOKEN.scaledTotalSupply());
+    
+    require totalSupply() <= ATOKEN.scaledTotalSupply();
+    require totalSupply() <= ATOKEN.totalSupply();
+
+    requireInvariant sumAllBalance_eq_totalSupply();
+    requireInvariant sumAllATokenBalance_eq_totalSupply();
+
+    require getUnclaimedRewards(e, user) == 0; 
+    require getUnclaimedRewards(e, recipient) == 0; 
+    
+  
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying); 
     mathint claimableRewardsAfter = getClaimableRewards(e, user);
     assert claimableRewardsAfter >= claimableRewardsBefore;
 

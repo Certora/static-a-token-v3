@@ -14,19 +14,25 @@ certoraRun src/StaticATokenLM.sol \
             StaticATokenLM:_aToken=AToken \
            StaticATokenLM:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
            StaticATokenLM:_rewardToken=DummyERC20_rewardToken \
+           AToken:_incentivesController=RewardsController \
     --solc solc8.10 \
     --optimistic_loop \
     --optimistic_hashing \
-    --settings -t=1000,-mediumTimeout=100,-depth=10 \
+    --settings -t=600,-mediumTimeout=40,-depth=45  \
     --staging \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --rule getClaimableRewards_increase_after_deposit \
-    --msg "getClaimableRewards_increase_after_deposit "
+    --rule getClaimableRewards_decrease_after_deposit_7 \
+    --msg "getClaimableRewards_decrease_after_deposit_7 link  AToken._incentivesController"
 
+# --settings -t=1500,-mediumTimeout=60,-depth=30 - getClaimableRewards_decrease_after_deposit finished after 15 minutes
+#    --rule inv_balanceOf_leq_totalSupply inv_atoken_balanceOf_leq_totalSupply sumAllBalance_eq_totalSupply sumAllATokenBalance_eq_totalSupply inv_atoken_scaled_balanceOf_leq_totalSupply\
+
+#    --optimistic_hashing \
+#    --settings -t=1000,-mediumTimeout=100,-depth=10 \
 #    --settings -optimisticUnboundedHashing=true \
 #link _aToken _aTokenUnderlying _aToken
 #           StaticATokenLM:_aToken=DummyERC20_aToken \
