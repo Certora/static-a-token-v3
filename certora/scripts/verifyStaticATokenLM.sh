@@ -3,7 +3,7 @@ certoraRun src/StaticATokenLM.sol \
     lib/aave-v3-periphery/contracts/rewards/RewardsController.sol \
     certora/harness/SymbolicLendingPoolL1.sol \
     lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
-    certora/harness/RewardsDistributorHarness.sol \
+    certora/harness/RewardsControllerHarness.sol \
     certora/harness/TransferStrategyHarness.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
     certora/harness/DummyERC20_rewardToken.sol \
@@ -18,7 +18,7 @@ certoraRun src/StaticATokenLM.sol \
     --solc solc8.10 \
     --optimistic_loop \
     --optimistic_hashing \
-    --settings -t=600,-mediumTimeout=40,-depth=45  \
+    --settings -t=600,-mediumTimeout=40,-depth=45   \
     --staging \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
@@ -26,8 +26,12 @@ certoraRun src/StaticATokenLM.sol \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
     --rule getClaimableRewards_decrease_after_deposit_7 \
-    --msg "getClaimableRewards_decrease_after_deposit_7 link  AToken._incentivesController"
+    --msg "getClaimableRewards_decrease_after_deposit_7 wo handleAction"
 
+# 
+#certora/harness/RewardsDistributorHarness.sol \
+   
+#  -t=600,-mediumTimeout=40,-depth=45  - best for getClaimableRewards_decrease_after_deposit_7 (25)
 # --settings -t=1500,-mediumTimeout=60,-depth=30 - getClaimableRewards_decrease_after_deposit finished after 15 minutes
 #    --rule inv_balanceOf_leq_totalSupply inv_atoken_balanceOf_leq_totalSupply sumAllBalance_eq_totalSupply sumAllATokenBalance_eq_totalSupply inv_atoken_scaled_balanceOf_leq_totalSupply\
 

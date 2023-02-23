@@ -2,6 +2,7 @@ import "erc20.spec"
 
 using AToken as ATOKEN
 using RewardsController as REWARDSCONTROLLER
+using RewardsControllerHarness as REWARDSCTRL
 
 
 methods
@@ -13,7 +14,7 @@ methods
 	ATOKEN.balanceOf(address) returns (uint256) envfree
 	ATOKEN.scaledTotalSupply() returns (uint256) envfree
     ATOKEN.scaledBalanceOf(address) returns (uint256) envfree
-    
+    REWARDSCTRL.getavailableRewardsCount(address) returns (uint128) envfree
 
     /*******************
     *     Pool.sol     *
@@ -59,7 +60,7 @@ methods
     *     RewardsController.sol     *
     **********************************/
     //call by RewardsController.IncentivizedERC20.sol and also by StaticATokenLM.sol
-    handleAction(address,uint256,uint256) => DISPATCHER(true)
+    //handleAction(address,uint256,uint256) => DISPATCHER(true)
 
     // called by  StaticATokenLM.claimRewardsToSelf  -->  RewardsController._getUserAssetBalances
     // get balanceOf and totalSupply of _aToken
@@ -181,6 +182,7 @@ rule getClaimableRewards_decrease_after_deposit_7(method f){
     require ATOKEN != e.msg.sender;
     require REWARDSCONTROLLER != e.msg.sender;
 
+    require (REWARDSCTRL.getavailableRewardsCount(ATOKEN) ) > 0;
 
     requireInvariant inv_balanceOf_leq_totalSupply(user);
     requireInvariant inv_balanceOf_leq_totalSupply(recipient);
@@ -241,6 +243,53 @@ rule getClaimableRewards_increase_after_deposit_7(method f){
     address recipient;
     uint16 referralCode;
     bool fromUnderlying;
+
+    require currentContract != e.msg.sender;
+    require ATOKEN != e.msg.sender;
+    require REWARDSCONTROLLER != e.msg.sender;
+
+
+    requireInvariant inv_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_balanceOf_leq_totalSupply(recipient);
+    require ((balanceOf(user) + balanceOf(recipient) ) <= totalSupply());
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
+    require ((ATOKEN.balanceOf(user) + ATOKEN.balanceOf(recipient) + ATOKEN.balanceOf(currentContract) ) <= ATOKEN.totalSupply());
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(recipient);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
+    require ((ATOKEN.scaledBalanceOf(user) + ATOKEN.scaledBalanceOf(recipient) + ATOKEN.scaledBalanceOf(currentContract) ) <= ATOKEN.scaledTotalSupply());
+    
+    require totalSupply() <= ATOKEN.scaledTotalSupply();
+    require totalSupply() <= ATOKEN.totalSupply();
+
+    requireInvariant sumAllBalance_eq_totalSupply();
+    requireInvariant sumAllATokenBalance_eq_totalSupply();
+
+    require getUnclaimedRewards(e, user) == 0; 
+    require getUnclaimedRewards(e, recipient) == 0; 
+    
+  
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    deposit(e, assets, recipient, referralCode, fromUnderlying); 
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter >= claimableRewardsBefore;
+
+}
+
+rule getClaimableRewards_increase_after_deposit_8(method f){
+
+    env e;
+    calldataarg args;
+    address user;
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+    
+   require (REWARDSCTRL.getavailableRewardsCount(ATOKEN) ) > 0;
 
     require currentContract != e.msg.sender;
     require ATOKEN != e.msg.sender;
