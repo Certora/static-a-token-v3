@@ -14,6 +14,7 @@ certoraRun src/StaticATokenLM.sol \
             StaticATokenLM:_aToken=AToken \
            StaticATokenLM:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
            StaticATokenLM:_rewardToken=DummyERC20_rewardToken \
+           AToken:_incentivesController=RewardsController \
     --solc solc8.10 \
     --optimistic_loop \
     --staging \
@@ -22,4 +23,4 @@ certoraRun src/StaticATokenLM.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --msg "verify StaticATokenLM amounts shares conversion" 
+    --msg "Shares to assets conversions" 
