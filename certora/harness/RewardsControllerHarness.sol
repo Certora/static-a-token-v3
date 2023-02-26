@@ -20,10 +20,14 @@ contract RewardsControllerHarness is RewardsController{
 function getavailableRewardsCount(address asset)
     external
     view
-    
     returns (uint128)
   {
     return _assets[asset].availableRewardsCount;
+  }
+
+
+  function getFirstRewardsByAsset(address asset) external view  returns (address) {
+    return _assets[asset].availableRewards[0];
   }
 
 }

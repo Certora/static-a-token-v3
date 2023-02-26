@@ -1,20 +1,24 @@
 import "erc20.spec"
 
-using AToken as ATOKEN
-using RewardsController as REWARDSCONTROLLER
-using RewardsControllerHarness as REWARDSCTRL
-
+using AToken as _AToken 
+using RewardsControllerHarness as _RewardsController 
+using DummyERC20_aTokenUnderlying as _DummyERC20_aTokenUnderlying 
+using DummyERC20_rewardToken as _DummyERC20_rewardToken 
+using SymbolicLendingPoolL1 as _SymbolicLendingPoolL1 
+using TransferStrategyHarness as _TransferStrategyHarness
 
 methods
 {
 
     totalSupply() returns uint256 envfree
 	balanceOf(address) returns (uint256) envfree
-    ATOKEN.totalSupply() returns uint256 envfree
-	ATOKEN.balanceOf(address) returns (uint256) envfree
-	ATOKEN.scaledTotalSupply() returns (uint256) envfree
-    ATOKEN.scaledBalanceOf(address) returns (uint256) envfree
-    REWARDSCTRL.getavailableRewardsCount(address) returns (uint128) envfree
+    _AToken.totalSupply() returns uint256 envfree
+	_AToken.balanceOf(address) returns (uint256) envfree
+	_AToken.scaledTotalSupply() returns (uint256) envfree
+    _AToken.scaledBalanceOf(address) returns (uint256) envfree
+    _RewardsController.getavailableRewardsCount(address) returns (uint128) envfree
+    _RewardsController.getDistributionEnd(address, address)  returns (uint256) envfree
+    _RewardsController.getFirstRewardsByAsset(address) returns (address ) envfree
 
     /*******************
     *     Pool.sol     *
@@ -92,11 +96,11 @@ ghost sumAllATokenBalance() returns mathint {
     init_state axiom sumAllATokenBalance() == 0;
 }
 
-hook Sstore ATOKEN._userState[KEY address a] .(offset 0) uint128 balance (uint128 old_balance) STORAGE {
+hook Sstore _AToken._userState[KEY address a] .(offset 0) uint128 balance (uint128 old_balance) STORAGE {
   havoc sumAllATokenBalance assuming sumAllATokenBalance@new() == sumAllATokenBalance@old() + balance - old_balance;
 }
 
-hook Sload uint128 balance ATOKEN._userState[KEY address a] .(offset 0) STORAGE {
+hook Sload uint128 balance _AToken._userState[KEY address a] .(offset 0) STORAGE {
     require balance <= sumAllATokenBalance();
 } 
 
@@ -115,7 +119,7 @@ invariant inv_balanceOf_leq_totalSupply(address user)
 
 
 invariant inv_atoken_balanceOf_leq_totalSupply(address user)
-	ATOKEN.balanceOf(user) <= ATOKEN.totalSupply()
+	_AToken.balanceOf(user) <= _AToken.totalSupply()
     {
 		preserved {
 			requireInvariant sumAllATokenBalance_eq_totalSupply();
@@ -123,12 +127,12 @@ invariant inv_atoken_balanceOf_leq_totalSupply(address user)
 	}
 
 invariant inv_atoken_scaled_balanceOf_leq_totalSupply(address user)
-	ATOKEN.scaledBalanceOf(user) <= ATOKEN.scaledTotalSupply()
+	_AToken.scaledBalanceOf(user) <= _AToken.scaledTotalSupply()
 
 invariant sumAllBalance_eq_totalSupply()
 	sumAllBalance() == totalSupply()
 invariant sumAllATokenBalance_eq_totalSupply()
-	sumAllATokenBalance() == ATOKEN.totalSupply()
+	sumAllATokenBalance() == _AToken.totalSupply()
 
 rule getClaimableRewards_stable_after_transfer(){
 
@@ -178,11 +182,48 @@ rule getClaimableRewards_decrease_after_deposit_7(method f){
     uint16 referralCode;
     bool fromUnderlying;
 
-    require currentContract != e.msg.sender;
-    require ATOKEN != e.msg.sender;
-    require REWARDSCONTROLLER != e.msg.sender;
+    mathint oldInd;
+    mathint newInd;
+    oldInd, newInd = _RewardsController.getAssetIndex(e, _AToken, _DummyERC20_rewardToken);
+    require oldInd >= 1;
 
-    require (REWARDSCTRL.getavailableRewardsCount(ATOKEN) ) > 0;
+    mathint oldIndRewCtrl;
+    mathint newIndRewCtrl;
+    oldIndRewCtrl, newIndRewCtrl = _RewardsController.getAssetIndex(e, _AToken, _RewardsController);
+    require oldIndRewCtrl >= 1;
+
+    require (_RewardsController.getDistributionEnd(_AToken, _DummyERC20_rewardToken) > 0);
+    require (_RewardsController.getDistributionEnd(_AToken, _RewardsController) > 0);
+    require (_RewardsController.getDistributionEnd(_AToken, user) > 0);
+    require (_RewardsController.getDistributionEnd(_AToken, recipient) > 0);
+
+
+
+
+    require currentContract != e.msg.sender;
+    require _AToken != e.msg.sender;
+    require _RewardsController != e.msg.sender;
+    require _DummyERC20_aTokenUnderlying  != e.msg.sender;
+    require _DummyERC20_rewardToken  != e.msg.sender;
+    require _SymbolicLendingPoolL1 != e.msg.sender;
+
+    require currentContract != recipient;
+    require _AToken != recipient;
+    require _RewardsController !=  recipient;
+    require _DummyERC20_aTokenUnderlying  != recipient;
+    require _DummyERC20_rewardToken  != recipient;
+    require _SymbolicLendingPoolL1 != recipient;
+
+    require currentContract != user;
+    require _AToken != user;
+    require _RewardsController !=  user;
+    require _DummyERC20_aTokenUnderlying  != user;
+    require _DummyERC20_rewardToken  != user;
+    require _SymbolicLendingPoolL1 != user;
+
+
+
+
 
     requireInvariant inv_balanceOf_leq_totalSupply(user);
     requireInvariant inv_balanceOf_leq_totalSupply(recipient);
@@ -190,14 +231,14 @@ rule getClaimableRewards_decrease_after_deposit_7(method f){
     requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
     requireInvariant inv_atoken_balanceOf_leq_totalSupply(recipient);
     requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
-    require ((ATOKEN.balanceOf(user) + ATOKEN.balanceOf(recipient) + ATOKEN.balanceOf(currentContract) ) <= ATOKEN.totalSupply());
+    require ((_AToken.balanceOf(user) + _AToken.balanceOf(recipient) + _AToken.balanceOf(currentContract) ) <= _AToken.totalSupply());
     requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
     requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(recipient);
     requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
-    require ((ATOKEN.scaledBalanceOf(user) + ATOKEN.scaledBalanceOf(recipient) + ATOKEN.scaledBalanceOf(currentContract) ) <= ATOKEN.scaledTotalSupply());
+    require ((_AToken.scaledBalanceOf(user) + _AToken.scaledBalanceOf(recipient) + _AToken.scaledBalanceOf(currentContract) ) <= _AToken.scaledTotalSupply());
     
-    require totalSupply() <= ATOKEN.scaledTotalSupply();
-    require totalSupply() <= ATOKEN.totalSupply();
+    require totalSupply() <= _AToken.scaledTotalSupply();
+    require totalSupply() <= _AToken.totalSupply();
 
     requireInvariant sumAllBalance_eq_totalSupply();
     requireInvariant sumAllATokenBalance_eq_totalSupply();
@@ -245,8 +286,8 @@ rule getClaimableRewards_increase_after_deposit_7(method f){
     bool fromUnderlying;
 
     require currentContract != e.msg.sender;
-    require ATOKEN != e.msg.sender;
-    require REWARDSCONTROLLER != e.msg.sender;
+    require _AToken != e.msg.sender;
+    require _RewardsController != e.msg.sender;
 
 
     requireInvariant inv_balanceOf_leq_totalSupply(user);
@@ -255,14 +296,14 @@ rule getClaimableRewards_increase_after_deposit_7(method f){
     requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
     requireInvariant inv_atoken_balanceOf_leq_totalSupply(recipient);
     requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
-    require ((ATOKEN.balanceOf(user) + ATOKEN.balanceOf(recipient) + ATOKEN.balanceOf(currentContract) ) <= ATOKEN.totalSupply());
+    require ((_AToken.balanceOf(user) + _AToken.balanceOf(recipient) + _AToken.balanceOf(currentContract) ) <= _AToken.totalSupply());
     requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
     requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(recipient);
     requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
-    require ((ATOKEN.scaledBalanceOf(user) + ATOKEN.scaledBalanceOf(recipient) + ATOKEN.scaledBalanceOf(currentContract) ) <= ATOKEN.scaledTotalSupply());
+    require ((_AToken.scaledBalanceOf(user) + _AToken.scaledBalanceOf(recipient) + _AToken.scaledBalanceOf(currentContract) ) <= _AToken.scaledTotalSupply());
     
-    require totalSupply() <= ATOKEN.scaledTotalSupply();
-    require totalSupply() <= ATOKEN.totalSupply();
+    require totalSupply() <= _AToken.scaledTotalSupply();
+    require totalSupply() <= _AToken.totalSupply();
 
     requireInvariant sumAllBalance_eq_totalSupply();
     requireInvariant sumAllATokenBalance_eq_totalSupply();
@@ -289,12 +330,50 @@ rule getClaimableRewards_increase_after_deposit_8(method f){
     bool fromUnderlying;
 
     
-   require (REWARDSCTRL.getavailableRewardsCount(ATOKEN) ) > 0;
+    mathint oldInd;
+    mathint newInd;
+    oldInd, newInd = _RewardsController.getAssetIndex(e, _AToken, _DummyERC20_rewardToken);
+    require oldInd >= 1;
+   require (_RewardsController.getavailableRewardsCount(_AToken) ) > 0;
+
+     mathint oldIndRewCtrl;
+    mathint newIndRewCtrl;
+    oldIndRewCtrl, newIndRewCtrl = _RewardsController.getAssetIndex(e, _AToken, _RewardsController);
+    require oldIndRewCtrl >= 1;
+
+    address availableFirstRewards = _RewardsController.getFirstRewardsByAsset(_AToken);
+    require (availableFirstRewards == _DummyERC20_rewardToken);
+
+    require (_RewardsController.getDistributionEnd(_AToken, _DummyERC20_rewardToken) > 0);
+    require (_RewardsController.getDistributionEnd(_AToken, _RewardsController) > 0);
+    require (_RewardsController.getDistributionEnd(_AToken, user) > 0);
+    require (_RewardsController.getDistributionEnd(_AToken, recipient) > 0);
 
     require currentContract != e.msg.sender;
-    require ATOKEN != e.msg.sender;
-    require REWARDSCONTROLLER != e.msg.sender;
+    require _AToken != e.msg.sender;
+    require _RewardsController != e.msg.sender;
+    require _DummyERC20_aTokenUnderlying  != e.msg.sender;
+    require _DummyERC20_rewardToken  != e.msg.sender;
+    require _SymbolicLendingPoolL1 != e.msg.sender;
+    require _TransferStrategyHarness != e.msg.sender;
+    
 
+    require currentContract != recipient;
+    require _AToken != recipient;
+    require _RewardsController !=  recipient;
+    require _DummyERC20_aTokenUnderlying  != recipient;
+    require _DummyERC20_rewardToken  != recipient;
+    require _SymbolicLendingPoolL1 != recipient;
+    require _TransferStrategyHarness != recipient;
+   
+    require currentContract != user;
+    require _AToken != user;
+    require _RewardsController !=  user;
+    require _DummyERC20_aTokenUnderlying  != user;
+    require _DummyERC20_rewardToken  != user;
+    require _SymbolicLendingPoolL1 != user;
+    require _TransferStrategyHarness != user;
+   
 
     requireInvariant inv_balanceOf_leq_totalSupply(user);
     requireInvariant inv_balanceOf_leq_totalSupply(recipient);
@@ -302,14 +381,14 @@ rule getClaimableRewards_increase_after_deposit_8(method f){
     requireInvariant inv_atoken_balanceOf_leq_totalSupply(user);
     requireInvariant inv_atoken_balanceOf_leq_totalSupply(recipient);
     requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
-    require ((ATOKEN.balanceOf(user) + ATOKEN.balanceOf(recipient) + ATOKEN.balanceOf(currentContract) ) <= ATOKEN.totalSupply());
+    require ((_AToken.balanceOf(user) + _AToken.balanceOf(recipient) + _AToken.balanceOf(currentContract) ) <= _AToken.totalSupply());
     requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
     requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(recipient);
     requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
-    require ((ATOKEN.scaledBalanceOf(user) + ATOKEN.scaledBalanceOf(recipient) + ATOKEN.scaledBalanceOf(currentContract) ) <= ATOKEN.scaledTotalSupply());
+    require ((_AToken.scaledBalanceOf(user) + _AToken.scaledBalanceOf(recipient) + _AToken.scaledBalanceOf(currentContract) ) <= _AToken.scaledTotalSupply());
     
-    require totalSupply() <= ATOKEN.scaledTotalSupply();
-    require totalSupply() <= ATOKEN.totalSupply();
+    require totalSupply() <= _AToken.scaledTotalSupply();
+    require totalSupply() <= _AToken.totalSupply();
 
     requireInvariant sumAllBalance_eq_totalSupply();
     requireInvariant sumAllATokenBalance_eq_totalSupply();
@@ -322,7 +401,7 @@ rule getClaimableRewards_increase_after_deposit_8(method f){
     deposit(e, assets, recipient, referralCode, fromUnderlying); 
     mathint claimableRewardsAfter = getClaimableRewards(e, user);
     assert claimableRewardsAfter >= claimableRewardsBefore;
-
+   // assert false;
 }
 
 
