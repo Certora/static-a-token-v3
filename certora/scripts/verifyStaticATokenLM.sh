@@ -17,18 +17,19 @@ certoraRun src/StaticATokenLM.sol \
     --solc solc8.10 \
     --optimistic_loop \
     --optimistic_hashing \
-    --settings -t=1200,-mediumTimeout=1200,-depth=10  \
+    --settings -t=1500,-mediumTimeout=60,-depth=30 \
     --staging \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --rule getClaimableRewards_increase_after_deposit_8 \
-    --msg "getClaimableRewards_increase_after_deposit_8 wo handleAction"
+    --rule getClaimableRewards_increase_17 getClaimableRewards_decrease_17\
+    --msg "getClaimableRewards_increase_17 getClaimableRewards_decrease_17.  index"
 
 # 
 #certora/harness/RewardsDistributorHarness.sol \
+#-t=1500,-mediumTimeout=60,-depth=30 for inv_atoken_balanceOf_leq_totalSupply 2 hours
    # -t=1200,-mediumTimeout=1200,-depth=10 - best for   getClaimableRewards_increase_after_deposit_8 (25 min)
 #  -t=600,-mediumTimeout=40,-depth=45  - best for getClaimableRewards_decrease_after_deposit_7 (25)
 # --settings -t=1500,-mediumTimeout=60,-depth=30 - getClaimableRewards_decrease_after_deposit finished after 15 minutes
