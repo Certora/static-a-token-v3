@@ -2,6 +2,7 @@ import "erc20.spec"
 
 
 using DummyERC20_rewardToken as aRewardToken
+using RewardsControllerHarness as aRewardsController
 
 
 methods
@@ -12,6 +13,7 @@ methods
 	getUnclaimedRewards(address user) returns (uint256) envfree
 	rewardToken() returns address envfree
 	aRewardToken.balanceOf(address user) returns (uint256) envfree
+	incentivesController() returns (address) envfree
 
     /*******************
     *     Pool.sol     *
@@ -62,7 +64,7 @@ methods
     // called by  StaticATokenLM.claimRewardsToSelf  -->  RewardsController._getUserAssetBalances
     // get balanceOf and totalSupply of _aToken
     // todo - link to the actual token.
-    getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => NONDET
+    getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => DISPATCHER(true)
 
     // called by StaticATokenLM.collectAndUpdateRewards --> RewardsController._transferRewards()
     //implemented as simple transfer() in TransferStrategyHarness
@@ -131,4 +133,65 @@ rule rewardsConsistencyWhenInsufficientRewards() {
 		// In this case the unclaimed rewards are not updated
 		assert claimablePre == claimablePost, "Claimable rewards mismatch";
 	}
+}
+
+// Failed (e.g. withdraw):
+// https://prover.certora.com/output/98279/ec85c3f994b84dfc9d99588955d536e7?anonymousKey=d052f9545f9a42e667a9d0965763f4967df5b790
+rule rewardsTotalDeclinesOnlyByClaim(method f) {
+	require aRewardsController == incentivesController();
+
+	env e;
+	require e.msg.sender != currentContract;
+	require f.selector != initialize(address, address, string, string).selector;
+
+	uint256 preTotal = getTotalClaimableRewards(e);
+	uint256 preRewards = aRewardsController.getUserAccruedRewards(e, currentContract, aRewardToken);
+
+	calldataarg args;
+	f(e, args);
+
+	uint256 postTotal = getTotalClaimableRewards(e);
+	uint256 postRewards = aRewardsController.getUserAccruedRewards(e, currentContract, aRewardToken);
+	require preRewards == postRewards;
+
+	assert (postTotal < preTotal) => (
+		(f.selector == claimRewardsOnBehalf(address, address).selector) ||
+		(f.selector == claimRewards(address).selector) ||
+		(f.selector == claimRewardsToSelf().selector)
+	), "Total rewards decline not due to claim";
+}
+
+
+// Failed:
+// https://prover.certora.com/output/98279/ca9c016adf2c4e23bc5747986621160f?anonymousKey=571190f7fa87d03513351adc13ec7eddcba0ae5c
+rule rewardsTotalDoesNotDeclineByWithdraw() {
+	require aRewardsController == incentivesController();
+
+	env e;
+	require e.msg.sender != currentContract;
+
+	uint256 preTotal = getTotalClaimableRewards(e);
+
+	calldataarg args;
+	withdraw(e, args);
+
+	uint256 postTotal = getTotalClaimableRewards(e);
+
+	assert (postTotal >= preTotal), "Total rewards declines by withdraw";
+}
+
+
+rule rewardsTotalDoesNotDeclineByDeposit(uint256 assets) {
+	require aRewardsController == incentivesController();
+
+	env e;
+	require e.msg.sender != currentContract;
+
+	uint256 preTotal = getTotalClaimableRewards(e);
+
+	deposit(e, assets, e.msg.sender);
+
+	uint256 postTotal = getTotalClaimableRewards(e);
+
+	assert (postTotal >= preTotal), "Total rewards declines by deposit";
 }
