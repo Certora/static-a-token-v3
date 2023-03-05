@@ -17,15 +17,14 @@ certoraRun src/StaticATokenLM.sol \
     --solc solc8.10 \
     --optimistic_loop \
     --optimistic_hashing \
-    --settings -t=1500,-mediumTimeout=60,-depth=30 \
+    --settings -t=2000,-mediumTimeout=900,-depth=14   \
     --staging \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --rule getClaimableRewards_increase_17 getClaimableRewards_decrease_17\
-    --msg "getClaimableRewards_increase_17 getClaimableRewards_decrease_17.  index"
+    --msg "ALL"
 
 # 
 #certora/harness/RewardsDistributorHarness.sol \

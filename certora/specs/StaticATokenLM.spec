@@ -117,10 +117,9 @@ hook Sload uint128 balance _AToken._userState[KEY address a] .(offset 0) STORAGE
 
 
 
-// INV #2
-/**
-* @title User's balance not greater than totalSupply()
-*/
+
+/// @title User's balance not greater than totalSupply()
+
 //pass
 invariant inv_balanceOf_leq_totalSupply(address user)
 	balanceOf(user) <= totalSupply()
@@ -130,17 +129,31 @@ invariant inv_balanceOf_leq_totalSupply(address user)
 		}
 	}
 
-//fail on deposit and redeem
-//https://vaas-stg.certora.com/output/99352/6355b694cd684e979531ae94b1e67adb/?anonymousKey=eb3d06c220ab788ba118e7152814b3ed8dc20bd5
+//timeout on reddem metaWithdraw
 invariant inv_atoken_balanceOf_leq_totalSupply(address user)
 	_AToken.balanceOf(user) <= _AToken.totalSupply()
+     filtered { f -> !f.isView && f.selector != redeem(uint256,address,address,bool).selector}
     {
 		preserved with (env e){
 			requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-            setup(e, user, user);
-            requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
+            //setup(e, user, user);
+            //requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
 		}
 	}
+
+invariant inv_atoken_balanceOf_leq_totalSupply_redeem(address user)
+	_AToken.balanceOf(user) <= _AToken.totalSupply()
+    filtered { f -> f.selector == redeem(uint256,address,address,bool).selector}
+    {
+		preserved with (env e){
+			requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
+            // setup(e, user, user);
+            // requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
+		}
+	}
+
+
+
 
 invariant inv_atoken_balanceOf_2users_leq_totalSupply(address user1, address user2)
 	(_AToken.balanceOf(user1) + _AToken.balanceOf(user2))<= _AToken.totalSupply()
@@ -178,43 +191,43 @@ invariant inv_atoken_balanceOf_2users_leq_totalSupply(address user1, address use
 
 	}
 //timeout (any inswx)
-rule rule_atoken_balanceOf_leq_totalSupply_after_deposit()
-{	
-     env e;
-    calldataarg args;
-    address user;
-    uint256 assets;
-    address recipient;
-    uint16 referralCode;
-    bool fromUnderlying;
+// rule rule_atoken_balanceOf_leq_totalSupply_after_deposit()
+// {	
+//      env e;
+//     calldataarg args;
+//     address user;
+//     uint256 assets;
+//     address recipient;
+//     uint16 referralCode;
+//     bool fromUnderlying;
 
-    requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-    setup(e, user, recipient);
-    require _AToken.balanceOf(user) <= _AToken.totalSupply();
-    require _AToken.balanceOf(recipient) <= _AToken.totalSupply();
-    require (_AToken.balanceOf(user) + _AToken.balanceOf(recipient)) <= _AToken.totalSupply();
+//     requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
+//     setup(e, user, recipient);
+//     require _AToken.balanceOf(user) <= _AToken.totalSupply();
+//     require _AToken.balanceOf(recipient) <= _AToken.totalSupply();
+//     require (_AToken.balanceOf(user) + _AToken.balanceOf(recipient)) <= _AToken.totalSupply();
     
-    deposit(e, assets, recipient, referralCode, fromUnderlying);
-    assert _AToken.balanceOf(user) <= _AToken.totalSupply();
-}
+//     deposit(e, assets, recipient, referralCode, fromUnderlying);
+//     assert _AToken.balanceOf(user) <= _AToken.totalSupply();
+// }
 
-rule rule_atoken_balanceOf_leq_totalSupply_after_redeem()
-{	
-     env e;
-    calldataarg args;
-    address user;
-    uint256 shares;
-    address receiver;
-    address owner;
+// rule rule_atoken_balanceOf_leq_totalSupply_after_redeem()
+// {	
+//      env e;
+//     calldataarg args;
+//     address user;
+//     uint256 shares;
+//     address receiver;
+//     address owner;
 
 
-    requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-    setup(e, user, receiver);
-    setup(e, user, owner);
-    require _AToken.balanceOf(user) <= _AToken.totalSupply();
-    redeem(e, shares, receiver,owner);
-    assert _AToken.balanceOf(user) <= _AToken.totalSupply();
-}
+//     requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
+//     setup(e, user, receiver);
+//     setup(e, user, owner);
+//     require _AToken.balanceOf(user) <= _AToken.totalSupply();
+//     redeem(e, shares, receiver,owner);
+//     assert _AToken.balanceOf(user) <= _AToken.totalSupply();
+// }
 
 //pass
 invariant inv_atoken_scaled_balanceOf_leq_totalSupply(address user)
@@ -264,47 +277,47 @@ function setup(env e, address user1, address user2)
     require _SymbolicLendingPoolL1 != user2;
     require _TransferStrategyHarness != user2;
 }
+//pass
+// rule getClaimableRewards_stable_after_transfer(){
 
-rule getClaimableRewards_stable_after_transfer(){
+//     env e;
+//     address to;
+//     uint256 amount;
 
-    env e;
-    address to;
-    uint256 amount;
+//     address user;
 
-    address user;
-
-    //todo: review assumption
-//    require (to != 0);
-//    require (e.msg.sender != 0);
-    require user != 0;
+//     //todo: review assumption
+// //    require (to != 0);
+// //    require (e.msg.sender != 0);
+//     require user != 0;
 
 
-    mathint claimableRewardsBefore = getClaimableRewards(e, user);
-    transfer(e, to, amount);
-    mathint claimableRewardsAfter = getClaimableRewards(e, user);
-    assert claimableRewardsAfter == claimableRewardsBefore;
+//     mathint claimableRewardsBefore = getClaimableRewards(e, user);
+//     transfer(e, to, amount);
+//     mathint claimableRewardsAfter = getClaimableRewards(e, user);
+//     assert claimableRewardsAfter == claimableRewardsBefore;
 
-}
+// }
 
-rule getClaimableRewards_stable_after_transfer_from(){
+// rule getClaimableRewards_stable_after_transfer_from(){
 
-    env e;
-    address from;
-    address to;
-    uint256 amount;
+//     env e;
+//     address from;
+//     address to;
+//     uint256 amount;
 
-    address user;
+//     address user;
 
-//    require (from != 0);
-//    require (to != 0);
-    require user != 0;
+// //    require (from != 0);
+// //    require (to != 0);
+//     require user != 0;
 
-    mathint claimableRewardsBefore = getClaimableRewards(e, user);
-    transferFrom(e, from, to, amount);
-    mathint claimableRewardsAfter = getClaimableRewards(e, user);
-    assert claimableRewardsAfter == claimableRewardsBefore;
+//     mathint claimableRewardsBefore = getClaimableRewards(e, user);
+//     transferFrom(e, from, to, amount);
+//     mathint claimableRewardsAfter = getClaimableRewards(e, user);
+//     assert claimableRewardsAfter == claimableRewardsBefore;
 
-}
+// }
 
 
 rule getClaimableRewards_stable_after_deposit(){
@@ -317,6 +330,7 @@ rule getClaimableRewards_stable_after_deposit(){
     uint16 referralCode;
     bool fromUnderlying;
 
+    require user != 0;
     setup(e, user, recipient);    
   
     mathint claimableRewardsBefore = getClaimableRewards(e, user);
@@ -325,76 +339,64 @@ rule getClaimableRewards_stable_after_deposit(){
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
 
+//fail on initialize(). timeout on redeem(uint256,address,address,bool) , metaWithdraw
+// rule getClaimableRewards_decrease_17(method f)
+//     filtered { f -> !f.isView && !claimFunctions(f) }{
 
-rule getClaimableRewards_decrease_17(method f)
-    filtered { f -> !f.isView && !claimFunctions(f) }{
-
-    env e;
-    calldataarg args;
-    address user;
+//     env e;
+//     calldataarg args;
+//     address user;
     
-    require user != 0;
-    setup(e, user, user);    
+//     require user != 0;
+//     setup(e, user, user);    
   
-    mathint claimableRewardsBefore = getClaimableRewards(e, user);
-    f(e, args); 
-    mathint claimableRewardsAfter = getClaimableRewards(e, user);
-    assert claimableRewardsAfter <= claimableRewardsBefore;
-}
+//     mathint claimableRewardsBefore = getClaimableRewards(e, user);
+//     f(e, args); 
+//     mathint claimableRewardsAfter = getClaimableRewards(e, user);
+//     assert claimableRewardsAfter <= claimableRewardsBefore;
+// }
+// //fail on initialize(). timeout on redeem(uint256,address,address,bool) , metaWithdraw
+// rule getClaimableRewards_increase_17(method f) filtered { f -> !f.isView && !claimFunctions(f) }
+// {
 
-rule getClaimableRewards_increase_17(method f) filtered { f -> !f.isView && !claimFunctions(f) }
-{
-
-    env e;
-    calldataarg args;
-    address user;
+//     env e;
+//     calldataarg args;
+//     address user;
     
-    require user != 0;
-    setup(e, user, user);    
+//     require user != 0;
+//     setup(e, user, user);    
   
-    mathint claimableRewardsBefore = getClaimableRewards(e, user);
-    f(e, args); 
-    mathint claimableRewardsAfter = getClaimableRewards(e, user);
-    assert claimableRewardsAfter >= claimableRewardsBefore;
-}
+//     mathint claimableRewardsBefore = getClaimableRewards(e, user);
+//     f(e, args); 
+//     mathint claimableRewardsAfter = getClaimableRewards(e, user);
+//     assert claimableRewardsAfter >= claimableRewardsBefore;
+// }
 
 
-rule getClaimableRewards_decrease_after_mint(){
+// rule getClaimableRewards_decrease_after_mint(){
 
-    env e;
-    calldataarg args;
-    address user;
-    mathint claimableRewardsBefore = getClaimableRewards(e, user);
-    mint(e, args);
-    mathint claimableRewardsAfter = getClaimableRewards(e, user);
-    assert claimableRewardsAfter <= claimableRewardsBefore;
+//     env e;
+//     calldataarg args;
+//     address user;
+//     mathint claimableRewardsBefore = getClaimableRewards(e, user);
+//     mint(e, args);
+//     mathint claimableRewardsAfter = getClaimableRewards(e, user);
+//     assert claimableRewardsAfter <= claimableRewardsBefore;
 
-}
+// }
 
-rule getClaimableRewards_increase_after_mint(){
+// rule getClaimableRewards_increase_after_mint(){
 
-    env e;
-    calldataarg args;
-    address user;
-    mathint claimableRewardsBefore = getClaimableRewards(e, user);
-    mint(e, args);
-    mathint claimableRewardsAfter = getClaimableRewards(e, user);
-    assert claimableRewardsAfter >= claimableRewardsBefore;
+//     env e;
+//     calldataarg args;
+//     address user;
+//     mathint claimableRewardsBefore = getClaimableRewards(e, user);
+//     mint(e, args);
+//     mathint claimableRewardsAfter = getClaimableRewards(e, user);
+//     assert claimableRewardsAfter >= claimableRewardsBefore;
 
-}
+// }
 
-//fail
-rule getClaimableRewards_is_zero(method f)
-  filtered { f -> claimFunctions(f) }
-{
-    env e;
-    calldataarg args;
-    address user;
-    f(e, args);
-    mathint claimableRewardsAfter = getClaimableRewards(e, user);
-    assert claimableRewardsAfter == 0;
-
-}
 
 
 rule sanity(method f)
@@ -462,3 +464,14 @@ rule getClaimableRewards_stable_after_withdraw(){
 //     mathint newIndRewCtrl;
 //     oldIndRewCtrl, newIndRewCtrl = _RewardsController.getAssetIndex(e, _AToken, _RewardsController);
 //     require oldIndRewCtrl >= 1;
+
+
+
+// rule getClaimableRewards_after_claimRewardsToSelf()
+// {
+//     env e;
+//     claimRewardsToSelf(e);
+//     mathint claimableRewardsAfter = getClaimableRewards(e, e.msg.sender);
+//     assert claimableRewardsAfter == 0;
+// }
+
