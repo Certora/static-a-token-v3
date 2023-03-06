@@ -17,11 +17,12 @@ certoraRun src/StaticATokenLM.sol \
     --solc solc8.10 \
     --optimistic_loop \
     --optimistic_hashing \
+    --settings -t=2250,-mediumTimeout=90,-depth=45 \
+	--staging \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
 	--rule_sanity \
-    --msg "rewards total declines by claim - parametric, fixed, reduced requirements" \
-	--rule rewardsTotalDeclinesOnlyByClaim_fixed_reduced_requires
+    --msg "Rewards consistency"

@@ -1,23 +1,11 @@
 import "erc20.spec"
 
 
-// using DummyERC20_rewardToken as aRewardToken
-// using RewardsControllerHarness as aRewardsController
-// using AToken as _AToken 
-
-
 methods
 {
     /*******************
     *     envfree      *
     ********************/
-	// getUnclaimedRewards(address user) returns (uint256) envfree
-	// rewardToken() returns address envfree
-	// aRewardToken.balanceOf(address user) returns (uint256) envfree
-	// incentivesController() returns (address) envfree
-
-    // aRewardsController.getAvailableRewardsCount(address) returns (uint128) envfree
-    // aRewardsController.getFirstRewardsByAsset(address) returns (address ) envfree
 
     /*******************
     *     Pool.sol     *
@@ -76,7 +64,14 @@ methods
 
  }
 
-
+/* Ensure rate is non-decreasing (except for initialize method)
+ * from IStaticATokenLM: “Returns the Aave liquidity index of the underlying
+ * aToken, denominated rate here as it can be considered as an ever-increasing
+ * exchange rate”
+ * Except for initialize and metaDeposit, all other methods passed in:
+ * https://vaas-stg.certora.com/output/98279/9646ebc64fe04ee7acb691a28e55f7d7?anonymousKey=2abd640e5b8a2d49871e6b6bed0df0feab173c77
+ * Note: metaDeposit seems to be vacuous, i.e. always fails on a require statement.
+ */
 rule nonDecreasingRate(method f) {
 	require f.selector != initialize(address, address, string, string).selector;
 

@@ -107,13 +107,12 @@ rule rewardsConsistencyWhenSufficientRewardsExist() {
 }
 
 
-// Ensures rewards are updated correctly after claiming, when there aren't
-// enough funds.
-/* Fails in:
-https://vaas-stg.certora.com/output/98279/274946aa85a247149c025df228c71bc1?anonymousKey=5adb195fd1c025db104868af9aead15244995b7f
- * Probably because getUnclaimedRewards uses rayToWadRoundDown (StaticATokenLM.sol:332).
- * Reported in https://github.com/bgd-labs/static-a-token-v3/issues/23
- * fix is in progress 20230306
+/* Ensures rewards are updated correctly after claiming, when there aren't
+ * enough funds.
+ * Fails in:
+ * https://vaas-stg.certora.com/output/98279/274946aa85a247149c025df228c71bc1?anonymousKey=5adb195fd1c025db104868af9aead15244995b7f
+ * Reported in: https://github.com/bgd-labs/static-a-token-v3/issues/23
+ * Fix is in progress 20230306
  */
 rule rewardsConsistencyWhenInsufficientRewards() {
 	require aRewardToken == rewardToken();
@@ -142,8 +141,11 @@ rule rewardsConsistencyWhenInsufficientRewards() {
 	}
 }
 
-// Passed:
-// https://prover.certora.com/output/98279/e542b57d3baa4ceaa1f9c73591134d9b?anonymousKey=69e006e2a576af5f3a08a5234478863a60bc63c9
+/* Only claim rewards methods (and initialize) should cause total rewards to decline.
+ * Except for metaDeposit (and initialize) all other methods passed in:
+ * https://prover.certora.com/output/98279/05e0d056329345c5a6ba8136e75f5c03?anonymousKey=edc61d598888d191816304c44d2ced0e678d3d8b
+ * Note: metaDeposit seems to be vacuous, i.e. always fails on a require statement.
+ */
 rule rewardsTotalDeclinesOnlyByClaim(method f) {
 	require aRewardsController == incentivesController();
 
@@ -152,42 +154,6 @@ rule rewardsTotalDeclinesOnlyByClaim(method f) {
 	// Copied from StaticATokenLM.spec function setup
     require aRewardsController.getAvailableRewardsCount(_AToken) > 0;
     require aRewardsController.getFirstRewardsByAsset(_AToken) == aRewardToken;
-	require _AToken != e.msg.sender;
-	require aRewardsController != e.msg.sender;
-	require aRewardToken != e.msg.sender;
-
-	require e.msg.sender != currentContract;
-	require f.selector != initialize(address, address, string, string).selector;
-
-	uint256 preTotal = getTotalClaimableRewards(e);
-	uint256 preRewards = aRewardsController.getUserAccruedRewards(e, currentContract, aRewardToken);
-
-	calldataarg args;
-	f(e, args);
-
-	uint256 postTotal = getTotalClaimableRewards(e);
-	uint256 postRewards = aRewardsController.getUserAccruedRewards(e, currentContract, aRewardToken);
-	require preRewards == postRewards;
-
-	assert (postTotal < preTotal) => (
-		(f.selector == claimRewardsOnBehalf(address, address).selector) ||
-		(f.selector == claimRewards(address).selector) ||
-		(f.selector == claimRewardsToSelf().selector)
-	), "Total rewards decline not due to claim";
-}
-
-
-rule rewardsTotalDeclinesOnlyByClaim_fixed(method f) {
-	require aRewardsController == incentivesController();
-
-	env e;
-
-	// Copied from StaticATokenLM.spec function setup
-    require aRewardsController.getAvailableRewardsCount(_AToken) > 0;
-    require aRewardsController.getFirstRewardsByAsset(_AToken) == aRewardToken;
-	require _AToken != e.msg.sender;
-	require aRewardsController != e.msg.sender;
-	require aRewardToken != e.msg.sender;
 
 	require e.msg.sender != currentContract;
 	require f.selector != initialize(address, address, string, string).selector;
@@ -205,109 +171,3 @@ rule rewardsTotalDeclinesOnlyByClaim_fixed(method f) {
 		(f.selector == claimRewardsToSelf().selector)
 	), "Total rewards decline not due to claim";
 }
-
-
-rule rewardsTotalDeclinesOnlyByClaim_fixed_reduced_requires(method f) {
-	require aRewardsController == incentivesController();
-
-	env e;
-
-	// Copied from StaticATokenLM.spec function setup
-    require aRewardsController.getAvailableRewardsCount(_AToken) > 0;
-    require aRewardsController.getFirstRewardsByAsset(_AToken) == aRewardToken;
-
-	require e.msg.sender != currentContract;
-	require f.selector != initialize(address, address, string, string).selector;
-
-	uint256 preTotal = getTotalClaimableRewards(e);
-
-	calldataarg args;
-	f(e, args);
-
-	uint256 postTotal = getTotalClaimableRewards(e);
-
-	assert (postTotal < preTotal) => (
-		(f.selector == claimRewardsOnBehalf(address, address).selector) ||
-		(f.selector == claimRewards(address).selector) ||
-		(f.selector == claimRewardsToSelf().selector)
-	), "Total rewards decline not due to claim";
-}
-
-
-rule rewardsTotalDeclinesOnlyByClaim_reduced_requires(method f) {
-	require aRewardsController == incentivesController();
-
-	env e;
-
-	// Copied from StaticATokenLM.spec function setup
-    require aRewardsController.getAvailableRewardsCount(_AToken) > 0;
-    require aRewardsController.getFirstRewardsByAsset(_AToken) == aRewardToken;
-	// require _AToken != e.msg.sender;
-	// require aRewardsController != e.msg.sender;
-	// require aRewardToken != e.msg.sender;
-
-	require e.msg.sender != currentContract;
-	require f.selector != initialize(address, address, string, string).selector;
-
-	uint256 preTotal = getTotalClaimableRewards(e);
-	uint256 preRewards = aRewardsController.getUserAccruedRewards(e, currentContract, aRewardToken);
-
-	calldataarg args;
-	f(e, args);
-
-	uint256 postTotal = getTotalClaimableRewards(e);
-	uint256 postRewards = aRewardsController.getUserAccruedRewards(e, currentContract, aRewardToken);
-	require preRewards == postRewards;
-
-	assert (postTotal < preTotal) => (
-		(f.selector == claimRewardsOnBehalf(address, address).selector) ||
-		(f.selector == claimRewards(address).selector) ||
-		(f.selector == claimRewardsToSelf().selector)
-	), "Total rewards decline not due to claim";
-}
-
-
-// Failed:
-// https://prover.certora.com/output/98279/ca9c016adf2c4e23bc5747986621160f?anonymousKey=571190f7fa87d03513351adc13ec7eddcba0ae5c
-// Succeeded:
-// https://prover.certora.com/output/98279/8f2fbc49610c4cd1aba8fccb64b6ff59?anonymousKey=b64fc6628d47e98aa7f44503f59df442feaa8aff
-// rule rewardsTotalDoesNotDeclineByWithdraw() {
-// 	env e;
-// 
-// 	// Copied from StaticATokenLM.spec function setup
-//     require aRewardsController.getAvailableRewardsCount(_AToken)  > 0;
-//     require aRewardsController.getFirstRewardsByAsset(_AToken) == aRewardToken;
-// 	require _AToken != e.msg.sender;
-// 	require aRewardsController != e.msg.sender;
-// 	require aRewardToken != e.msg.sender;
-// 
-// 	require aRewardsController == incentivesController();
-// 
-// 	require e.msg.sender != currentContract;
-// 
-// 	uint256 preTotal = getTotalClaimableRewards(e);
-// 
-// 	calldataarg args;
-// 	withdraw(e, args);
-// 
-// 	uint256 postTotal = getTotalClaimableRewards(e);
-// 
-// 	assert (postTotal >= preTotal), "Total rewards declines by withdraw";
-// }
-// 
-// Timed out:
-// https://prover.certora.com/output/98279/97b8326304dc4b6081eb3d2d7d0c0d5f?anonymousKey=4327f523e55dc5b51a6bc03bf0c3a116d58637d7
-// rule rewardsTotalDoesNotDeclineByDeposit(uint256 assets) {
-// 	require aRewardsController == incentivesController();
-// 
-// 	env e;
-// 	require e.msg.sender != currentContract;
-// 
-// 	uint256 preTotal = getTotalClaimableRewards(e);
-// 
-// 	deposit(e, assets, e.msg.sender);
-// 
-// 	uint256 postTotal = getTotalClaimableRewards(e);
-// 
-// 	assert (postTotal >= preTotal), "Total rewards declines by deposit";
-// }

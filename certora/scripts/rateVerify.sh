@@ -24,5 +24,5 @@ certoraRun src/StaticATokenLM.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --msg "StaticATokenLM - rate does not decrease" \
-	--rule_sanity
+	--rule_sanity \
+	--msg "Non-decreasing rate()" \
