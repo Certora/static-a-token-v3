@@ -72,4 +72,22 @@ contract StaticATokenLMHarness is StaticATokenLM{
         assets = _aToken.balanceOf(account) + IERC20(_aTokenUnderlying).balanceOf(account);
 
     }
+
+    function getStaticATokenUnderlying() public view returns (address){
+        return _aTokenUnderlying;
+    }
+    
+    // function getATokenUnderlying() public view returns (address){
+    //     return _underlyingAsset;
+    // }
+
+    function upperBound(uint256 index) public returns (uint256){
+        return (index/ (2*1e27));
+    }
+
+    // (asset * RAY + INDEX/2)INDEX
+
+    // function GetRAY() public returns (uint256){
+    //     return RAY;
+    // }
 }

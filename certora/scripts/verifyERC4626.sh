@@ -24,8 +24,6 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
             StaticATokenLMHarness:_aToken=AToken \
            StaticATokenLMHarness:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
            StaticATokenLMHarness:_rewardToken=DummyERC20_rewardToken \
-    --hashing_length_bound 224\
-    --optimistic_hashing \
     --solc solc8.10 \
     --optimistic_loop \
     --staging \
@@ -35,6 +33,8 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
     --rule_sanity basic \
+    --settings -optimisticUnboundedHashing=true \
+    --settings -hashingLengthBound=224 \
     $RULE \
     --msg "StaticAToken - $RULE $MSG  "
 
