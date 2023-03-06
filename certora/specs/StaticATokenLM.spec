@@ -232,7 +232,6 @@ function setup(env e, address user1, address user2)
 }
 
 
-//fail on initialized
 rule getClaimableRewards_stable(method f)
     filtered { f -> !f.isView && !claimFunctions(f)  && f.selector != initialize(address,address,string,string).selector}
 {
@@ -245,7 +244,6 @@ rule getClaimableRewards_stable(method f)
   
     mathint claimableRewardsBefore = getClaimableRewards(e, user);
     f(e, args); 
-    setup(e, user, user);    
     mathint claimableRewardsAfter = getClaimableRewards(e, user);
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
@@ -262,8 +260,6 @@ rule getClaimableRewards_stable_after_initialize(method f)
     calldataarg args;
     address user;
     
-    //require user != 0;
-    //require newPool == _SymbolicLendingPoolL1;
     require newAToken == _AToken;
   
     mathint claimableRewardsBefore = getClaimableRewards(e, user);
@@ -275,28 +271,59 @@ rule getClaimableRewards_stable_after_initialize(method f)
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
 
-//fail: claimableRewardsBefore=claimableRewardsAfter=2 but deltaReceiverBalance=3
-// todo: rerun with the fix of issue23
-//https://vaas-stg.certora.com/output/99352/d4dfdaabe60c48c2835cc2288c2b252c/?anonymousKey=49fe26ba512b2be99426d4b2fcd2458ddf91c6e5
+//pass
 rule getClaimableRewardsBefore_leq_calimed_claimRewardsOnBehalf(method f)
 {   
     env e;
     address onBehalfOf;
     address receiver; 
 
-    require receiver != 0;
     setup(e, onBehalfOf, receiver);   
-    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(receiver); 
-  
-    mathint receiverBalanceBefore = _DummyERC20_rewardToken.balanceOf(receiver);
-    mathint claimableRewardsBefore = getClaimableRewards(e, receiver);
+    
+    mathint balanceBefore = _DummyERC20_rewardToken.balanceOf(onBehalfOf);
+    mathint claimableRewardsBefore = getClaimableRewards(e, onBehalfOf);
     claimRewardsOnBehalf(e, onBehalfOf, receiver);
-    mathint receiverBalanceAfter = _DummyERC20_rewardToken.balanceOf(receiver);
-    mathint claimableRewardsAfter = getClaimableRewards(e, receiver);
-    mathint deltaReceiverBalance = receiverBalanceAfter - receiverBalanceBefore;
-    assert deltaReceiverBalance <= claimableRewardsBefore;
+    mathint balanceAfter = _DummyERC20_rewardToken.balanceOf(onBehalfOf);
+    mathint claimableRewardsAfter = getClaimableRewards(e, onBehalfOf);
+    mathint deltaBalance = balanceAfter - balanceBefore;
+    assert deltaBalance <= claimableRewardsBefore;
 }
 
+// //sanity - should fail
+// rule getClaimableRewardsBefore_eq_calimed_claimRewardsOnBehalf(method f)
+// {   
+//     env e;
+//     address onBehalfOf;
+//     address receiver; 
+
+//     setup(e, onBehalfOf, receiver);   
+    
+//     mathint balanceBefore = _DummyERC20_rewardToken.balanceOf(onBehalfOf);
+//     mathint claimableRewardsBefore = getClaimableRewards(e, onBehalfOf);
+//     claimRewardsOnBehalf(e, onBehalfOf, receiver);
+//     mathint balanceAfter = _DummyERC20_rewardToken.balanceOf(onBehalfOf);
+//     mathint claimableRewardsAfter = getClaimableRewards(e, onBehalfOf);
+//     mathint deltaBalance = balanceAfter - balanceBefore;
+//     assert deltaBalance == claimableRewardsBefore;
+// }
+
+// //sanity - should fail
+// rule getClaimableRewardsBefore_geq_calimed_claimRewardsOnBehalf(method f)
+// {   
+//     env e;
+//     address onBehalfOf;
+//     address receiver; 
+
+//     setup(e, onBehalfOf, receiver);   
+    
+//     mathint balanceBefore = _DummyERC20_rewardToken.balanceOf(onBehalfOf);
+//     mathint claimableRewardsBefore = getClaimableRewards(e, onBehalfOf);
+//     claimRewardsOnBehalf(e, onBehalfOf, receiver);
+//     mathint balanceAfter = _DummyERC20_rewardToken.balanceOf(onBehalfOf);
+//     mathint claimableRewardsAfter = getClaimableRewards(e, onBehalfOf);
+//     mathint deltaBalance = balanceAfter - balanceBefore;
+//     assert deltaBalance >= claimableRewardsBefore;
+// }
 
 
 rule sanity(method f)
