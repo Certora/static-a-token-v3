@@ -403,3 +403,29 @@ invariant noSupplyIfNoAssets()
 
 
 // }
+
+
+
+/****************************
+ *** Michael's properties ***
+ ****************************/
+
+ // A larger asset deposit will either give the same amount or more shares compared to a smaller deposit
+
+rule moreAssetToDepositResultMoreShares(uint256 assets1, uint256 assets2){
+    address recipient; uint16 referralCode; bool fromUnderlying; 
+    env e;
+    require assets2 > assets1;
+    uint256 _userShares = balanceOf(recipient);
+    
+    storage init = lastStorage;
+    
+    uint256 shares1 = deposit(e, assets1, recipient, referralCode, fromUnderlying);
+    uint256 userShares1_ = balanceOf(recipient);
+    
+    uint256 shares2 = deposit(e, assets2, recipient, referralCode, fromUnderlying) at init;
+    uint256 userShares2_ = balanceOf(recipient);
+
+    assert shares2 >= shares1;
+    assert userShares2_ - _userShares >= userShares1_ - _userShares;
+}
