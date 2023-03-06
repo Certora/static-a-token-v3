@@ -13,6 +13,7 @@ methods
 
     totalSupply() returns uint256 envfree
 	balanceOf(address) returns (uint256) envfree
+    rewardToken() returns (address) envfree 
     _AToken.totalSupply() returns uint256 envfree
 	_AToken.balanceOf(address) returns (uint256) envfree
 	_AToken.scaledTotalSupply() returns (uint256) envfree
@@ -20,6 +21,7 @@ methods
     _RewardsController.getAvailableRewardsCount(address) returns (uint128) envfree
     _RewardsController.getDistributionEnd(address, address)  returns (uint256) envfree
     _RewardsController.getFirstRewardsByAsset(address) returns (address ) envfree
+    _DummyERC20_rewardToken.balanceOf(address) returns (uint256) envfree
 
     /*******************
     *     Pool.sol     *
@@ -118,8 +120,6 @@ hook Sload uint128 balance _AToken._userState[KEY address a] .(offset 0) STORAGE
 
 
 
-/// @title User's balance not greater than totalSupply()
-
 //pass
 invariant inv_balanceOf_leq_totalSupply(address user)
 	balanceOf(user) <= totalSupply()
@@ -129,16 +129,14 @@ invariant inv_balanceOf_leq_totalSupply(address user)
 		}
 	}
 
-//timeout on reddem metaWithdraw
+//timeout on redeem metaWithdraw
 invariant inv_atoken_balanceOf_leq_totalSupply(address user)
 	_AToken.balanceOf(user) <= _AToken.totalSupply()
      filtered { f -> !f.isView && f.selector != redeem(uint256,address,address,bool).selector}
     {
 		preserved with (env e){
 			requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-            //setup(e, user, user);
-            //requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
-		}
+        }
 	}
 
 invariant inv_atoken_balanceOf_leq_totalSupply_redeem(address user)
@@ -147,25 +145,18 @@ invariant inv_atoken_balanceOf_leq_totalSupply_redeem(address user)
     {
 		preserved with (env e){
 			requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-            // setup(e, user, user);
-            // requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(user);
-		}
+    	}
 	}
-
-
 
 
 invariant inv_atoken_balanceOf_2users_leq_totalSupply(address user1, address user2)
 	(_AToken.balanceOf(user1) + _AToken.balanceOf(user2))<= _AToken.totalSupply()
     {
 		preserved with (env e1){
-			//requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
             setup(e1, user1, user2);
 		}
         preserved redeem(uint256 shares, address receiver, address owner) with (env e2){
             require user1 != user2;
-        	//requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-            //require _AToken.balanceOf(e2.msg.sender) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
             require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
         }
         preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e3){
@@ -190,44 +181,6 @@ invariant inv_atoken_balanceOf_2users_leq_totalSupply(address user1, address use
         }
 
 	}
-//timeout (any inswx)
-// rule rule_atoken_balanceOf_leq_totalSupply_after_deposit()
-// {	
-//      env e;
-//     calldataarg args;
-//     address user;
-//     uint256 assets;
-//     address recipient;
-//     uint16 referralCode;
-//     bool fromUnderlying;
-
-//     requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-//     setup(e, user, recipient);
-//     require _AToken.balanceOf(user) <= _AToken.totalSupply();
-//     require _AToken.balanceOf(recipient) <= _AToken.totalSupply();
-//     require (_AToken.balanceOf(user) + _AToken.balanceOf(recipient)) <= _AToken.totalSupply();
-    
-//     deposit(e, assets, recipient, referralCode, fromUnderlying);
-//     assert _AToken.balanceOf(user) <= _AToken.totalSupply();
-// }
-
-// rule rule_atoken_balanceOf_leq_totalSupply_after_redeem()
-// {	
-//      env e;
-//     calldataarg args;
-//     address user;
-//     uint256 shares;
-//     address receiver;
-//     address owner;
-
-
-//     requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-//     setup(e, user, receiver);
-//     setup(e, user, owner);
-//     require _AToken.balanceOf(user) <= _AToken.totalSupply();
-//     redeem(e, shares, receiver,owner);
-//     assert _AToken.balanceOf(user) <= _AToken.totalSupply();
-// }
 
 //pass
 invariant inv_atoken_scaled_balanceOf_leq_totalSupply(address user)
@@ -277,125 +230,72 @@ function setup(env e, address user1, address user2)
     require _SymbolicLendingPoolL1 != user2;
     require _TransferStrategyHarness != user2;
 }
-//pass
-// rule getClaimableRewards_stable_after_transfer(){
-
-//     env e;
-//     address to;
-//     uint256 amount;
-
-//     address user;
-
-//     //todo: review assumption
-// //    require (to != 0);
-// //    require (e.msg.sender != 0);
-//     require user != 0;
 
 
-//     mathint claimableRewardsBefore = getClaimableRewards(e, user);
-//     transfer(e, to, amount);
-//     mathint claimableRewardsAfter = getClaimableRewards(e, user);
-//     assert claimableRewardsAfter == claimableRewardsBefore;
-
-// }
-
-// rule getClaimableRewards_stable_after_transfer_from(){
-
-//     env e;
-//     address from;
-//     address to;
-//     uint256 amount;
-
-//     address user;
-
-// //    require (from != 0);
-// //    require (to != 0);
-//     require user != 0;
-
-//     mathint claimableRewardsBefore = getClaimableRewards(e, user);
-//     transferFrom(e, from, to, amount);
-//     mathint claimableRewardsAfter = getClaimableRewards(e, user);
-//     assert claimableRewardsAfter == claimableRewardsBefore;
-
-// }
-
-
-rule getClaimableRewards_stable_after_deposit(){
+//fail on initialized
+rule getClaimableRewards_stable(method f)
+    filtered { f -> !f.isView && !claimFunctions(f)  && f.selector != initialize(address,address,string,string).selector}
+{
 
     env e;
     calldataarg args;
     address user;
-    uint256 assets;
-    address recipient;
-    uint16 referralCode;
-    bool fromUnderlying;
-
+    
     require user != 0;
-    setup(e, user, recipient);    
   
     mathint claimableRewardsBefore = getClaimableRewards(e, user);
-    deposit(e, assets, recipient, referralCode, fromUnderlying); 
+    f(e, args); 
+    setup(e, user, user);    
     mathint claimableRewardsAfter = getClaimableRewards(e, user);
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
 
-//fail on initialize(). timeout on redeem(uint256,address,address,bool) , metaWithdraw
-// rule getClaimableRewards_decrease_17(method f)
-//     filtered { f -> !f.isView && !claimFunctions(f) }{
+rule getClaimableRewards_stable_after_initialize(method f)
+    filtered { f -> !f.isView && !claimFunctions(f) }{
 
-//     env e;
-//     calldataarg args;
-//     address user;
+    env e;
+    address newPool;
+    address newAToken;
+    string staticATokenName;
+    string staticATokenSymbol;
+
+    calldataarg args;
+    address user;
     
-//     require user != 0;
-//     setup(e, user, user);    
+    //require user != 0;
+    //require newPool == _SymbolicLendingPoolL1;
+    require newAToken == _AToken;
   
-//     mathint claimableRewardsBefore = getClaimableRewards(e, user);
-//     f(e, args); 
-//     mathint claimableRewardsAfter = getClaimableRewards(e, user);
-//     assert claimableRewardsAfter <= claimableRewardsBefore;
-// }
-// //fail on initialize(). timeout on redeem(uint256,address,address,bool) , metaWithdraw
-// rule getClaimableRewards_increase_17(method f) filtered { f -> !f.isView && !claimFunctions(f) }
-// {
+    mathint claimableRewardsBefore = getClaimableRewards(e, user);
 
-//     env e;
-//     calldataarg args;
-//     address user;
-    
-//     require user != 0;
-//     setup(e, user, user);    
+    initialize(e, newPool, newAToken, staticATokenName, staticATokenSymbol);
+    require rewardToken() == _DummyERC20_rewardToken;
+    setup(e, user, user);    
+    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    assert claimableRewardsAfter == claimableRewardsBefore;
+}
+
+//fail: claimableRewardsBefore=claimableRewardsAfter=2 but deltaReceiverBalance=3
+// todo: rerun with the fix of issue23
+//https://vaas-stg.certora.com/output/99352/d4dfdaabe60c48c2835cc2288c2b252c/?anonymousKey=49fe26ba512b2be99426d4b2fcd2458ddf91c6e5
+rule getClaimableRewardsBefore_leq_calimed_claimRewardsOnBehalf(method f)
+{   
+    env e;
+    address onBehalfOf;
+    address receiver; 
+
+    require receiver != 0;
+    setup(e, onBehalfOf, receiver);   
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(receiver); 
   
-//     mathint claimableRewardsBefore = getClaimableRewards(e, user);
-//     f(e, args); 
-//     mathint claimableRewardsAfter = getClaimableRewards(e, user);
-//     assert claimableRewardsAfter >= claimableRewardsBefore;
-// }
-
-
-// rule getClaimableRewards_decrease_after_mint(){
-
-//     env e;
-//     calldataarg args;
-//     address user;
-//     mathint claimableRewardsBefore = getClaimableRewards(e, user);
-//     mint(e, args);
-//     mathint claimableRewardsAfter = getClaimableRewards(e, user);
-//     assert claimableRewardsAfter <= claimableRewardsBefore;
-
-// }
-
-// rule getClaimableRewards_increase_after_mint(){
-
-//     env e;
-//     calldataarg args;
-//     address user;
-//     mathint claimableRewardsBefore = getClaimableRewards(e, user);
-//     mint(e, args);
-//     mathint claimableRewardsAfter = getClaimableRewards(e, user);
-//     assert claimableRewardsAfter >= claimableRewardsBefore;
-
-// }
+    mathint receiverBalanceBefore = _DummyERC20_rewardToken.balanceOf(receiver);
+    mathint claimableRewardsBefore = getClaimableRewards(e, receiver);
+    claimRewardsOnBehalf(e, onBehalfOf, receiver);
+    mathint receiverBalanceAfter = _DummyERC20_rewardToken.balanceOf(receiver);
+    mathint claimableRewardsAfter = getClaimableRewards(e, receiver);
+    mathint deltaReceiverBalance = receiverBalanceAfter - receiverBalanceBefore;
+    assert deltaReceiverBalance <= claimableRewardsBefore;
+}
 
 
 
@@ -413,7 +313,7 @@ rule sanity(method f)
 //keep these rules until a Jira ticket is opened
 //
 
-rule sanity_metawDeposit    ()
+rule sanity_metaDeposit    ()
 {
 	env e;
 	calldataarg args;
