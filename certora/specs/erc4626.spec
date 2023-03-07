@@ -812,3 +812,6 @@ rule moreAssetToDepositResultMoreShares(uint256 assets1, uint256 assets2){
     assert shares2 >= shares1;
     assert userShares2_ - _userShares >= userShares1_ - _userShares;
 }
+
+invariant nonZeroSharesImplyNonZeroAssets()
+    totalSupply() != 0 => ATok.balanceOf(currentContract) != 0

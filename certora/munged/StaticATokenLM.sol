@@ -121,7 +121,7 @@ contract StaticATokenLM is
     uint256 deadline,
     PermitParams calldata permit,
     SignatureParams calldata sigParams
-  ) public returns (uint256) { //HARNESS external -> public
+  ) external returns (uint256) {
     require(depositor != address(0), StaticATokenErrors.INVALID_DEPOSITOR);
     //solium-disable-next-line
     require(deadline >= block.timestamp, StaticATokenErrors.INVALID_EXPIRATION);
@@ -180,8 +180,8 @@ contract StaticATokenLM is
     uint256 dynamicAmount,
     bool toUnderlying,
     uint256 deadline,
-    SignatureParams memory sigParams //HARNESS calldata -> memory
-  ) public returns (uint256, uint256) {  //HARNESS external -> public
+    SignatureParams calldata sigParams
+  ) external returns (uint256, uint256) {
     require(owner != address(0), StaticATokenErrors.INVALID_OWNER);
     //solium-disable-next-line
     require(deadline >= block.timestamp, StaticATokenErrors.INVALID_EXPIRATION);
