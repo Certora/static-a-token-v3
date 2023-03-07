@@ -77,6 +77,11 @@ methods
 
  }
 
+/* Latest full run:
+ * https://vaas-stg.certora.com/output/98279/32a962b0074448b68debba59660aa734?anonymousKey=29b10e5710a7e70dcc1f3b0d224f29becb5b7085
+ * (note rewardsConsistencyWhenInsufficientRewards fails, and rewardsTotalDeclinesOnlyByClaim has issues)
+ */
+
 
 // Ensures rewards are updated correctly after claiming, when there are enough
 // reward funds.

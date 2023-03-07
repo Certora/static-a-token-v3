@@ -70,7 +70,11 @@ methods
  * exchange rate”
  * Except for initialize and metaDeposit, all other methods passed in:
  * https://vaas-stg.certora.com/output/98279/9646ebc64fe04ee7acb691a28e55f7d7?anonymousKey=2abd640e5b8a2d49871e6b6bed0df0feab173c77
+ *
  * Note: metaDeposit seems to be vacuous, i.e. always fails on a require statement.
+ *
+ * Latest full test run:
+ * https://vaas-stg.certora.com/output/98279/baa50b3315e142d99f70503cce72df08?anonymousKey=7b4b80ae889501a7ef6fa8e4777f3d4135dac6c9
  */
 rule nonDecreasingRate(method f) {
 	require f.selector != initialize(address, address, string, string).selector;
