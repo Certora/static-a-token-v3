@@ -5,24 +5,11 @@
 import "erc20.spec"
 
 
-using DummyERC20_rewardToken as aRewardToken
-using RewardsControllerHarness as aRewardsController
-
-using AToken as _AToken 
-
-
 methods
 {
     /*******************
     *     envfree      *
     ********************/
-//	getUnclaimedRewards(address user) returns (uint256) envfree
-//	rewardToken() returns address envfree
-//	aRewardToken.balanceOf(address user) returns (uint256) envfree
-//	incentivesController() returns (address) envfree
-//
-//    aRewardsController.getAvailableRewardsCount(address) returns (uint128) envfree
-//    aRewardsController.getFirstRewardsByAsset(address) returns (address ) envfree
 
     /*******************
     *     Pool.sol     *
@@ -82,7 +69,7 @@ methods
 }
 
 /* Latest run - all rules passed:
- * https://vaas-stg.certora.com/output/98279/644dae37e1044ccf84728e0ed73d32bc?anonymousKey=99273d5e70d8d36b68bc609b95080e0c9cd28254
+ * https://vaas-stg.certora.com/output/98279/80c7287d0819482ab6552e5d8942a267?anonymousKey=3b59bf807a784197884f2d897e8ea119e14bca47
  */
 
 
