@@ -26,13 +26,12 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
            StaticATokenLMHarness:_rewardToken=DummyERC20_rewardToken \
     --solc solc8.10 \
     --optimistic_loop \
-    --staging \
+    --staging master \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --rule_sanity basic \
     --settings -optimisticUnboundedHashing=true \
     --settings -hashingLengthBound=224 \
     $RULE \

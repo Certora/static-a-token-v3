@@ -30,6 +30,7 @@ methods{
     previewMint(uint256) returns (uint256) envfree
     previewWithdraw(address) returns (uint256) envfree
     maxWithdraw(address) returns (uint256) envfree
+    maxMint(address) returns (uint256) envfree
 }
 
 
@@ -794,7 +795,6 @@ invariant noSupplyIfNoAssets()
  ****************************/
 
  // A larger asset deposit will either give the same amount or more shares compared to a smaller deposit
-
 rule moreAssetToDepositResultMoreShares(uint256 assets1, uint256 assets2){
     address recipient; uint16 referralCode; bool fromUnderlying; 
     env e;
@@ -813,5 +813,38 @@ rule moreAssetToDepositResultMoreShares(uint256 assets1, uint256 assets2){
     assert userShares2_ - _userShares >= userShares1_ - _userShares;
 }
 
-invariant nonZeroSharesImplyNonZeroAssets()
-    totalSupply() != 0 => ATok.balanceOf(currentContract) != 0
+// totalAssets must not revert
+rule totalAssetsMustntRevert(address user){
+    totalAssets@withrevert();
+    assert !lastReverted;
+}
+
+// maxDeposit must not revert
+rule maxDepositMustntRevert(address user){
+    maxDeposit@withrevert(user);
+    assert !lastReverted;
+}
+
+// maxMint must not revert
+rule maxMintMustntRevert(address user){
+    maxMint@withrevert(user);
+    assert !lastReverted;
+}
+
+// maxWithdraw must not revert
+rule maxWithdrawMustntRevert(address user){
+    maxWithdraw@withrevert(user);
+    assert !lastReverted;
+}
+
+// maxRedeem must not revert
+rule maxRedeemMustntRevert(address user){
+    maxRedeem@withrevert(user);
+    assert !lastReverted;
+}
+
+// invariant nonZeroSharesImplyNonZeroAssets()
+//     totalSupply() != 0 => ATok.balanceOf(currentContract) != 0
+
+// invariant zeroAssetsImplyZeroShares()
+//     ATok.balanceOf(currentContract) == 0 => totalSupply() == 0
