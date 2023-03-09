@@ -1,6 +1,6 @@
 diff -ruN ../src/StaticATokenLM.sol StaticATokenLM.sol
 --- ../src/StaticATokenLM.sol	2023-02-21 15:36:15.000000000 +0000
-+++ StaticATokenLM.sol	2023-02-21 22:09:36.000000000 +0000
++++ StaticATokenLM.sol	2023-03-07 13:55:56.000000000 +0000
 @@ -121,7 +121,7 @@
      uint256 deadline,
      PermitParams calldata permit,
@@ -21,3 +21,12 @@ diff -ruN ../src/StaticATokenLM.sol StaticATokenLM.sol
      require(owner != address(0), StaticATokenErrors.INVALID_OWNER);
      //solium-disable-next-line
      require(deadline >= block.timestamp, StaticATokenErrors.INVALID_EXPIRATION);
+@@ -471,7 +471,7 @@
+     if (fromUnderlying) {
+       address cachedATokenUnderlying = _aTokenUnderlying;
+       IERC20(cachedATokenUnderlying).safeTransferFrom(
+-        depositor,
++        depositor, 
+         address(this),
+         assets
+       );

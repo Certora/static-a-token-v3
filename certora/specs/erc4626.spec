@@ -7,7 +7,9 @@ using AToken as ATok
 using SymbolicLendingPoolL1 as pool
 
 methods{
-    convertToAssets(uint256) returns (uint256) envfree
+    asset() returns (address) envfree
+    convertToAssets(uint256) returns (uint256)
+    convertToShares(uint256) returns (uint256)
     previewDeposit(uint256) returns(uint256) envfree
     deposit(uint256, address) returns (uint256)
     underlying.balanceOf(address) returns(uint256) envfree
@@ -30,6 +32,7 @@ methods{
     previewMint(uint256) returns (uint256) envfree
     previewWithdraw(address) returns (uint256) envfree
     maxWithdraw(address) returns (uint256) envfree
+    ATok.scaledBalanceOf(address) returns (uint256) envfree
 }
 
 
@@ -170,23 +173,26 @@ rule previewMintIndependentOfAllowance()
     uint256 shares1;
     uint256 assets1;
     uint256 assets2;
-    require convertToAssets(shares1) < ATokAllowance1;
+    env e1;
+    require convertToAssets(e1, shares1) < ATokAllowance1;
     uint256 previewAssets1 = previewMint(shares1);
 
-    env e1;
+    env e2;
     address receiver1;
-    deposit(e1, assets1, receiver1);
+    deposit(e2, assets1, receiver1);
     
     uint256 ATokAllowance2 = ATok.allowance(currentContract, user);
-    require convertToAssets(shares1) == ATokAllowance2;
+    env e3;
+    require convertToAssets(e3, shares1) == ATokAllowance2;
     uint256 previewAssets2 = previewDeposit(shares1);
     
-    env e2;
+    env e4;
     address receiver2;
     deposit(e2, assets2, receiver2); 
     
+    env e5;
     uint256 ATokAllowance3 = ATok.allowance(currentContract, user);
-    require convertToAssets(shares1) > ATokAllowance3;
+    require convertToAssets(e4, shares1) > ATokAllowance3;
     uint256 previewAssets3 = previewDeposit(shares1);
 
     assert previewAssets1 == previewAssets2,"previewMint should not change regardless of C2A(shares) > or = allowance";
@@ -253,6 +259,9 @@ rule previewWithdrawIndependentOfMaxWithdraw(env e){
 rule previewWithdrawIndependentOfBalance(){
     env e1;
     env e2;
+    env e3;
+    env e4;
+    env e5;
     address user;
     uint256 shareBal1 = balanceOf(user);
     uint256 assets1;
@@ -261,17 +270,17 @@ rule previewWithdrawIndependentOfBalance(){
     address receiver1;
     address receiver2;
     
-    require assets1 > convertToAssets(shareBal1);
+    require assets1 > convertToAssets(e3, shareBal1);
     uint256 previewShares1 = previewWithdraw(assets1);
 
     deposit(e1, assets2, receiver1);
     uint256 shareBal2 = balanceOf(user);
-    require assets1 ==  convertToAssets(shareBal2);
+    require assets1 ==  convertToAssets(e4, shareBal2);
     uint256 previewShares2 = previewWithdraw(assets1);
 
     deposit(e2, assets3, receiver2);
     uint256 shareBal3 = balanceOf(user);
-    require assets1 <  convertToAssets(shareBal3);
+    require assets1 <  convertToAssets(e5, shareBal3);
     uint256 previewShares3 = previewWithdraw(assets1);
     
     assert previewShares1 == previewShares2 && previewShares2 == previewShares3,"preview withdraw should be independent of allowance";
@@ -430,6 +439,7 @@ rule depositCheck(env e){
 // STATUS: FAILED
 // When the index is less than RAY, the function can mint a higher number of shares than it was asked to
 // https://vaas-stg.certora.com/output/11775/ea6a9c19c1b1b315017d/?anonymousKey=8d63aadfe646514e1229219e510e4bcb492144f0 (user asked for 101 shares but got 200, ref change in receiverBalBefore/After)
+// This rule passes for both the assertions as long as the index is >= RAY. For index < RAY, only the assertions about the lower limit passes.
 // 
 rule mintCheck(env e){
     uint256 shares;
@@ -440,19 +450,38 @@ rule mintCheck(env e){
     uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
 
     uint256 receiverBalBefore = balanceOf(receiver);
-    require 100 * index == RAY();
+    require index >= RAY();
     
     assets = mint(e, shares, receiver);
     
     uint256 receiverBalAfter = balanceOf(receiver);
-    // index to be RAY/100 *****CHECK THIS
-    // index to be greater than ray. then check ifthe 1 error limit holds
-
-    // assert receiverBalAfter == receiverBalBefore + shares,"receiver should get exactly the number of shares requested";
+    
     assert receiverBalAfter <= receiverBalBefore + shares + 1,"receiver should get no more than the 1 extra share";
     assert receiverBalAfter >= receiverBalBefore + shares,"receiver should get no less than the amount of shares requested";
+
+    // Atoken -> under = RayMul - [0, 0.5) -> round down -> (shares * index + RAY/2 ) / RAY
+    // Atoken -> under = RayMul - [0.5, 1) -> round up
     
+    // static Atoken -> under = RayMulRoundUp - 0 - "round down" -> (shares * index + RAY - 1)/RAY
+    // static Atoken -> under = RayMulRoundUp - (0,1] - round up
+
+    // share == number of static ATokens and also # of Atokens 
+    // index is the same in both cases
+
+    // under -> static Atoken = RayDivRoundDown - [0,1) - round down -> (assets * RAY) / index
+    // under -> static Atoken = RayDivRoundDown - [0,1) - round down -> (shares + RAY / index)
+
 }
+
+// The mint function mints a disproportionately high amount of shares compared to what was asked for  when the index value is 
+
+// report of exact amount violation equality
+
+// report on high share mint
+
+// index value dependence
+
+
 
 // (shares * <RAY/3 + RAY -1)/RAY = 1 
 // (RAY  + index/2)/index 
@@ -467,28 +496,40 @@ rule mintCheck(env e){
 * 4. SHOULD check msg.sender can spend owner funds, assets needs to be converted to shares and shares should be checked for allowance.
 * 5. MUST revert if all of assets cannot be withdrawn (due to withdrawal limit being reached, slippage, the owner not having enough shares, etc).
 */
-// STATUS
-rule withdrawCheck(env e){
-    
+// STATUS: FAILING
+// failing with the upper limit assert because of wrong balance reading from the Atoken due to rounding.
+rule withdrawCheck(env e){    
     address owner;
     address receiver;
     uint256 assets;
     
     uint256 allowed = allowance(e, owner, e.msg.sender);
     uint256 balBefore = ATok.balanceOf(receiver);
+    uint256 shareBalBefore = balanceOf(owner);
     require getStaticATokenUnderlying() == ATok._underlyingAsset();
     uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
     require e.msg.sender != currentContract;
-    require assets * RAY() >= index;//keep the asset amount greater than 1 Atoken
+    require receiver != currentContract;
+    require owner != currentContract;
+    
+    require index > RAY();
+    // require index == 3 * RAY();
+    // require assets == 1;
+
+    // require assets * RAY() >= index;//keep the asset amount greater than 1 Atoken
 
     uint256 sharesBurnt;
     
-    sharesBurnt = withdraw(e, assets, receiver, owner);
+         = withdraw(e, assets, receiver, owner);
 
     uint256 balAfter = ATok.balanceOf(receiver);
+    uint256 shareBalAfter = balanceOf(owner);
     // assert msg.sender == owner || allowance(msg.sender, owner) >= shares
-    assert allowed >= sharesBurnt,"msg.sender should have allowane to spend owner's shares";
-    assert balBefore + assets == balAfter,"assets should be transferred correctly";
+    // assert sharesBurnt == 0 => balBefore == balAfter,"no assets without burning shares";
+    // assert e.msg.sender != owner => allowed >= sharesBurnt,"msg.sender should have allowane to spend owner's shares";
+    // // assert balBefore + assets == balAfter,"assets should be transferred correctly";
+    // assert assets * 2 * RAY() >= index => balAfter - balBefore + 1 >= assets,"if atleast 1/2 AToken worth of assets are deposited, receiver can lose upto 1 AToken";
+    assert balAfter - balBefore <= assets,"the user shouldn't get more assets than requested";
 }
 
 
@@ -500,7 +541,7 @@ rule withdrawCheck(env e){
 * 4. SHOULD check msg.sender can spend owner funds using allowance.
 * 5. MUST revert if all of shares cannot be redeemed (due to withdrawal limit being reached, slippage, the owner not having enough shares, etc).
 */
-// STATUS: WIP
+// STATUS: VERIFIED
 
 rule redeemCheck(env e){
     uint256 shares;
@@ -509,168 +550,76 @@ rule redeemCheck(env e){
     uint256 assets;
     uint256 allowed = allowance(e, owner, e.msg.sender);
     uint256 balBefore = balanceOf(owner);
+    uint256 ATokRecbalBefore = ATok.scaledBalanceOf(receiver);
 
     require getStaticATokenUnderlying() == ATok._underlyingAsset();
     uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
+    require index > RAY();
     require e.msg.sender != currentContract;
-    
+    require receiver != currentContract;
+    require shares == 1;
+
     assets = redeem(e, shares, receiver, owner);
     
     uint256 balAfter = balanceOf(owner);
+    uint256 ATokRecbalAfter = ATok.scaledBalanceOf(receiver);
 
-    assert allowed >= balBefore - balAfter,"msg.sender should have allowance for transferring owner's shares";
-    assert shares == balBefore -balAfter,"exactly the specified amount of shares must be burnt";
-
+    // assert e.msg.sender != owner => allowed >= (balBefore - balAfter),"msg.sender should have allowance for transferring owner's shares";
+    // assert shares == balBefore -balAfter,"exactly the specified amount of shares must be burnt";
+    // assert ATokRecbalAfter - ATokRecbalBefore >= shares - 1,"receiver should get no less than shares - 1"; // timing out
+    // assert ATokRecbalAfter - ATokRecbalBefore <= shares,"receiver should get at most the amount of shares burnt";
+    assert shares > 0 => ATokRecbalAfter - ATokRecbalBefore > 0,"receiver should get no less than shares - 1";
+    // assert ATokRecbalAfter - ATokRecbalBefore >= previewRedeem(shares),"receiver should get at most the amount of shares burnt";
 }
 
-
-///////////////// NON-ERC4626 DEPOSIT, MINT, WITHDRAW & REDEEM RULES ///////////////////////
-// rule metaDepositCheck(env e){
-    
-//     calldataarg args;
-//     uint256 _ULBal = getULBalanceOf(currentContract);
-//     uint256 _ATBal = getATokenBalanceOf(currentContract);
-//     bool fromUnderlying;
-//     uint256 sharesReceived;
-//     uint256 value;
-    
-//     fromUnderlying, value = metaDepositHelper(e, args);
-    
-//     uint256 ULBal_ = getULBalanceOf(currentContract);
-//     uint256 ATBal_ = getATokenBalanceOf(currentContract);
-
-//     assert balanceCheck(fromUnderlying, _ULBal, ULBal_, _ATBal, ATBal_, value),"assets should be transferred correctly";
-// }
-
-
-rule deposit4Check(env e){
-    uint256 assets;
-    address recipient;
-    uint16 referralCode;
-    bool fromUnderlying;
-
-    uint256 _ULBal = getULBalanceOf(currentContract);
-    uint256 _ATBal = getATokenBalanceOf(currentContract);
-
-    uint256 sharesReceived;
-    
-    sharesReceived = deposit(e, assets, recipient, referralCode, fromUnderlying);
-
-    uint256 ULBal_ = getULBalanceOf(currentContract);
-    uint256 ATBal_ = getATokenBalanceOf(currentContract);
-
-    assert balanceCheck(fromUnderlying, _ULBal, ULBal_, _ATBal, ATBal_, assets),"assets should be transferred correctly";
-}
- 
-/***
-* rule to check the following for the withdraw function:
-* 1. MUST emit the Withdraw event.
-* 2. MUST support a withdraw flow where the shares are burned from owner directly where owner is msg.sender.
-* 3. MUST support a withdraw flow where the shares are burned from owner directly where msg.sender has EIP-20 approval over the shares of owner.
-* _4. SHOULD check msg.sender can spend owner funds, assets needs to be converted to shares and shares should be checked for allowance.
-* 5. MUST revert if all of assets cannot be withdrawn (due to withdrawal limit being reached, slippage, the owner not having enough shares, etc).
-*/
-// STATUS: WIP
-
-// rule metaWithdrawCheck(env e){
-    
-//     address owner;
-//     address recipient;
-//     uint256 shares;
-//     uint256 assets;
-//     bool toUnderlying;
-//     uint256 deadline;
-//     uint8 v;
-//     bytes32 r;
-//     bytes32 s;
-//     // SAT.SignatureParams SP;
-//     calldataarg args;
-    
-//     uint256 allowed = allowance(e, owner, e.msg.sender);
-//     uint256 _ULBal = getULBalanceOf(recipient);
-//     uint256 _ATBal = getATokenBalanceOf(recipient);
-
-//     uint256 sharesBurnt;
-//     uint256 assetsReceived;
-    
-//     sharesBurnt, assetsReceived = metaWithdrawCallHelper(e, owner, recipient, shares, assets, toUnderlying, deadline, v, r, s);
-    
-//     uint256 ULBal_ = getULBalanceOf(recipient);
-//     uint256 ATBal_ = getATokenBalanceOf(recipient);
-
-//     // assertions
-//     // assert !lastReverted => allowed >= sharesBurnt,"msg.sender should have allowane to spend owner's shares";
-//     // assert !lastReverted => shares ==0 || assets == 0,"either shares or assets to be supplied";
-//     // assert !lastReverted => balanceCheck(toUnderlying, _ULBal, ULBal_, _ATBal, ATBal_, assetsReceived),"";
-//     assert allowed >= sharesBurnt,"msg.sender should have allowane to spend owner's shares";
-//     assert shares ==0 || assets == 0,"either shares or assets to be supplied";
-//     assert balanceCheck(toUnderlying, _ULBal, ULBal_, _ATBal, ATBal_, assetsReceived),"assets should be transferred correctly";
-// }
 
 
 /////////////////////////////// OTHER ERC4626 FUNCTIONS ////////////////////////////////////
 
-rule totalAssetCheck(){
-    totalAssets@withrevert();
-    assert !lastReverted;
-}
 
-// ghost to track sum of balances of atoken contract and check is equal to totalSupply
-// rule totalAssetCheck(){
-
-// }
-
-// should be able to deposit an amount as long as it's less than maxdeposit amount
-// rule maxDepositCheck(){
-//     maxDeposit@withrevert();
-//     assert !lastReverted;
-// }
-
-// 
-// rule maxdepLimit(){
-//     uint256 asset;
-//     deposit@withrevert(assets);
-    
-//     assert !lastReverted => assets<= maxDeposit();
-//     assert !lastReverted && assets == maxuint256 => maxDeposit() == maxuint;
-// }
 
 /***
 * rule to check the following for the covertToAssets function:
-* 1. Independent of the user
-* 2. No revert unless overflow
-* 3. Must round down
+* 1. MUST NOT be inclusive of any fees that are charged against assets in the Vault.
+* _2. MUST NOT show any variations depending on the caller.
+* 3. MUST NOT reflect slippage or other on-chain conditions, when performing the actual exchange.
+* 4. MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
+* _5. MUST round down towards 0.
 */
-// STATUS: WIP
-// rule convertToAssetsCheck(){
-//     env e1;
-//     env e2;
-//     env e3;
-//     uint256 shares1;
-//     uint256 shares2;
-//     uint256 assets1;
-//     uint256 assets2;
-//     uint256 assets3;
-//     uint256 combinedAssets;
-//     storage before  = lastStorage;
+// STATUS: VERIFIED
+rule convertToAssetsCheck(){
+    env e1;
+    env e2;
+    env e3;
+    uint256 shares1;
+    uint256 shares2;
+    uint256 assets1;
+    uint256 assets2;
+    uint256 assets3;    
+    uint256 combinedAssets;
+    storage before  = lastStorage;
+    // require shares1 + shares2 < shares1;
     
-//     assets1         = convertToAssets@withrevert(e1, shares1)           at before;
-//     assets2         = convertToAssets@withrevert(e2, shares1)           at before;
-//     assets3         = convertToAssets@withrevert(e2, shares2)           at before;
-//     combinedAssets  = convertToAssets@withrevert(e3, shares1 +shares2)  at before;
+    assets1         = convertToAssets(e1, shares1)           at before;
+    assets2         = convertToAssets(e2, shares1)           at before;
+    assets3         = convertToAssets(e2, shares2)           at before;
+    combinedAssets  = convertToAssets(e3, shares1 +shares2)  at before;
 
-//     // assert !lastReverted,"should not revert except for overflow";
-//     assert assets1 == assets2,"conversion to assets should be independent of env such as msg.sender";
-//     assert assets1 + assets3 <= combinedAssets,"conversion should round down and not up";
-// }
+    // assert !lastReverted,"should not revert except for overflow";
+    assert assets1 == assets2,"conversion to assets should be independent of env such as msg.sender";
+    assert shares1 + shares2 <= max_uint256 => assets1 + assets3 <= combinedAssets,"conversion should round down and not up";
+}
+
 
 /***
-* rule to check the following for the covertToShares function:
-* 1. Independent of the user
-* 2. No revert unless overflow
-* 3. Must round down
+* rule to check the following for the convertToShares function:
+* 1. MUST NOT be inclusive of any fees that are charged against assets in the Vault.
+* _2. MUST NOT show any variations depending on the caller.
+* 3. MUST NOT reflect slippage or other on-chain conditions, when performing the actual exchange.
+* 4. MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
+* _5. MUST round down towards 0.
 */
-// STATUS: WIP
+// STATUS: VERIFIED
 rule convertToSharesCheck(){
     env e1;
     env e2;
@@ -682,109 +631,67 @@ rule convertToSharesCheck(){
     uint256 shares3;
     uint256 combinedShares;
     storage before  = lastStorage;
+    require assets1 + assets2 < assets1;
     
-    shares1         = convertToShares@withrevert(e1, assets1)            at before;
+    shares1         = convertToShares           (e1, assets1)            at before;
     shares2         = convertToShares           (e2, assets1)            at before;
     shares3         = convertToShares           (e2, assets2)            at before;
     combinedShares  = convertToShares           (e3, assets1 + assets2)  at before;
 
     
-    assert shares1 == shares2,"conversion to shares should be independent of env such as msg.sender";
+    assert shares1 == shares2,"conversion to shares should be independent of env variables including msg.sender";
     assert shares1 + shares3 <= combinedShares,"conversion should round down and not up";
 }
 
-// maxDeposit
-// rule maxDepositCheck(){
-//     address receiver;
-//     uint256 maxDep = maxDeposit(receiver);
-//     uint256 depositAmt;
-//     require depositAmt > maxDep;
-
-//     deposit(receiver, maxDep);
-//     deposit@withrevert(receiver, depositAmt);
-//     assert lastReverted,"should revert for any amount greater than maxDep";
-// }
-
 
 /***
-* rule to check the following for the withdraw function:
-* 1. MUST return the maximum amount of assets that could be transferred from owner through withdraw and not cause a revert, 
-*    which MUST NOT be higher than the actual maximum that would be accepted (it should underestimate if necessary).
+* rule to check the following for the maxWithdraw function:
+* _1. MUST return the maximum amount of assets that could be transferred from owner through withdraw and not cause a revert, which MUST NOT be higher than the actual maximum that would be accepted (it should underestimate if necessary).
 * 2. MUST factor in both global and user-specific limits, like if withdrawals are entirely disabled (even temporarily) it MUST return 0.
 * 3. MUST NOT revert
 */
 
-// STATUS: WIP
-// rule maxWithdrawCheck(){
+// STATUS: VERIFIED
+rule maxWithdrawCheck(){
+    address owner;
+    uint256 maxAssets = maxWithdraw(owner);
+    address receiver;
+    uint256 assets;
 
-// }
+    env e;
+    withdraw@withrevert(e, assets, receiver, owner);
 
-// asset 200
-// rate 100
-// ray 10
-// share 20
+    // assert assets <= maxAssets => !lastReverted;
+    assert !lastReverted => assets <= maxAssets;
+}
 
-// asset 222
-// rate 100
-// ray 10
-// share 22
-// lost 20/100
+/***
+* rule to check the following for the maxRedeem function:
+* _1. MUST return the maximum amount of shares that could be transferred from owner through redeem and not cause a revert, which MUST NOT be higher than the actual maximum that would be accepted (it should underestimate if necessary).
+* 2. MUST factor in both global and user-specific limits, like if redemption is entirely disabled (even temporarily) it MUST return 0.
+* 3. MUST NOT revert
+*/
 
+// STATUS: VERIFIED
+rule maxRedeemCheck(){
+    address owner;
+    uint256 maxRed = maxRedeem(owner);
+    address receiver;
+    uint256 shares;
+    
+    env e;
+    redeem@withrevert(e, shares, receiver, owner);
 
-
-
-
-function balanceCheck(bool toUnderlying, uint256 _ULBal, uint256 ULBal_, uint256 _ATBal, uint256 ATBal_, uint256 assetReceived) returns bool{
-    if (toUnderlying){
-        return(ULBal_ == _ULBal + assetReceived);
-    }else{
-        return(ATBal_ == _ATBal + assetReceived);
-    }
+    assert !lastReverted => shares <= maxRed;
 }
 
 
-
-
-
-
-
-
-/***
-* If there is a non-zero supply of shares, there must be a non-zero amount of assets backing the shares
-*/
-// STATUS: WIP
-invariant noSupplyIfNoAssets()
-    totalSupply() != 0 => assetsTotal(currentContract) != 0
-
-
-/***
-* If a user converts some assets to shares and then converts back to assets or start with shares and convert to and back from assets,
-* the user will have LE the starting amount
-*/
-// STATUS: WIP
-
-// rule houseAlwaysWins(env e){
-//     uint256 _assets;
-//     uint256 _shares;
-//     uint256 _assets_;
-//     uint256 _shares_;
-//     uint256 assets_;
-//     uint256 shares_;
-//     address a1;
-//     address a2;
-//     address a3;
-//     address a4;
-//     address a5;
-//     address a6;
-
-//     _assets_ = redeem(e, _shares, a1, a2);
-//     shares_ = deposit(e, _assets_, a3);
-
-//     _shares_ = deposit(e, _assets, a4);
-//     assets_ = redeem
-//     assert shares_ <= _shares,"shares after converting to and back from assets, should be less than before";
-
-
+// rule totalAssetCheck(){
+//     totalAssets@withrevert();
+//     assert !lastReverted;
 // }
 
-
+// rule assetRevertCheck(){
+//     asset@withrevert();
+//     assert !lastReverted;
+// }

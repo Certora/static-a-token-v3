@@ -26,7 +26,6 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
            StaticATokenLMHarness:_rewardToken=DummyERC20_rewardToken \
     --solc solc8.10 \
     --optimistic_loop \
-    --staging \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
                aave-v3-periphery=lib/aave-v3-periphery \
@@ -38,6 +37,7 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     $RULE \
     --msg "StaticAToken - $RULE $MSG  "
 
+    # --staging \
 #link _aToken _aTokenUnderlying _aToken
 #           StaticATokenLM:_aToken=DummyERC20_aToken \
 #           StaticATokenLM:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
