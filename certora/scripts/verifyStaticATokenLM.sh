@@ -26,23 +26,14 @@ certoraRun src/StaticATokenLM.sol \
     --send_only \
     --msg "ALL"
 
+
+# -t=1500,-mediumTimeout=60,-depth=30 for inv_atoken_balanceOf_leq_totalSupply 2 hours
+# -t=1200,-mediumTimeout=1200,-depth=10 - best for   getClaimableRewards_increase_after_deposit_8 (25 min)
+# -t=600,-mediumTimeout=40,-depth=45  - best for getClaimableRewards_decrease_after_deposit_7 (25)
+# -t=1500,-mediumTimeout=60,-depth=30 - getClaimableRewards_decrease_after_deposit finished after 15 minutes
+# -t=1000,-mediumTimeout=100,-depth=10 \
+# 
+#    --rule inv_balanceOf_leq_totalSupply inv_atoken_balanceOf_leq_totalSupply sumAllBalance_eq_totalSupply sumAllATokenBalance_eq_totalSupply inv_atoken_scaled_balanceOf_leq_totalSupply\
 #    --rule getClaimableRewardsBefore_geq_calimed_claimRewardsOnBehalf getClaimableRewardsBefore_eq_calimed_claimRewardsOnBehalf getClaimableRewardsBefore_leq_calimed_claimRewardsOnBehalf\
 
-#certora/harness/RewardsDistributorHarness.sol \
-#-t=1500,-mediumTimeout=60,-depth=30 for inv_atoken_balanceOf_leq_totalSupply 2 hours
-   # -t=1200,-mediumTimeout=1200,-depth=10 - best for   getClaimableRewards_increase_after_deposit_8 (25 min)
-#  -t=600,-mediumTimeout=40,-depth=45  - best for getClaimableRewards_decrease_after_deposit_7 (25)
-# --settings -t=1500,-mediumTimeout=60,-depth=30 - getClaimableRewards_decrease_after_deposit finished after 15 minutes
-#    --rule inv_balanceOf_leq_totalSupply inv_atoken_balanceOf_leq_totalSupply sumAllBalance_eq_totalSupply sumAllATokenBalance_eq_totalSupply inv_atoken_scaled_balanceOf_leq_totalSupply\
-
-#    --optimistic_hashing \
-#    --settings -t=1000,-mediumTimeout=100,-depth=10 \
-#    --settings -optimisticUnboundedHashing=true \
-#link _aToken _aTokenUnderlying _aToken
-#           StaticATokenLM:_aToken=DummyERC20_aToken \
-#           StaticATokenLM:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
-#           StaticATokenLM:_rewardToken=DummyERC20_rewardToken \
-#    certora/harness/ScaledBalanceTokenHarness.sol \
-#    lib/aave-v3-periphery/contracts/rewards/transfer-strategies/StakedTokenTransferStrategy.sol \
-#    lib/aave-v3-periphery/contracts/rewards/transfer-strategies/PullRewardsTransferStrategy.sol \
     
