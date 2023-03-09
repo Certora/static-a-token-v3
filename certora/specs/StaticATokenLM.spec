@@ -13,7 +13,11 @@ methods
 
     totalSupply() returns uint256 envfree
 	balanceOf(address) returns (uint256) envfree
-    rewardToken() returns (address) envfree
+    rewardTokens() returns (address[]) envfree
+
+    // getters from munged/harness
+    getRewardTokensLength() returns (uint256) envfree 
+    getRewardToken(uint256) returns (address) envfree
 
     _AToken.totalSupply() returns uint256 envfree
 	_AToken.balanceOf(address) returns (uint256) envfree
@@ -202,6 +206,12 @@ invariant sumAllATokenScaledBalance_eq_totalSupply()
 /// @dev Assume that RewardsController.configureAssets(RewardsDataTypes.RewardsConfigInput[] memory rewardsInput) was called
 function setup(env e, address user1, address user2)
 {
+    
+    //assume a single reward
+    //todo: allow multiple rewards
+    require getRewardTokensLength() == 1;
+    require getRewardToken(0) == _DummyERC20_rewardToken;
+
     require _RewardsController.getAvailableRewardsCount(_AToken)  > 0;
     require _RewardsController.getFirstRewardsByAsset(_AToken) == _DummyERC20_rewardToken;
 
@@ -241,6 +251,13 @@ rule getClaimableRewards_stable(method f)
     address reward;
     
     require user != 0;
+    
+    //assume a single reward
+    //todo: allow multiple rewards
+    require reward == _DummyERC20_rewardToken;
+    require getRewardTokensLength() == 1;
+    require getRewardToken(0) == _DummyERC20_rewardToken;
+    
   
     mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
     f(e, args); 
@@ -249,6 +266,8 @@ rule getClaimableRewards_stable(method f)
 }
 
 /// @title special case of rule getClaimableRewards_stable for initialize
+//fail
+//todo: consider removing this rule. no method is called before initialize()
 rule getClaimableRewards_stable_after_initialize(method f)
     filtered { f -> !f.isView && !claimFunctions(f) }{
 
@@ -261,13 +280,18 @@ rule getClaimableRewards_stable_after_initialize(method f)
     address user;
     address reward;
     
-    require newAToken == _AToken;
   
     mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
 
 
     initialize(e, newAToken, staticATokenName, staticATokenSymbol);
-    require rewardToken() == _DummyERC20_rewardToken;
+
+    //assume a single reward
+    //todo: allow multiple rewards
+    require reward == _DummyERC20_rewardToken;
+    require newAToken == _AToken;
+    require getRewardTokensLength() == 1;
+    require getRewardToken(0) == _DummyERC20_rewardToken;
     setup(e, user, user);    
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
@@ -281,9 +305,6 @@ rule getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf(method f)
     address receiver; 
     address my_reward;
     address[] rewards;
-
-    require rewards[0] == my_reward;
-
     setup(e, onBehalfOf, receiver);   
     
     mathint balanceBefore = _DummyERC20_rewardToken.balanceOf(onBehalfOf);
@@ -293,6 +314,22 @@ rule getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf(method f)
     mathint deltaBalance = balanceAfter - balanceBefore;
    
     assert deltaBalance <= claimableRewardsBefore;
+}
+
+
+/// @title The return value of totalAssets() should be unchanged after reward claim
+rule totalAssets_stable(method f)
+    filtered { f -> !f.isView && claimFunctions(f)  }
+{
+    env e;
+    calldataarg args;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    f(e, args); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
 }
 
 

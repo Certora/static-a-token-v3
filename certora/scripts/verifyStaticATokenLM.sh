@@ -1,5 +1,5 @@
 #!/bin/sh
-certoraRun src/StaticATokenLM.sol \
+certoraRun  certora/munged/StaticATokenLM.sol \
     certora/harness/RewardsControllerHarness.sol \
     certora/harness/SymbolicLendingPoolL1.sol \
     lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
