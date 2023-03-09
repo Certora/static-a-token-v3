@@ -6,6 +6,7 @@ import {RewardsDataTypes} from '../../lib/aave-v3-periphery/contracts/rewards/li
 
 contract RewardsControllerHarness is RewardsController{
 
+constructor(address emissionManager) RewardsController(emissionManager) {}
 function getAvailableRewardsCount(address asset)
     external
     view

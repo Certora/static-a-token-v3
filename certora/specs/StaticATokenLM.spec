@@ -80,13 +80,12 @@ methods
     performTransfer(address,address,uint256) returns (bool) =>  DISPATCHER(true)
 
  }
-
 /// @notice Claim rewards methods
 definition claimFunctions(method f) returns bool = 
-            f.selector == claimRewardsToSelf().selector ||
-            f.selector == claimRewards(address).selector ||
-            f.selector ==claimRewardsOnBehalf(address,address).selector ||
-            f.selector == collectAndUpdateRewards().selector;
+            f.selector == claimRewardsToSelf(address[]).selector ||
+            f.selector == claimRewards(address, address[]).selector ||
+            f.selector ==claimRewardsOnBehalf(address, address,address[]).selector ||
+            f.selector == collectAndUpdateRewards(address).selector;
 
 
 
@@ -234,17 +233,18 @@ function setup(env e, address user1, address user2)
 
 /// @title The return value of getClaimableRewards() should be unchanged unless rewards were claimed
 rule getClaimableRewards_stable(method f)
-    filtered { f -> !f.isView && !claimFunctions(f)  && f.selector != initialize(address,address,string,string).selector}
+    filtered { f -> !f.isView && !claimFunctions(f)  && f.selector != initialize(address,string,string).selector}
 {
     env e;
     calldataarg args;
     address user;
+    address reward;
     
     require user != 0;
   
-    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
     f(e, args); 
-    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
 
@@ -253,22 +253,23 @@ rule getClaimableRewards_stable_after_initialize(method f)
     filtered { f -> !f.isView && !claimFunctions(f) }{
 
     env e;
-    address newPool;
     address newAToken;
     string staticATokenName;
     string staticATokenSymbol;
 
     calldataarg args;
     address user;
+    address reward;
     
     require newAToken == _AToken;
   
-    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
 
-    initialize(e, newPool, newAToken, staticATokenName, staticATokenSymbol);
+
+    initialize(e, newAToken, staticATokenName, staticATokenSymbol);
     require rewardToken() == _DummyERC20_rewardToken;
     setup(e, user, user);    
-    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
 
@@ -278,12 +279,16 @@ rule getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf(method f)
     env e;
     address onBehalfOf;
     address receiver; 
+    address my_reward;
+    address[] rewards;
+
+    require rewards[0] == my_reward;
 
     setup(e, onBehalfOf, receiver);   
     
     mathint balanceBefore = _DummyERC20_rewardToken.balanceOf(onBehalfOf);
-    mathint claimableRewardsBefore = getClaimableRewards(e, onBehalfOf);
-    claimRewardsOnBehalf(e, onBehalfOf, receiver);
+    mathint claimableRewardsBefore = getClaimableRewards(e, onBehalfOf, my_reward);
+    claimRewardsOnBehalf(e, onBehalfOf, receiver, rewards);
     mathint balanceAfter = _DummyERC20_rewardToken.balanceOf(onBehalfOf);
     mathint deltaBalance = balanceAfter - balanceBefore;
    
@@ -326,9 +331,11 @@ rule getClaimableRewards_stable_after_metaWithdraw(){
     env e;
     calldataarg args;
     address user;
-    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    address reward;
+
+    mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
     metaWithdraw(e, args);
-    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
 
 }
@@ -338,9 +345,11 @@ rule getClaimableRewards_stable_after_withdraw(){
     env e;
     calldataarg args;
     address user;
-    mathint claimableRewardsBefore = getClaimableRewards(e, user);
+    address reward;
+
+    mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
     withdraw(e, args);
-    mathint claimableRewardsAfter = getClaimableRewards(e, user);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
 
 }

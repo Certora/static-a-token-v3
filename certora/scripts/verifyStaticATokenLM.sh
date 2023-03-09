@@ -7,12 +7,11 @@ certoraRun src/StaticATokenLM.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
     certora/harness/DummyERC20_rewardToken.sol \
     --verify StaticATokenLM:certora/specs/StaticATokenLM.spec \
-    --link StaticATokenLM:_incentivesController=RewardsControllerHarness \
-           StaticATokenLM:_pool=SymbolicLendingPoolL1 \
+    --link StaticATokenLM:INCENTIVES_CONTROLLER=RewardsControllerHarness \
+           StaticATokenLM:POOL=SymbolicLendingPoolL1 \
            AToken:POOL=SymbolicLendingPoolL1 \
             StaticATokenLM:_aToken=AToken \
            StaticATokenLM:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
-           StaticATokenLM:_rewardToken=DummyERC20_rewardToken \
            AToken:_incentivesController=RewardsControllerHarness \
     --solc solc8.10 \
     --optimistic_loop \
@@ -24,9 +23,11 @@ certoraRun src/StaticATokenLM.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --msg "ALL"
+    --rule getClaimableRewards_stable \
+    --msg "getClaimableRewards_stable"
 
 
+#           StaticATokenLM:_rewardToken=DummyERC20_rewardToken \
 # -t=1500,-mediumTimeout=60,-depth=30 for inv_atoken_balanceOf_leq_totalSupply 2 hours
 # -t=1200,-mediumTimeout=1200,-depth=10 - best for   getClaimableRewards_increase_after_deposit_8 (25 min)
 # -t=600,-mediumTimeout=40,-depth=45  - best for getClaimableRewards_decrease_after_deposit_7 (25)
