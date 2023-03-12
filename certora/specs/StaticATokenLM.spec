@@ -38,6 +38,7 @@ methods
     //in RewardsDistributor.sol called by RewardsController.sol
     getAssetIndex(address, address) returns (uint256, uint256) =>  DISPATCHER(true)
     
+    //caled by AToken.sol.  function executeFinalizeTransfer is defined in SupplyLogic.sol
     finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET  
 
     //in ScaledBalanceTokenBase.sol called by getAssetIndex
@@ -72,18 +73,21 @@ methods
     **********************************/
 
     //call by RewardsController.IncentivizedERC20.sol and also by StaticATokenLM.sol
-    //handleAction(address,uint256,uint256) => DISPATCHER(true)
+    handleAction(address,uint256,uint256) => DISPATCHER(true)
 
     // called by  StaticATokenLM.claimRewardsToSelf  -->  RewardsController._getUserAssetBalances
     // get balanceOf and totalSupply of _aToken
     // todo - link to the actual token.
-    getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => NONDET
+    //defined in ScaledBalanceTokenBase.sol called in RewardsController.sol
+    getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => DISPATCHER(true)
+//    getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => NONDET
 
     // called by StaticATokenLM.collectAndUpdateRewards --> RewardsController._transferRewards()
     //implemented as simple transfer() in TransferStrategyHarness
     performTransfer(address,address,uint256) returns (bool) =>  DISPATCHER(true)
 
  }
+
 /// @notice Claim rewards methods
 definition claimFunctions(method f) returns bool = 
             f.selector == claimRewardsToSelf(address[]).selector ||
@@ -93,6 +97,15 @@ definition claimFunctions(method f) returns bool =
 
 
 
+/// @title Reward hook
+/// @notice allows a single reward
+//todo: allow 2 or 3 rewards
+hook Sload address reward _rewardTokens[INDEX  uint256 i] STORAGE {
+    require reward == _DummyERC20_rewardToken;
+} 
+
+
+///////////////////////////
 /// @title Sum of balances of StaticAToken 
 ghost sumAllBalance() returns mathint {
     init_state axiom sumAllBalance() == 0;
@@ -241,6 +254,115 @@ function setup(env e, address user1, address user2)
     require _TransferStrategyHarness != user2;
 }
 
+
+/// @title The return value of totalAssets() should be unchanged after reward claim
+rule totalAssets_stable(method f)
+    filtered { f -> !f.isView && claimFunctions(f)  }
+{
+    env e;
+    calldataarg args;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    f(e, args); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+//fail
+//https://vaas-stg.certora.com/output/99352/2104ed63c44845c2a8a793007224cb2a/?anonymousKey=f2e12ee6154f8b707b21fb62d1cc12a46a6c03b1
+rule totalAssets_stable_after_collectAndUpdateRewards()
+{
+    env e;
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+rule totalAssets_stable_after_collectAndUpdateRewards_SANITY()
+{
+    env e;
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert false;
+}
+
+//pass
+rule totalAssets_stable_after_collectAndUpdateRewards_excl_atoken()
+{
+    env e;
+    address reward;
+
+    require reward != _AToken;
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+rule totalAssets_stable_after_collectAndUpdateRewards_excl_atoken_SANITY()
+{
+    env e;
+    address reward;
+
+    require reward != _AToken;
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert false;
+}
+
+
+/// @title The return value of getUnclaimableRewards() should be unchanged unless rewards were claimed
+//fail
+//https://vaas-stg.certora.com/output/99352/9c9d8a8a9ab5420082c4193b4b4a8c13/?anonymousKey=59fbb313753ef7f12073e1a56d5eb4c279c4c19d
+rule totalClaimableRewards_stable(method f)
+    filtered { f -> !f.isView && !claimFunctions(f)  }
+{
+    env e;
+    calldataarg args;
+    address reward;
+    
+  
+    mathint totalClaimableRewardsBefore = getTotalClaimableRewards(e, reward);
+    
+    f(e, args); 
+    mathint totalClaimableRewardsAfter = getTotalClaimableRewards(e, reward);
+
+    assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
+}
+
+rule totalClaimableRewards_stable_excl_currentContract(method f)
+    filtered { f -> !f.isView && !claimFunctions(f)  }
+{
+    env e;
+    calldataarg args;
+    address reward;
+    require reward != currentContract;
+  
+    mathint totalClaimableRewardsBefore = getTotalClaimableRewards(e, reward);
+    
+    f(e, args); 
+    mathint totalClaimableRewardsAfter = getTotalClaimableRewards(e, reward);
+
+    assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
+}
+
 /// @title The return value of getClaimableRewards() should be unchanged unless rewards were claimed
 rule getClaimableRewards_stable(method f)
     filtered { f -> !f.isView && !claimFunctions(f)  && f.selector != initialize(address,string,string).selector}
@@ -305,7 +427,7 @@ rule getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf(method f)
     address receiver; 
     address my_reward;
     address[] rewards;
-    setup(e, onBehalfOf, receiver);   
+    //setup(e, onBehalfOf, receiver);   
     
     mathint balanceBefore = _DummyERC20_rewardToken.balanceOf(onBehalfOf);
     mathint claimableRewardsBefore = getClaimableRewards(e, onBehalfOf, my_reward);
@@ -317,20 +439,6 @@ rule getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf(method f)
 }
 
 
-/// @title The return value of totalAssets() should be unchanged after reward claim
-rule totalAssets_stable(method f)
-    filtered { f -> !f.isView && claimFunctions(f)  }
-{
-    env e;
-    calldataarg args;
-
-    mathint totalAssetBefore = totalAssets(e);
-    
-    f(e, args); 
-    mathint totalAssetAfter = totalAssets(e);
-
-    assert totalAssetAfter == totalAssetBefore;
-}
 
 
 

@@ -4,6 +4,7 @@ certoraRun  certora/munged/StaticATokenLM.sol \
     certora/harness/SymbolicLendingPoolL1.sol \
     lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
     certora/harness/TransferStrategyHarness.sol \
+    certora/harness/ScaledBalanceTokenHarness.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
     certora/harness/DummyERC20_rewardToken.sol \
     --verify StaticATokenLM:certora/specs/StaticATokenLM.spec \
@@ -23,8 +24,7 @@ certoraRun  certora/munged/StaticATokenLM.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --rule getClaimableRewards_stable \
-    --msg "getClaimableRewards_stable"
+    --msg "all no hook        "
 
 
 #           StaticATokenLM:_rewardToken=DummyERC20_rewardToken \
