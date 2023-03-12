@@ -6,7 +6,7 @@ using DummyERC20_aTokenUnderlying as _DummyERC20_aTokenUnderlying
 using DummyERC20_rewardToken as _DummyERC20_rewardToken 
 using SymbolicLendingPoolL1 as _SymbolicLendingPoolL1 
 using TransferStrategyHarness as _TransferStrategyHarness
-using StaticATokenLM as _StaticATokenLM
+using StaticATokenLMHarness as _StaticATokenLM
 
 methods
 {
@@ -28,6 +28,8 @@ methods
     _RewardsController.getDistributionEnd(address, address)  returns (uint256) envfree
     _RewardsController.getFirstRewardsByAsset(address) returns (address ) envfree
     _RewardsController.getUserAccruedRewards(address, address) returns (uint256) envfree
+    _RewardsController.getAssetByIndex(uint256) returns (address) envfree
+    _RewardsController.getAssetListLength() returns (uint256) envfree
     
     _DummyERC20_rewardToken.balanceOf(address) returns (uint256) envfree
 
@@ -290,6 +292,27 @@ rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued()
 {
      uint256 totalAccrued = _RewardsController.getUserAccruedRewards(_AToken, currentContract);
     require (totalAccrued == 0);
+
+    env e;
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset()
+{
+    require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    require _RewardsController.getAssetListLength() > 0;
+    
+    uint256 totalAccrued = _RewardsController.getUserAccruedRewards(_AToken, currentContract);
+    require (totalAccrued == 0);
+
+
 
     env e;
     address reward;
