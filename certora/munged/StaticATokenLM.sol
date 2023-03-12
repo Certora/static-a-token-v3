@@ -276,12 +276,24 @@ contract StaticATokenLM is
       );
   }
 
+  function claimSingleRewardOnBehalf(
+    address onBehalfOf,
+    address receiver,
+    address reward
+  ) external 
+  {
+
+    address[] memory rewards = new address[](1);
+    rewards[0] = address(reward);
+    claimRewardsOnBehalf(onBehalfOf, receiver, rewards);
+
+  }
   ///@inheritdoc IStaticATokenLM
   function claimRewardsOnBehalf(
     address onBehalfOf,
     address receiver,
     address[] memory rewards
-  ) external {
+  ) public {
     require(
       msg.sender == onBehalfOf ||
         msg.sender == INCENTIVES_CONTROLLER.getClaimer(onBehalfOf),

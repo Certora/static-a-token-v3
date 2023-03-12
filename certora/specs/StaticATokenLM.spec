@@ -27,6 +27,7 @@ methods
     _RewardsController.getAvailableRewardsCount(address) returns (uint128) envfree
     _RewardsController.getDistributionEnd(address, address)  returns (uint256) envfree
     _RewardsController.getFirstRewardsByAsset(address) returns (address ) envfree
+    _RewardsController.getUserAccruedRewards(address, address) returns (uint256) envfree
     
     _DummyERC20_rewardToken.balanceOf(address) returns (uint256) envfree
 
@@ -285,6 +286,68 @@ rule totalAssets_stable_after_collectAndUpdateRewards()
     assert totalAssetAfter == totalAssetBefore;
 }
 
+rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued()
+{
+     uint256 totalAccrued = _RewardsController.getUserAccruedRewards(_AToken, currentContract);
+    require (totalAccrued == 0);
+
+    env e;
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+rule totalAssets_stable_after_claimRewardsOnBehalf()
+{
+    env e;
+    address onBehalfOf;
+    address receiver;
+    address[] rewards;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    claimRewardsOnBehalf(e, onBehalfOf, receiver, rewards);
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+//pass as expected
+rule totalAssets_stable_after_claimSingleRewardOnBehalf()
+{
+    env e;
+    address onBehalfOf;
+    address receiver;
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    claimSingleRewardOnBehalf(e, onBehalfOf, receiver, reward);
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+rule totalAssets_stable_after_claimSingleRewardOnBehalf_SANITY()
+{
+    env e;
+    address onBehalfOf;
+    address receiver;
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    claimSingleRewardOnBehalf(e, onBehalfOf, receiver, reward);
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert false;
+}
+
 rule totalAssets_stable_after_collectAndUpdateRewards_SANITY()
 {
     env e;
@@ -418,6 +481,23 @@ rule getClaimableRewards_stable_after_initialize(method f)
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
+
+rule getClaimableRewards_stable_after_refreshRewardTokens()
+{
+
+    env e;
+    address user;
+    address reward;
+
+    mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
+    refreshRewardTokens(e);
+
+    setup(e, user, user);    
+
+    mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
+    assert claimableRewardsAfter == claimableRewardsBefore;
+}
+
 
 /// @title The amount of rewards that was actually received by claimRewards() cannot exceed the initial amount of rewards
 rule getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf(method f)
