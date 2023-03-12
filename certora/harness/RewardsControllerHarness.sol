@@ -6,17 +6,7 @@ import {RewardsDataTypes} from '../../lib/aave-v3-periphery/contracts/rewards/li
 
 contract RewardsControllerHarness is RewardsController{
 
-
-// function _getUserAssetBalances(address[] calldata assets, address user)
-//     internal
-//     view
-//     override
-//     returns (RewardsDataTypes.UserAssetBalance[] memory userAssetBalances){
-        
-//         revert();
-
-//     }
-
+constructor(address emissionManager) RewardsController(emissionManager) {}
 function getAvailableRewardsCount(address asset)
     external
     view
