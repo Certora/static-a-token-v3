@@ -8,9 +8,18 @@ out/
 # editors
 .idea
 .vscode
+.*.swp
 
 # well, looks strange to ignore package-lock, but we have only pretter and it's temproray
 package-lock.json
 node_modules
 
 broadcast
+
+#certora
+.certora*
+.certora*.json
+**.last_conf*
+certora-logs
+certora_debug_log.txt
+resource_errors.json
