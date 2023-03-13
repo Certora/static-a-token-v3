@@ -1,5 +1,5 @@
 #!/bin/sh
-certoraRun  certora/munged/StaticATokenLM.sol \
+certoraRun  certora/harness/StaticATokenLMHarness.sol \
     certora/harness/RewardsControllerHarness.sol \
     certora/harness/SymbolicLendingPoolL1.sol \
     lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
@@ -7,12 +7,12 @@ certoraRun  certora/munged/StaticATokenLM.sol \
     certora/harness/ScaledBalanceTokenHarness.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
     certora/harness/DummyERC20_rewardToken.sol \
-    --verify StaticATokenLM:certora/specs/StaticATokenLM.spec \
-    --link StaticATokenLM:INCENTIVES_CONTROLLER=RewardsControllerHarness \
-           StaticATokenLM:POOL=SymbolicLendingPoolL1 \
+    --verify StaticATokenLMHarness:certora/specs/StaticATokenLM.spec \
+    --link StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
+           StaticATokenLMHarness:POOL=SymbolicLendingPoolL1 \
            AToken:POOL=SymbolicLendingPoolL1 \
-            StaticATokenLM:_aToken=AToken \
-           StaticATokenLM:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
+            StaticATokenLMHarness:_aToken=AToken \
+           StaticATokenLMHarness:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
            AToken:_incentivesController=RewardsControllerHarness \
     --solc solc8.10 \
     --optimistic_loop \
@@ -24,7 +24,8 @@ certoraRun  certora/munged/StaticATokenLM.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --msg "all no hook        "
+    --rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset \
+    --msg "totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset"
 
 
 #           StaticATokenLM:_rewardToken=DummyERC20_rewardToken \

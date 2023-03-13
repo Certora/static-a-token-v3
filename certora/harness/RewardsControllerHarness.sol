@@ -19,5 +19,11 @@ function getAvailableRewardsCount(address asset)
   function getFirstRewardsByAsset(address asset) external view  returns (address) {
     return _assets[asset].availableRewards[0];
   }
+  function getAssetByIndex(uint256 i) external view  returns (address) {
+    return  _assetsList[i];
+  }
+  function getAssetListLength() external view  returns (uint256) {
+    return  _assetsList.length;
+  }
 
 }
