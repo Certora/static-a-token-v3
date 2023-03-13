@@ -17,43 +17,16 @@ methods
     /*******************
     *     Pool.sol     *
     ********************/
-    // can we assume a fixed index? 1 ray?
-    // getReserveNormalizedIncome(address) returns (uint256) => DISPATCHER(true)
 
     //in RewardsDistributor.sol called by RewardsController.sol
     getAssetIndex(address, address) returns (uint256, uint256) =>  DISPATCHER(true)
-    //deposit(address,uint256,address,uint16) => DISPATCHER(true)
-    //withdraw(address,uint256,address) returns (uint256) => DISPATCHER(true)
+
+    //in RewardsDistributor.sol called by RewardsController.sol
     finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET  
 
     //in ScaledBalanceTokenBase.sol called by getAssetIndex
     scaledTotalSupply() returns (uint256)  => DISPATCHER(true) 
     
-    //IAToken.sol
-    mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
-    burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
-
-    /*******************************
-    *     RewardsController.sol    *
-    ********************************/
-   // claimRewards(address[],uint256,address,address) => NONDET
-     
-   /*****************************
-    *     OZ ERC20Permit.sol     *
-    ******************************/
-    permit(address,address,uint256,uint256,uint8,bytes32,bytes32) => NONDET
-
-    /*********************
-    *     AToken.sol     *
-    **********************/
-    getIncentivesController() returns (address) => CONSTANT
-    UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT
-    
-    /**********************************
-    *     RewardsDistributor.sol     *
-    **********************************/
-    getRewardsList() returns (address[]) => NONDET
-
     /**********************************
     *     RewardsController.sol     *
     **********************************/
@@ -63,13 +36,21 @@ methods
     // called by  StaticATokenLM.claimRewardsToSelf  -->  RewardsController._getUserAssetBalances
     // get balanceOf and totalSupply of _aToken
     // todo - link to the actual token.
-    getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => NONDET
+    getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => DISPATCHER(true)
 
     // called by StaticATokenLM.collectAndUpdateRewards --> RewardsController._transferRewards()
     //implemented as simple transfer() in TransferStrategyHarness
     performTransfer(address,address,uint256) returns (bool) =>  DISPATCHER(true)
 
  }
+
+/* Latest run succeeded (without rule_sanity):
+ * https://vaas-stg.certora.com/output/98279/ea328af594d24ad49a4e23519ca59172?anonymousKey=c3eaa5b7731775680b95c88fab035485a145cf29
+ * With rule sanity - redeemSum and previewWithdrawNearlyWithdraw timed out:
+ * https://vaas-stg.certora.com/output/98279/fd6985c3fe384be1a9d27df93632ede6?anonymousKey=b024adf8aaa95430cd4e6e1d285db399a979902f
+ * With rule sanityy - redeemSum and previewWithdrawNearlyWithdraw only:
+ * https://vaas-stg.certora.com/output/98279/73356e092d3f45e48d6e0adf4988beeb?anonymousKey=0adf45f0ed985353a3dd8616e804b6dfd26f9952
+ */
 
 
 definition RAY() returns uint256 = (10 ^ 27);
@@ -223,7 +204,8 @@ rule previewRedeemNearlyRedeem(uint256 shares) {
 
 
 /* The commented out rule below (withdrawSum) timed out after 6994 seconds (see link below).
- * However, we can deduce worse bounds from previous rules, here is the proof. TODO: should we try for better bounds?
+ * However, we can deduce worse bounds from previous rules, here is the proof.
+ * TODO: should we try for better bounds?
  * Let w = withdraw(assets), p = previewWithdraw(assets), s = convertToShares(assets),
  * then:
  *     p - 1 <= w <= p -- by previewWithdrawNearlyWithdraw
@@ -241,27 +223,24 @@ rule previewRedeemNearlyRedeem(uint256 shares) {
  *
  * The following run of withdrawSum timed out:
  * https://vaas-stg.certora.com/output/98279/8f5d36ea63ba4a4ca1d23f781ec8dfa6?anonymousKey=11d8393da339881d925ad4e087252951d1da512d
-
-rule withdrawSum(uint256 assets1, uint256 assets2) {
-    env e;
-	address owner = e.msg.sender;  // Handy alias
-
-	// Additional requirement to speed up calculation
-	require balanceOf(owner) > convertToShares(2 * (assets1 + assets2));
-
-	uint256 shares1 = withdraw(e, assets1, owner, owner);
-	uint256 shares2 = withdraw(e, assets2, owner, owner);
-	uint256 sharesSum = withdraw(e, assets1 + assets2, owner, owner);
-
-	assert sharesSum <= shares1 + shares2, "Withdraw sum larger than its parts";
-	assert sharesSum + 2 > shares1 + shares2, "Withdraw sum far smaller than it sparts";
-}
  */
+//rule withdrawSum(uint256 assets1, uint256 assets2) {
+//    env e;
+//	address owner = e.msg.sender;  // Handy alias
+//
+//	// Additional requirement to speed up calculation
+//	require balanceOf(owner) > convertToShares(2 * (assets1 + assets2));
+//
+//	uint256 shares1 = withdraw(e, assets1, owner, owner);
+//	uint256 shares2 = withdraw(e, assets2, owner, owner);
+//	uint256 sharesSum = withdraw(e, assets1 + assets2, owner, owner);
+//
+//	assert sharesSum <= shares1 + shares2, "Withdraw sum larger than its parts";
+//	assert sharesSum + 2 > shares1 + shares2, "Withdraw sum far smaller than it sparts";
+//}
 
 
-/* Successful run (without rule_sanity):
- * https://vaas-stg.certora.com/output/98279/34b666accf66440b851f8530dd28fa77?anonymousKey=91c02c46b6fcf524843cb74615b955b742225fee
- */
+// Redeeming sum of assets is nearly equal to sum of redeeming
 rule redeemSum(uint256 shares1, uint256 shares2) {
     env e;
 	address owner = e.msg.sender;  // Handy alias

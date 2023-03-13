@@ -3,6 +3,7 @@ import "erc20.spec"
 
 using AToken as _AToken 
 using DummyERC20_rewardToken as _DummyERC20_rewardToken
+using DummyERC20_aTokenUnderlying as _DummyERC20_aTokenUnderlying 
 using RewardsControllerHarness as _RewardsController
 
 
@@ -19,6 +20,9 @@ methods
 	// getters from munged/harness
     getRewardTokensLength() returns (uint256) envfree 
     getRewardToken(uint256) returns (address) envfree
+
+	// AToken
+	_AToken.UNDERLYING_ASSET_ADDRESS() returns (address) envfree
 
 	// Reward token
 	_DummyERC20_rewardToken.balanceOf(address user) returns (uint256) envfree
@@ -44,16 +48,16 @@ methods
     *     RewardsController.sol    *
     ********************************/
      
-   /*****************************
+    /*****************************
     *     OZ ERC20Permit.sol     *
     ******************************/
-    //permit(address,address,uint256,uint256,uint8,bytes32,bytes32) => NONDET
+    permit(address,address,uint256,uint256,uint8,bytes32,bytes32) => NONDET
 
     /*********************
     *     AToken.sol     *
     **********************/
-    //mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
-    //burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
+    mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
+    burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
     //getIncentivesController() returns (address) => CONSTANT
     //UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT
     
@@ -96,15 +100,6 @@ function single_RewardToken_setup() {
 }
 
 
-// Returns an array of reward tokens, containing a single reward token.
-function gen_single_reward_array() returns address[]{
-	address[] _rewards;
-	require _rewards[0] == _DummyERC20_rewardToken;
-	require _rewards.length == 1;
-	return _rewards;
-}
-
-
 // Sets the first reward to _AToken as _DummyERC20_rewardToken
 function rewardsController_reward_setup() {
     require _RewardsController.getAvailableRewardsCount(_AToken) > 0;
@@ -112,25 +107,17 @@ function rewardsController_reward_setup() {
 }
 
 
-rule mini_test() {
-	single_RewardToken_setup();
-	rewardsController_reward_setup(); // TODO: remove?
-	address[] _rewards = gen_single_reward_array();
-	require _rewards.length == 1;
-
-	assert getRewardTokensLength() == 1, "rewardTokens length is wrong";
-	assert getRewardToken(0) == _DummyERC20_rewardToken, "Reward in rewardTokens is wrong";
-	assert _rewards.length == 1, "rewards length is wrong";
-	assert _rewards[0] == _DummyERC20_rewardToken, "Reward in rewards is wrong";
-}
-
-
-// Ensures rewards are updated correctly after claiming, when there are enough
-// reward funds.
+/* Ensures rewards are updated correctly after claiming, when there are enough
+ * reward funds.
+ * Succeeds in:
+ * https://vaas-stg.certora.com/output/98279/06bddfec425a4f63a4ee97fc688f626e?anonymousKey=bfc940b1fcf8a201007e87438bb92f8fda4775c5
+ */
 rule rewardsConsistencyWhenSufficientRewardsExist() {
 	// Assuming single reward
 	single_RewardToken_setup();
-	rewardsController_reward_setup(); // TODO: remove?
+	// rewardsController_reward_setup(); // TODO: remove?
+
+	// Create a rewards array
 	address[] _rewards;
 	require _rewards[0] == _DummyERC20_rewardToken;
 	require _rewards.length == 1;
@@ -155,72 +142,39 @@ rule rewardsConsistencyWhenSufficientRewardsExist() {
 	assert claimablePost == unclaimedPost, "Claimable different from unclaimed";
 }
 
-rule simplified() {
-	// Assuming single reward
-	single_RewardToken_setup();
-	address[] _rewards;
-	require _rewards[0] == _DummyERC20_rewardToken;
-	require _rewards.length == 1;
-
-	env e;
-	require e.msg.sender != currentContract;  // Cannot claim to contract
-	uint256 claimablePre = getClaimableRewards(e, e.msg.sender, _rewards[0]);
-
-	// Ensure contract has sufficient rewards
-	require _DummyERC20_rewardToken.balanceOf(currentContract) >= claimablePre;
-
-	claimRewardsToSelf(e, _rewards);
-
-	uint256 rewardsBalancePost = _DummyERC20_rewardToken.balanceOf(e.msg.sender);
-
-	assert rewardsBalancePost >= claimablePre, "Rewards less than claimable";
-}
-
-rule simplified_use_existing_array() {
-	// Assuming single reward
-	single_RewardToken_setup();
-	rewardsController_reward_setup();
-
-	env e;
-	require e.msg.sender != currentContract;  // Cannot claim to contract
-	uint256 claimablePre = getClaimableRewards(e, e.msg.sender, _DummyERC20_rewardToken);
-
-	// Ensure contract has sufficient rewards
-	require _DummyERC20_rewardToken.balanceOf(currentContract) >= claimablePre;
-
-	claimRewardsToSelf(e, rewardTokens());
-
-	uint256 rewardsBalancePost = _DummyERC20_rewardToken.balanceOf(e.msg.sender);
-
-	assert rewardsBalancePost >= claimablePre, "Rewards less than claimable";
-}
-
 
 /* Ensures rewards are updated correctly after claiming, when there aren't
  * enough funds.
  * Fails in:
  * https://vaas-stg.certora.com/output/98279/274946aa85a247149c025df228c71bc1?anonymousKey=5adb195fd1c025db104868af9aead15244995b7f
  * Reported in: https://github.com/bgd-labs/static-a-token-v3/issues/23
+ * 
+ * Passed after fix:
+ * https://vaas-stg.certora.com/output/98279/f74b4265c1084fdf951f44e519a7cbc3?anonymousKey=2fdef305121e549c5062c641ffbe53120ff72cfd
  */
 rule rewardsConsistencyWhenInsufficientRewards() {
 	// Assuming single reward
 	single_RewardToken_setup();
-	rewardsController_reward_setup();
-	address[] rewards = gen_single_reward_array();
+	// rewardsController_reward_setup(); // TODO: remove?
+
+	// Create a rewards array
+	address[] _rewards;
+	require _rewards[0] == _DummyERC20_rewardToken;
+	require _rewards.length == 1;
 
 	env e;
 	require e.msg.sender != currentContract;  // Cannot claim to contract
 	uint256 rewardsBalancePre = _DummyERC20_rewardToken.balanceOf(e.msg.sender);
-	uint256 claimablePre = getClaimableRewards(e, e.msg.sender, rewards[0]);
+	uint256 claimablePre = getClaimableRewards(e, e.msg.sender, _DummyERC20_rewardToken);
 
 	// Ensure contract does not have sufficient rewards
 	require _DummyERC20_rewardToken.balanceOf(currentContract) < claimablePre;
 
-	claimRewardsToSelf(e, rewards);
+	claimRewardsToSelf(e, _rewards);
 
 	uint256 rewardsBalancePost = _DummyERC20_rewardToken.balanceOf(e.msg.sender);
-	uint256 unclaimedPost = getUnclaimedRewards(e.msg.sender, rewards[0]);
-	uint256 claimablePost = getClaimableRewards(e, e.msg.sender, rewards[0]);
+	uint256 unclaimedPost = getUnclaimedRewards(e.msg.sender, _DummyERC20_rewardToken);
+	uint256 claimablePost = getClaimableRewards(e, e.msg.sender, _DummyERC20_rewardToken);
 	
 	assert rewardsBalancePost >= rewardsBalancePre, "Rewards balance reduced after claim";
 	uint256 rewardsGiven = rewardsBalancePost - rewardsBalancePre;
@@ -233,14 +187,25 @@ rule rewardsConsistencyWhenInsufficientRewards() {
 }
 
 /* Only claim rewards methods (and initialize) should cause total rewards to decline.
- * Except for metaDeposit (and initialize) all other methods passed in:
- * https://prover.certora.com/output/98279/05e0d056329345c5a6ba8136e75f5c03?anonymousKey=edc61d598888d191816304c44d2ced0e678d3d8b
- * Note: metaDeposit seems to be vacuous, i.e. always fails on a require statement.
+ * Except for metaWithdraw, redeem, claimSingleRewardOnBehalf, succeeded in: 
+ * https://vaas-stg.certora.com/output/98279/632020a606444f5886390c8f5c02e583?anonymousKey=655b64a7c7a0cbf503036f107067b92030097ad7
+ * NOTE: metaDeposit seems to be vacuous, i.e. always fails on a require statement.
+ * 
+ * metaWithdraw passed in (other methods were DISABLED):
+ * https://vaas-stg.certora.com/output/98279/21e258b783a74c55bae60d408b6a2637?anonymousKey=b6c7b24e9d5bc54a8a632c9058c860e1db9fc4fb
+ *
+ * claimSingleRewardOnBehalf passed in (other methods were DISABLED):
+ * https://vaas-stg.certora.com/output/98279/921238b5d35a402999f743cc0eb3dea2?anonymousKey=5e33696510484a2efade606642ca766284aecd17
+ *
+ * redeem(uint256,address,address,bool) passed in (other methods were DISABLED):
+ * https://vaas-stg.certora.com/output/98279/497fa8295d62489b9b6f8515be5a06f7?anonymousKey=de80e3820be8d4e75312f8b8f17288d1c867b095
  */
 rule rewardsTotalDeclinesOnlyByClaim(method f) {
 	// Assuming single reward
 	single_RewardToken_setup();
 	rewardsController_reward_setup();
+
+	require _AToken.UNDERLYING_ASSET_ADDRESS() == _DummyERC20_aTokenUnderlying;
 
 	env e;
 
@@ -257,6 +222,7 @@ rule rewardsTotalDeclinesOnlyByClaim(method f) {
 	assert (postTotal < preTotal) => (
 		(f.selector == claimRewardsOnBehalf(address, address, address[]).selector) ||
 		(f.selector == claimRewards(address, address[]).selector) ||
-		(f.selector == claimRewardsToSelf(address[]).selector)
+		(f.selector == claimRewardsToSelf(address[]).selector) ||
+		(f.selector == claimSingleRewardOnBehalf(address,address,address).selector)
 	), "Total rewards decline not due to claim";
 }

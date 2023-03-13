@@ -25,42 +25,15 @@ methods
     /*******************
     *     Pool.sol     *
     ********************/
-    // can we assume a fixed index? 1 ray?
-    // getReserveNormalizedIncome(address) returns (uint256) => DISPATCHER(true)
 
     //in RewardsDistributor.sol called by RewardsController.sol
     getAssetIndex(address, address) returns (uint256, uint256) =>  DISPATCHER(true)
-    //deposit(address,uint256,address,uint16) => DISPATCHER(true)
-    //withdraw(address,uint256,address) returns (uint256) => DISPATCHER(true)
+
+    //in RewardsDistributor.sol called by RewardsController.sol
     finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET  
 
     //in ScaledBalanceTokenBase.sol called by getAssetIndex
     scaledTotalSupply() returns (uint256)  => DISPATCHER(true) 
-    
-    //IAToken.sol
-    mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
-    burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
-
-    /*******************************
-    *     RewardsController.sol    *
-    ********************************/
-   // claimRewards(address[],uint256,address,address) => NONDET
-     
-   /*****************************
-    *     OZ ERC20Permit.sol     *
-    ******************************/
-    permit(address,address,uint256,uint256,uint8,bytes32,bytes32) => NONDET
-
-    /*********************
-    *     AToken.sol     *
-    **********************/
-    getIncentivesController() returns (address) => CONSTANT
-    UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT
-    
-    /**********************************
-    *     RewardsDistributor.sol     *
-    **********************************/
-    getRewardsList() returns (address[]) => NONDET
 
     /**********************************
     *     RewardsController.sol     *
@@ -79,6 +52,12 @@ methods
 
 }
 
+/* Latest run:
+ * https://vaas-stg.certora.com/output/98279/c838a5cdad104424a0596cc54e61a64c?anonymousKey=4eb91f83d983728e03d016fa80b6b28fa9b76ff7
+ * toAssetsDoesNotRevert and toSharesDoesNotRevert fail, since we get overflow
+ * on part of the calculation, even though the final result is fine. In essence
+ * we compute x = (a * b) / c, even though x does not overflow (a * b) does overflow.
+ */
 
 definition RAY() returns uint256 = (10 ^ 27);
 

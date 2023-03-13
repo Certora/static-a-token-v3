@@ -14,43 +14,24 @@ methods
     /*******************
     *     Pool.sol     *
     ********************/
-    // can we assume a fixed index? 1 ray?
-    // getReserveNormalizedIncome(address) returns (uint256) => DISPATCHER(true)
 
     //in RewardsDistributor.sol called by RewardsController.sol
     getAssetIndex(address, address) returns (uint256, uint256) =>  DISPATCHER(true)
-    //deposit(address,uint256,address,uint16) => DISPATCHER(true)
-    //withdraw(address,uint256,address) returns (uint256) => DISPATCHER(true)
+
+    //in RewardsDistributor.sol called by RewardsController.sol
     finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET  
 
     //in ScaledBalanceTokenBase.sol called by getAssetIndex
     scaledTotalSupply() returns (uint256)  => DISPATCHER(true) 
-    
-    //IAToken.sol
-    mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
-    burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
-
-    /*******************************
-    *     RewardsController.sol    *
-    ********************************/
-   // claimRewards(address[],uint256,address,address) => NONDET
-     
-   /*****************************
-    *     OZ ERC20Permit.sol     *
-    ******************************/
-    permit(address,address,uint256,uint256,uint8,bytes32,bytes32) => NONDET
 
     /*********************
     *     AToken.sol     *
     **********************/
-    getIncentivesController() returns (address) => CONSTANT
-    UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT
+    //mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
+    //burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
+    //getIncentivesController() returns (address) => CONSTANT
+    //UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT
     
-    /**********************************
-    *     RewardsDistributor.sol     *
-    **********************************/
-    getRewardsList() returns (address[]) => NONDET
-
     /**********************************
     *     RewardsController.sol     *
     **********************************/
@@ -69,7 +50,7 @@ methods
 }
 
 /* Latest run - all rules passed:
- * https://vaas-stg.certora.com/output/98279/80c7287d0819482ab6552e5d8942a267?anonymousKey=3b59bf807a784197884f2d897e8ea119e14bca47
+ * https://vaas-stg.certora.com/output/98279/a445d0abe25046e2bb6272a338121ca7?anonymousKey=c554bbe2893b4d5735fa4d8b6c3e1b2624b9bbd8
  */
 
 
