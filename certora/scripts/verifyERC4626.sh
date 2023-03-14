@@ -31,13 +31,13 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
+    --staging \
     --rule_sanity basic \
     --settings -optimisticUnboundedHashing=true \
     --settings -hashingLengthBound=224 \
     $RULE \
     --msg "StaticAToken - $RULE $MSG  "
 
-    # --staging \
 #link _aToken _aTokenUnderlying _aToken
 #           StaticATokenLM:_aToken=DummyERC20_aToken \
 #           StaticATokenLM:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
