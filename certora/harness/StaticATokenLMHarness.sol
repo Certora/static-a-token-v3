@@ -1,11 +1,22 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.8.10;
 
+import {IPool} from 'aave-v3-core/contracts/interfaces/IPool.sol';
+
+import {IRewardsController} from 'aave-v3-periphery/contracts/rewards/interfaces/IRewardsController.sol';
+import {SymbolicLendingPoolL1} from './SymbolicLendingPoolL1.sol';
+
+import {StaticATokenErrors} from '../../src/StaticATokenErrors.sol';
 import {StaticATokenLM} from 'certora/munged/StaticATokenLM.sol';
 import {IERC20} from 'solidity-utils/contracts/oz-common/interfaces/IERC20.sol';
 
 contract StaticATokenLMHarness is StaticATokenLM{
     
+
+constructor(
+    IPool pool,
+    IRewardsController rewardsController
+    ) StaticATokenLM(pool, rewardsController){}
 
 
     function getULBalanceOf(address recipient) public returns (uint256 balance){
@@ -15,36 +26,6 @@ contract StaticATokenLMHarness is StaticATokenLM{
     function getATokenBalanceOf(address recipient) public returns (uint256 balance){
         balance = _aToken.balanceOf(recipient);
     }
-
-    // function metaWithdrawCallHelper(address owner,
-    //                                 address recipient, 
-    //                                 uint256 shares, 
-    //                                 uint256 assets, 
-    //                                 bool toUnderlying, 
-    //                                 uint256 deadline, 
-    //                                 uint8 v, 
-    //                                 bytes32 r, 
-    //                                 bytes32 s) 
-                                    
-    //                                 public returns (uint256 sharesBurnt, uint256 assetsReceived){
-        
-    //     SignatureParams memory SP = SignatureParams(v, r, s);
-    //     (sharesBurnt, assetsReceived) = metaWithdraw(owner, recipient, shares, assets, toUnderlying, deadline, SP);
-
-    // }
-
-    // function metaDepositHelper(    address depositor,
-    //                                 address recipient,
-    //                                 uint256 value,
-    //                                 uint16 referralCode,
-    //                                 bool fromUnderlying,
-    //                                 uint256 deadline,
-    //                                 PermitParams calldata permit,
-    //                                 SignatureParams calldata sigParams) public returns (bool fromUnderlying_, uint256 value_){
-    //     uint256 shares = metaDeposit(depositor, recipient, value, referralCode, fromUnderlying, deadline, permit, sigParams);
-    //     fromUnderlying_ = fromUnderlying;
-    //     value_ = value;
-    // }
     
 
     function assetsTotal(address account) public returns (uint256 assets){
@@ -56,9 +37,32 @@ contract StaticATokenLMHarness is StaticATokenLM{
         return _aTokenUnderlying;
     }
     
+    
+  function getRewardTokensLength() external view returns (uint256) {
+    return _rewardTokens.length;
+  }
 
-    function upperBound(uint256 index) public returns (uint256){
-        return (index/ (2*1e27));
-    }
+  function getRewardToken(uint256 i) external view returns (address) {
+    return _rewardTokens[i];
+  }
 
+
+  function claimSingleRewardOnBehalf(
+    address onBehalfOf,
+    address receiver,
+    address reward
+  ) external 
+  {
+
+    address[] memory rewards = new address[](1);
+    rewards[0] = address(reward);
+
+      require(
+        msg.sender == onBehalfOf ||
+        msg.sender == INCENTIVES_CONTROLLER.getClaimer(onBehalfOf),
+      StaticATokenErrors.INVALID_CLAIMER
+    );
+    _claimRewardsOnBehalf(onBehalfOf, receiver, rewards);
+    
+  }
 }
