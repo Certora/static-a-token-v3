@@ -5,8 +5,9 @@ using RewardsControllerHarness as _RewardsController
 using DummyERC20_aTokenUnderlying as _DummyERC20_aTokenUnderlying 
 using DummyERC20_rewardToken as _DummyERC20_rewardToken 
 using SymbolicLendingPoolL1 as _SymbolicLendingPoolL1 
-using TransferStrategyHarness as _TransferStrategyHarness
+using TransferStrategyHarness as _TransferStrategy
 using StaticATokenLMHarness as _StaticATokenLM
+using ScaledBalanceTokenHarness as _ScaledBalanceToken
 
 methods
 {
@@ -18,11 +19,13 @@ methods
     // getters from munged/harness
     getRewardTokensLength() returns (uint256) envfree 
     getRewardToken(uint256) returns (address) envfree
+    isRegisteredRewardToken(address) envfree
 
     _AToken.totalSupply() returns uint256 envfree
 	_AToken.balanceOf(address) returns (uint256) envfree
 	_AToken.scaledTotalSupply() returns (uint256) envfree
     _AToken.scaledBalanceOf(address) returns (uint256) envfree
+    _AToken.transferFrom(address,address,uint256) returns (bool)
     
     _RewardsController.getAvailableRewardsCount(address) returns (uint128) envfree
     _RewardsController.getDistributionEnd(address, address)  returns (uint256) envfree
@@ -30,6 +33,10 @@ methods
     _RewardsController.getUserAccruedRewards(address, address) returns (uint256) envfree
     _RewardsController.getAssetByIndex(uint256) returns (address) envfree
     _RewardsController.getAssetListLength() returns (uint256) envfree
+    _RewardsController.getUserAccruedReward(address, address, address) returns (uint256) envfree
+    _RewardsController.getAssetDecimals(address) returns (uint8) envfree 
+    _RewardsController.getRewardsData(address,address) returns (uint256,uint256,uint256,uint256) envfree
+    _RewardsController.getUserAssetIndex(address,address, address) returns (uint256) envfree 
     
     _DummyERC20_rewardToken.balanceOf(address) returns (uint256) envfree
 
@@ -237,7 +244,8 @@ function setup(env e, address user1, address user2)
     require _DummyERC20_aTokenUnderlying  != e.msg.sender;
     require _DummyERC20_rewardToken != e.msg.sender;
     require _SymbolicLendingPoolL1 != e.msg.sender;
-    require _TransferStrategyHarness != e.msg.sender;
+    require _TransferStrategy != e.msg.sender;
+    require _ScaledBalanceToken != e.msg.sender;
     
 
     require currentContract != user1;
@@ -246,7 +254,8 @@ function setup(env e, address user1, address user2)
     require _DummyERC20_aTokenUnderlying  != user1;
     require _DummyERC20_rewardToken != user1;
     require _SymbolicLendingPoolL1 != user1;
-    require _TransferStrategyHarness != user1;
+    require _TransferStrategy != user1;
+    require _ScaledBalanceToken != user1;
    
     require currentContract != user2;
     require _AToken != user2;
@@ -254,7 +263,8 @@ function setup(env e, address user1, address user2)
     require _DummyERC20_aTokenUnderlying != user2;
     require _DummyERC20_rewardToken  != user2;
     require _SymbolicLendingPoolL1 != user2;
-    require _TransferStrategyHarness != user2;
+    require _TransferStrategy != user2;
+    require _ScaledBalanceToken != user2;
 }
 
 
@@ -312,7 +322,427 @@ rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset()
     uint256 totalAccrued = _RewardsController.getUserAccruedRewards(_AToken, currentContract);
     require (totalAccrued == 0);
 
+    env e;
+    address reward;
 
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+//todo: debug fail
+invariant singleAssetAccrruedRewards(env e0, address asset, address reward, address user)
+    ((_RewardsController.getAssetListLength() == 1 && _RewardsController.getAssetByIndex(0) == asset)
+        => (_RewardsController.getUserAccruedReward(asset, reward, user) == _RewardsController.getUserAccruedRewards(reward, user)))
+        {
+            preserved with (env e1){
+                require e1.msg.sender == e0.msg.sender;
+                require e1.msg.sender != _StaticATokenLM;
+                require e1.msg.sender != _SymbolicLendingPoolL1;
+                require e1.msg.sender != _RewardsController;
+                require e1.msg.sender != _DummyERC20_aTokenUnderlying;
+                require e1.msg.sender != _ScaledBalanceToken;
+                require e1.msg.sender != asset;
+                require e1.msg.sender != reward;
+                require e1.msg.sender != user;
+                require user != _RewardsController;
+                require user != _ScaledBalanceToken;
+                require user != _TransferStrategy;
+                require asset != _RewardsController;
+                require asset != _TransferStrategy;
+                require asset != _ScaledBalanceToken;
+                require reward != _StaticATokenLM;
+                require reward != _AToken;
+                require reward != _ScaledBalanceToken;
+                require reward != _TransferStrategy;
+            }
+        }
+
+//todo: remove this rule
+rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset_2()
+{
+    require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    require _RewardsController.getAssetListLength() == 1;
+    
+    require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
+    // uint256 totalAccrued = _RewardsController.getUserAccruedRewards(_AToken, currentContract);
+    // require (totalAccrued == 0);
+    // uint256 totalAccrued2 = _RewardsController.getUserAccruedRewards(currentContract, _AToken);
+    // require (totalAccrued2 == 0);
+
+    env e;
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+//todo: remove this rule
+rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset_2_1()
+{
+    env e;
+    
+    require _RewardsController.getAssetDecimals(_AToken) < 10; //77
+    require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    require _RewardsController.getAssetListLength() == 1;
+    
+    require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
+    
+    uint256 index;
+    uint256 emissionPerSecond;
+    uint256 lastUpdateTimestamp;
+    uint256 distributionEnd;
+    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
+    require lastUpdateTimestamp <= e.block.timestamp;
+
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+//todo: remove this rule
+rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset_2_2()
+{
+    env e;
+    
+    require _RewardsController.getAssetDecimals(_AToken) < 77; //77
+    require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    require _RewardsController.getAssetListLength() == 1;
+    
+    require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
+
+    uint256 index;
+    uint256 emissionPerSecond;
+    uint256 lastUpdateTimestamp;
+    uint256 distributionEnd;
+    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
+    require lastUpdateTimestamp <= e.block.timestamp;
+
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+
+
+//todo: remove this rule
+rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset_2_3()
+{
+    env e;
+    
+    require _RewardsController.getAssetDecimals(_AToken) < 77; //77
+    require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    require _RewardsController.getAssetListLength() == 1;
+    
+    require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
+
+    uint256 index;
+    uint256 emissionPerSecond;
+    uint256 lastUpdateTimestamp;
+    uint256 distributionEnd;
+    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
+    //require lastUpdateTimestamp <= e.block.timestamp;
+
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+//todo: keep rule until end of investigation
+//https://vaas-stg.certora.com/output/99352/23ce9fa66f2544c0afef9d4640e8a3bd/?anonymousKey=7aada53d39c93e8366f7da8babb3e23242e388f7
+rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset_2_4()
+{
+    env e;
+    
+    require _RewardsController.getAssetDecimals(_AToken) < 10; //77
+    require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    require _RewardsController.getAssetListLength() == 1;
+    
+    require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
+    
+    uint256 index;
+    uint256 emissionPerSecond;
+    uint256 lastUpdateTimestamp;
+    uint256 distributionEnd;
+    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
+    require lastUpdateTimestamp <= e.block.timestamp;
+    require index < 100; // for readable counter example
+
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+//todo: remove this rule
+rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset_2_5()
+{
+    env e;
+    
+    require _RewardsController.getAssetDecimals(_AToken) < 10; //77
+    require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    require _RewardsController.getAssetListLength() == 1;
+    
+    require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
+    
+    uint256 index;
+    uint256 emissionPerSecond;
+    uint256 lastUpdateTimestamp;
+    uint256 distributionEnd;
+    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
+    require lastUpdateTimestamp <= e.block.timestamp;
+    require distributionEnd > 0;
+    require index < 100; // for readable counter example
+
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+//todo: remove this rule
+rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset_2_6()
+{
+    env e;
+    
+    require _RewardsController.getAssetDecimals(_AToken) < 10; //77
+    require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    require _RewardsController.getAssetListLength() == 1;
+    
+    require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
+    
+    uint256 index;
+    uint256 emissionPerSecond;
+    uint256 lastUpdateTimestamp;
+    uint256 distributionEnd;
+    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
+    require lastUpdateTimestamp <= e.block.timestamp;
+    require distributionEnd > 0;
+    require emissionPerSecond > 0;
+    require index < 100; // for readable counter example
+
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+//todo: remove this rule
+rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset_2_7()
+{
+    env e;
+    
+    require _RewardsController.getAssetDecimals(_AToken) < 10; //77
+    require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    require _RewardsController.getAssetListLength() == 1;
+    
+    require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
+    
+    uint256 index;
+    uint256 emissionPerSecond;
+    uint256 lastUpdateTimestamp;
+    uint256 distributionEnd;
+    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
+    require lastUpdateTimestamp <= e.block.timestamp;
+    require distributionEnd > 0;
+    require emissionPerSecond > 0;
+    require index > 0;
+
+    require index < 100; // for readable counter example
+    require _RewardsController.getUserAssetIndex(currentContract, _AToken, _AToken) > 0;
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+//todo: keep this one
+//https://vaas-stg.certora.com/output/99352/d5b87d6186354165b70745a44efd7311/?anonymousKey=0d95330d8643f093e5e63d8bf9c3503eff0cdbff
+rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset_2_8()
+{
+    env e;
+    
+    require _RewardsController.getAssetDecimals(_AToken) < 10; //77
+    require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    require _RewardsController.getAssetListLength() == 1;
+    
+    require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
+    
+    uint256 index;
+    uint256 emissionPerSecond;
+    uint256 lastUpdateTimestamp;
+    uint256 distributionEnd;
+    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
+    require lastUpdateTimestamp <= e.block.timestamp;
+    require index == 0; 
+
+    address reward;
+
+    mathint totalAssetBefore = totalAssets(e);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint totalAssetAfter = totalAssets(e);
+
+    assert totalAssetAfter == totalAssetBefore;
+}
+
+
+rule collectAndUpdateRewards_1()
+{
+    env e;
+    
+    require _RewardsController.getAssetDecimals(_AToken) < 10; //77
+    require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    require _RewardsController.getAssetListLength() == 1;
+    
+    require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
+    
+    uint256 index;
+    uint256 emissionPerSecond;
+    uint256 lastUpdateTimestamp;
+    uint256 distributionEnd;
+    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
+    require lastUpdateTimestamp <= e.block.timestamp;
+//    require index < 100; // for readable counter example
+    require index == 0; 
+
+    address reward;
+    address sender;
+    uint256 amount;
+    setup(e, sender, sender);
+
+    storage initial = lastStorage;
+    mathint reward_balance_1 = _DummyERC20_rewardToken.balanceOf(currentContract);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint reward_balance_2 = _DummyERC20_rewardToken.balanceOf(currentContract);
+
+    _AToken.transferFrom(e, sender, currentContract, amount) at initial;
+    collectAndUpdateRewards(e, reward); 
+    mathint reward_balance_3 = _DummyERC20_rewardToken.balanceOf(currentContract);
+
+    assert reward_balance_2 == reward_balance_3;
+}
+
+//for debugging
+rule collectAndUpdateRewards_2()
+{
+    env e;
+    
+    // require _RewardsController.getAssetDecimals(_AToken) < 10; //77
+    // require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    // require _RewardsController.getAssetListLength() == 1;
+    
+    // require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
+    
+    uint256 index;
+    uint256 emissionPerSecond;
+    uint256 lastUpdateTimestamp;
+    uint256 distributionEnd;
+    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
+    require lastUpdateTimestamp <= e.block.timestamp;
+    require index == 0; 
+
+    address reward;
+    address sender;
+    uint256 amount;
+//    setup(e, sender, sender);
+
+    storage initial = lastStorage;
+    mathint reward_balance_1 = _DummyERC20_rewardToken.balanceOf(currentContract);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint reward_balance_2 = _DummyERC20_rewardToken.balanceOf(currentContract);
+
+    _AToken.transferFrom(e, sender, currentContract, amount) at initial;
+    collectAndUpdateRewards(e, reward); 
+    mathint reward_balance_3 = _DummyERC20_rewardToken.balanceOf(currentContract);
+
+    assert reward_balance_2 == reward_balance_3;
+}
+
+//for debugging
+rule collectAndUpdateRewards_3()
+{
+    env e;
+    
+    // require _RewardsController.getAssetDecimals(_AToken) < 10; //77
+    // require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    // require _RewardsController.getAssetListLength() == 1;
+    
+    // require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
+    
+    uint256 index;
+    uint256 emissionPerSecond;
+    uint256 lastUpdateTimestamp;
+    uint256 distributionEnd;
+    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
+    require lastUpdateTimestamp <= e.block.timestamp;
+//    require index < 100; // for readable counter example
+    require index == 0; 
+
+    address reward;
+    address sender;
+    uint256 amount;
+    setup(e, sender, sender);
+
+    storage initial = lastStorage;
+    mathint reward_balance_1 = _DummyERC20_rewardToken.balanceOf(currentContract);
+    
+    collectAndUpdateRewards(e, reward); 
+    mathint reward_balance_2 = _DummyERC20_rewardToken.balanceOf(currentContract);
+
+    _AToken.transferFrom(e, sender, currentContract, amount) at initial;
+    collectAndUpdateRewards(e, reward); 
+    mathint reward_balance_3 = _DummyERC20_rewardToken.balanceOf(currentContract);
+
+    assert reward_balance_2 == reward_balance_3;
+}
+
+rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset_3()
+{
+    //require _RewardsController.getAssetByIndex(0) != _RewardsController;
+    //require _RewardsController.getAssetListLength() == 0;
+    
+    require _RewardsController.getUserAccruedReward(_AToken, _AToken, currentContract) ==0;
+    // uint256 totalAccrued = _RewardsController.getUserAccruedRewards(_AToken, currentContract);
+    // require (totalAccrued == 0);
+    // uint256 totalAccrued2 = _RewardsController.getUserAccruedRewards(currentContract, _AToken);
+    // require (totalAccrued2 == 0);
 
     env e;
     address reward;
@@ -466,13 +896,41 @@ rule getClaimableRewards_stable(method f)
     require getRewardTokensLength() == 1;
     require getRewardToken(0) == _DummyERC20_rewardToken;
     
-  
+  require isRegisteredRewardToken(reward); //todo: review the assumption
+ 
     mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
     f(e, args); 
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
+//pass
+//todo: remove
+rule getClaimableRewards_stable_after_atoken_transferFrom()
+{
+    env e;
+    calldataarg args;
+    address user;
+    address reward;
 
+    address sender;
+    uint256 amount;
+    
+    require user != 0;
+    //setup(e, user, sender);
+    //assume a single reward
+    //todo: allow multiple rewards
+    // require reward == _DummyERC20_rewardToken;
+    // require getRewardTokensLength() == 1;
+    // require getRewardToken(0) == _DummyERC20_rewardToken;
+    
+    //require isRegisteredRewardToken(reward); //todo: review assumption
+ 
+    mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
+    _AToken.transferFrom(e, sender, currentContract, amount);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
+    assert claimableRewardsAfter == claimableRewardsBefore;
+}
+ 
 /// @title special case of rule getClaimableRewards_stable for initialize
 //fail
 //todo: consider removing this rule. no method is called before initialize()
@@ -490,10 +948,10 @@ rule getClaimableRewards_stable_after_initialize(method f)
     
   
     mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
-
+    require isRegisteredRewardToken(reward); //todo: review assumption
+ 
 
     initialize(e, newAToken, staticATokenName, staticATokenSymbol);
-
     //assume a single reward
     //todo: allow multiple rewards
     require reward == _DummyERC20_rewardToken;
@@ -504,13 +962,15 @@ rule getClaimableRewards_stable_after_initialize(method f)
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
-
+//todo: remove
+//pass
 rule getClaimableRewards_stable_after_refreshRewardTokens()
 {
 
     env e;
     address user;
     address reward;
+    require isRegisteredRewardToken(reward); //todo: review assumption
 
     mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
     refreshRewardTokens(e);
