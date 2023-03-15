@@ -2,12 +2,11 @@
 pragma solidity ^0.8.10;
 
 import {IPool} from 'aave-v3-core/contracts/interfaces/IPool.sol';
-
 import {IRewardsController} from 'aave-v3-periphery/contracts/rewards/interfaces/IRewardsController.sol';
 import {SymbolicLendingPoolL1} from './SymbolicLendingPoolL1.sol';
 
-import {StaticATokenErrors} from '../../src/StaticATokenErrors.sol';
-import {StaticATokenLM} from '../../src/StaticATokenLM.sol';
+import {StaticATokenErrors} from '../munged/src/StaticATokenErrors.sol';
+import {StaticATokenLM} from '../munged/src/StaticATokenLM.sol';
 
 contract StaticATokenLMHarness is StaticATokenLM{
 
