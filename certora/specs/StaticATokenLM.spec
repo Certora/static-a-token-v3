@@ -621,104 +621,12 @@ rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset_2
 }
 
 
-rule collectAndUpdateRewards_1()
+rule reward_balance_stable_after_collectAndUpdateRewards()
 {
     env e;
-    
-    require _RewardsController.getAssetDecimals(_AToken) < 10; //77
-    require _RewardsController.getAssetByIndex(0) != _RewardsController;
-    require _RewardsController.getAssetListLength() == 1;
-    
-    require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
-    
-    uint256 index;
-    uint256 emissionPerSecond;
-    uint256 lastUpdateTimestamp;
-    uint256 distributionEnd;
-    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
-    require lastUpdateTimestamp <= e.block.timestamp;
-//    require index < 100; // for readable counter example
-    require index == 0; 
-
     address reward;
     address sender;
     uint256 amount;
-    setup(e, sender, sender);
-
-    storage initial = lastStorage;
-    mathint reward_balance_1 = _DummyERC20_rewardToken.balanceOf(currentContract);
-    
-    collectAndUpdateRewards(e, reward); 
-    mathint reward_balance_2 = _DummyERC20_rewardToken.balanceOf(currentContract);
-
-    _AToken.transferFrom(e, sender, currentContract, amount) at initial;
-    collectAndUpdateRewards(e, reward); 
-    mathint reward_balance_3 = _DummyERC20_rewardToken.balanceOf(currentContract);
-
-    assert reward_balance_2 == reward_balance_3;
-}
-
-//for debugging
-rule collectAndUpdateRewards_2()
-{
-    env e;
-    
-    // require _RewardsController.getAssetDecimals(_AToken) < 10; //77
-    // require _RewardsController.getAssetByIndex(0) != _RewardsController;
-    // require _RewardsController.getAssetListLength() == 1;
-    
-    // require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
-    
-    uint256 index;
-    uint256 emissionPerSecond;
-    uint256 lastUpdateTimestamp;
-    uint256 distributionEnd;
-    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
-    require lastUpdateTimestamp <= e.block.timestamp;
-    require index == 0; 
-
-    address reward;
-    address sender;
-    uint256 amount;
-//    setup(e, sender, sender);
-
-    storage initial = lastStorage;
-    mathint reward_balance_1 = _DummyERC20_rewardToken.balanceOf(currentContract);
-    
-    collectAndUpdateRewards(e, reward); 
-    mathint reward_balance_2 = _DummyERC20_rewardToken.balanceOf(currentContract);
-
-    _AToken.transferFrom(e, sender, currentContract, amount) at initial;
-    collectAndUpdateRewards(e, reward); 
-    mathint reward_balance_3 = _DummyERC20_rewardToken.balanceOf(currentContract);
-
-    assert reward_balance_2 == reward_balance_3;
-}
-
-//for debugging
-rule collectAndUpdateRewards_3()
-{
-    env e;
-    
-    // require _RewardsController.getAssetDecimals(_AToken) < 10; //77
-    // require _RewardsController.getAssetByIndex(0) != _RewardsController;
-    // require _RewardsController.getAssetListLength() == 1;
-    
-    // require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
-    
-    uint256 index;
-    uint256 emissionPerSecond;
-    uint256 lastUpdateTimestamp;
-    uint256 distributionEnd;
-    index, emissionPerSecond,lastUpdateTimestamp,distributionEnd = _RewardsController.getRewardsData(_AToken,_AToken);
-    require lastUpdateTimestamp <= e.block.timestamp;
-//    require index < 100; // for readable counter example
-    require index == 0; 
-
-    address reward;
-    address sender;
-    uint256 amount;
-    setup(e, sender, sender);
 
     storage initial = lastStorage;
     mathint reward_balance_1 = _DummyERC20_rewardToken.balanceOf(currentContract);
@@ -754,6 +662,8 @@ rule totalAssets_stable_after_collectAndUpdateRewards_zero_accrued_valid_asset_3
 
     assert totalAssetAfter == totalAssetBefore;
 }
+
+
 
 rule totalAssets_stable_after_claimRewardsOnBehalf()
 {

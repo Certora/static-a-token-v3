@@ -24,8 +24,8 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --rule getClaimableRewards_stable \
-    --msg "getClaimableRewards_stable"
+    --rule reward_balance_stable_after_collectAndUpdateRewards \
+    --msg "reward_balance_stable_after_collectAndUpdateRewards"
 
 
 #           StaticATokenLM:_rewardToken=DummyERC20_rewardToken \
