@@ -6,8 +6,9 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
     certora/harness/TransferStrategyHarness.sol \
     certora/harness/ScaledBalanceTokenHarness.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
-    certora/harness/DummyERC20_rewardToken.sol \
-    --verify StaticATokenLMHarness:certora/specs/to_shares_assets_4626.spec \
+    certora/harness/DummyERC20_rewardTokenA.sol \
+    certora/harness/DummyERC20_rewardTokenB.sol \
+    --verify StaticATokenLMHarness:certora/specs/multi_rewards_preserve.spec \
     --link StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
            StaticATokenLMHarness:POOL=SymbolicLendingPoolL1 \
            AToken:POOL=SymbolicLendingPoolL1 \
@@ -18,12 +19,12 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
     --optimistic_loop \
 	--loop_iter 1 \
     --optimistic_hashing \
-    --settings -t=1500,-mediumTimeout=60,-depth=30 \
+    --settings -t=2000,-mediumTimeout=900,-depth=30  \
     --staging \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-	--rule_sanity \
-	--msg "check ConvertToShares ConvertToAssets conforms to EIP4626"
+    --msg "Prevent double claiming - iter 2 no unclaimed" \
+	--rule prevent_double_claiming
