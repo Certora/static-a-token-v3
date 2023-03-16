@@ -7,7 +7,7 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
     certora/harness/ScaledBalanceTokenHarness.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
     certora/harness/DummyERC20_rewardToken.sol \
-    --verify StaticATokenLMHarness:certora/specs/sharesAssetsConversion.spec \
+    --verify StaticATokenLMHarness:certora/specs/atoken_balance.spec \
     --link StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
            StaticATokenLMHarness:POOL=SymbolicLendingPoolL1 \
            AToken:POOL=SymbolicLendingPoolL1 \
@@ -25,5 +25,5 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-	--rule_sanity \
-    --msg "Shares to assets conversions"
+	--msg "AToken balance is fixed - PARAMETRIC" \
+	--rule aTokenBalanceIsFixed \

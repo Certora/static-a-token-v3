@@ -7,7 +7,7 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
     certora/harness/ScaledBalanceTokenHarness.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
     certora/harness/DummyERC20_rewardToken.sol \
-    --verify StaticATokenLMHarness:certora/specs/sharesAssetsConversion.spec \
+    --verify StaticATokenLMHarness:certora/specs/to_shares_assets_4626.spec \
     --link StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
            StaticATokenLMHarness:POOL=SymbolicLendingPoolL1 \
            AToken:POOL=SymbolicLendingPoolL1 \
@@ -18,7 +18,7 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
     --optimistic_loop \
 	--loop_iter 1 \
     --optimistic_hashing \
-    --settings -t=2000,-mediumTimeout=900,-depth=40  \
+    --settings -t=1500,-mediumTimeout=60,-depth=30 \
     --staging \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
@@ -26,4 +26,4 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
 	--rule_sanity \
-    --msg "Shares to assets conversions"
+	--msg "check ConvertToShares ConvertToAssets conforms to EIP4626"
