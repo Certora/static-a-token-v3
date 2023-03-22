@@ -24,11 +24,12 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --rule totalClaimableRewards_stable_after_initialized                 \
-    --msg "totalClaimableRewards_stable_after_initialized      with hook            "
+    --rule getClaimableRewards_stable                        \
+    --msg "getClaimableRewards_stable        without hook            "
 
 
 #--rule_sanity advanced \
+#  -t=1400,-mediumTimeout=800,-depth=15  for getClaimableRewards_stable, getClaimableRewards_stable      
 #           StaticATokenLM:_rewardToken=DummyERC20_rewardToken \
 # -t=1500,-mediumTimeout=60,-depth=30 for inv_atoken_balanceOf_leq_totalSupply 2 hours
 # -t=1200,-mediumTimeout=1200,-depth=10 - best for   getClaimableRewards_increase_after_deposit_8 (25 min)

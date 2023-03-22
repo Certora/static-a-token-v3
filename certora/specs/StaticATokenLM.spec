@@ -16,7 +16,6 @@ methods
 	balanceOf(address) returns (uint256) envfree
     rewardTokens() returns (address[]) envfree
 
-    // getters from munged/harness
     getRewardTokensLength() returns (uint256) envfree 
     getRewardToken(uint256) returns (address) envfree
     isRegisteredRewardToken(address) envfree
@@ -43,23 +42,22 @@ methods
     /*******************
     *     Pool.sol     *
     ********************/
+
     //getReserveNormalizedIncome(address) returns (uint256) => ALWAYS(1000000000000000000000000000)
 
-    //in RewardsDistributor.sol called by RewardsController.sol
+    //Called by RewardsController.sol
+    //Defined in RewardsDistributor.sol
     getAssetIndex(address, address) returns (uint256, uint256) =>  DISPATCHER(true)
     
-    //caled by AToken.sol.  function executeFinalizeTransfer is defined in SupplyLogic.sol
+    //Called by AToken.sol
+    //Defined in SupplyLogic.sol
     finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET  
 
-    //in ScaledBalanceTokenBase.sol called by getAssetIndex
+    //Called by getAssetIndex
+    // Defined in ScaledBalanceTokenBase.sol
     scaledTotalSupply() returns (uint256) envfree => DISPATCHER(true) 
     
 
-    /*******************************
-    *     RewardsController.sol    *
-    ********************************/
-   // claimRewards(address[],uint256,address,address) => NONDET
-     
    /*****************************
     *     OZ ERC20Permit.sol     *
     ******************************/
@@ -82,23 +80,20 @@ methods
     *     RewardsController.sol     *
     **********************************/
 
-    //call by RewardsController.IncentivizedERC20.sol and also by StaticATokenLM.sol
+    //Called by IncentivizedERC20.sol and by StaticATokenLM.sol
     handleAction(address,uint256,uint256) => DISPATCHER(true)
 
-    // called by  StaticATokenLM.claimRewardsToSelf  -->  RewardsController._getUserAssetBalances
-    // get balanceOf and totalSupply of _aToken
-    // todo - link to the actual token.
-    //defined in ScaledBalanceTokenBase.sol called in RewardsController.sol
+    //Called by RewardsController.sol
+    //Defined in ScaledBalanceTokenBase.sol
     getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => DISPATCHER(true)
-//    getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => NONDET
 
-    // called by StaticATokenLM.collectAndUpdateRewards --> RewardsController._transferRewards()
-    //implemented as simple transfer() in TransferStrategyHarness
+    //Called by RewardsController._transferRewards()
+    //Defined in TransferStrategyHarness as simple transfer() 
     performTransfer(address,address,uint256) returns (bool) =>  DISPATCHER(true)
 
  }
 
-/// @notice Claim rewards methods
+/// @title Claim rewards methods
 definition claimFunctions(method f) returns bool = 
             f.selector == claimRewardsToSelf(address[]).selector ||
             f.selector == claimRewards(address, address[]).selector ||
@@ -107,16 +102,15 @@ definition claimFunctions(method f) returns bool =
 
 
 
-/// @title Reward hook
-/// @notice allows a single reward
-//todo: allow 2 or 3 rewards
-hook Sload address reward _rewardTokens[INDEX  uint256 i] STORAGE {
-   require reward == _DummyERC20_rewardToken;
-} 
+// /// @title Reward hook
+// /// @notice allows a single reward
+// /// @dev todo: hook may be omitted
+// hook Sload address reward _rewardTokens[INDEX  uint256 i] STORAGE {
+//    require reward == _DummyERC20_rewardToken;
+// } 
 
 
-///////////////////////////
-/// @title Sum of balances of StaticAToken 
+/// @title Sum of balances of StaticATokenLM 
 ghost sumAllBalance() returns mathint {
     init_state axiom sumAllBalance() == 0;
 }
@@ -143,7 +137,7 @@ hook Sload uint128 balance _AToken._userState[KEY address a] .(offset 0) STORAGE
 } 
 
 
-/// @title balancerOf(user) <= totalSupply()
+/// @title Static AToeknLM balancerOf(user) <= totalSupply()
 invariant inv_balanceOf_leq_totalSupply(address user)
 	balanceOf(user) <= totalSupply()
 	{
@@ -163,6 +157,7 @@ invariant inv_atoken_balanceOf_leq_totalSupply(address user)
         }
 	}
 
+/// @title AToken balancerOf(user) <= AToken totalSupply()
 /// @dev case split of inv_atoken_balanceOf_leq_totalSupply
 invariant inv_atoken_balanceOf_leq_totalSupply_redeem(address user)
 	_AToken.balanceOf(user) <= _AToken.totalSupply()
@@ -208,7 +203,7 @@ invariant inv_atoken_balanceOf_2users_leq_totalSupply(address user1, address use
 
 	}
 
-/// @title AToken scaled balancerOf(user) <= AToken scaled totalSupply()
+/// @title AToken scaledBalancerOf(user) <= AToken scaledTotalSupply()
 invariant inv_atoken_scaled_balanceOf_leq_totalSupply(address user)
 	_AToken.scaledBalanceOf(user) <= _AToken.scaledTotalSupply()
     {
@@ -228,12 +223,11 @@ invariant sumAllATokenScaledBalance_eq_totalSupply()
 
 
 /// @title Assumptions that should hold in any run
-/// @dev Assume that RewardsController.configureAssets(RewardsDataTypes.RewardsConfigInput[] memory rewardsInput) was called
+/// @dev Assume that the memory was configured by calling RewardsController.configureAssets(RewardsDataTypes.RewardsConfigInput[] memory rewardsInput) 
 function setup(env e, address user)
 {
     
     //assume a single reward
-    //todo: allow multiple rewards
     require getRewardTokensLength() == 1;
     require getRewardToken(0) == _DummyERC20_rewardToken;
 
@@ -263,7 +257,9 @@ function setup(env e, address user)
 }
 
 //pass
-invariant singleAssetAccrruedRewards(env e0, address asset, address reward, address user)
+/// @title correct accrued value is fetched
+/// @notice assume a single asset
+invariant singleAssetAccruedRewards(env e0, address asset, address reward, address user)
     ((_RewardsController.getAssetListLength() == 1 && _RewardsController.getAssetByIndex(0) == asset)
         => (_RewardsController.getUserAccruedReward(asset, reward, user) == _RewardsController.getUserAccruedRewards(reward, user)))
         {
@@ -281,7 +277,7 @@ invariant singleAssetAccrruedRewards(env e0, address asset, address reward, addr
 
 
 //pass
-/// @title The return value of totalAssets() should be unchanged after reward claim
+/// @title Claiming rewards should not affect totalAssets() 
 rule totalAssets_stable(method f)
     filtered { f -> (f.selector == claimRewardsToSelf(address[]).selector ||
                     f.selector == claimRewards(address, address[]).selector ||
@@ -296,6 +292,8 @@ rule totalAssets_stable(method f)
 }
 
 //pass
+/// @title Claiming rewards should not affect totalAssets() 
+/// @dev case splitting
 rule totalAssets_stable_after_collectAndUpdateRewards()
 {
     env e;
@@ -310,6 +308,7 @@ rule totalAssets_stable_after_collectAndUpdateRewards()
 
 
 //pass
+/// @title Receiving ATokens does not affect the amount of rewards fetched by collectAndUpdateRewards()
 rule reward_balance_stable_after_collectAndUpdateRewards()
 {
     env e;
@@ -329,6 +328,7 @@ rule reward_balance_stable_after_collectAndUpdateRewards()
 }
 
 // timeout
+/// @title getTotalClaimableRewards() is stable unless rewards were claimed
 rule totalClaimableRewards_stable(method f)
     filtered { f -> !f.isView && !claimFunctions(f)  && f.selector != initialize(address,string,string).selector  }
 {
@@ -337,10 +337,7 @@ rule totalClaimableRewards_stable(method f)
     setup(e, 0);
     calldataarg args;
     address reward;
-
-
     require e.msg.sender != reward;
- 
     require currentContract != e.msg.sender;
     require _AToken != e.msg.sender;
     require _RewardsController != e.msg.sender;
@@ -367,9 +364,48 @@ rule totalClaimableRewards_stable(method f)
     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
 }
 
+
+//should fail
+rule totalClaimableRewards_stable_SANITY(method f)
+    filtered { f -> f.selector == claimRewardsOnBehalf(address, address,address[]).selector   }
+{
+    env e;
+    require e.msg.sender != currentContract;
+    setup(e, 0);
+    calldataarg args;
+    address reward;
+    require e.msg.sender != reward;
+    require currentContract != e.msg.sender;
+    require _AToken != e.msg.sender;
+    require _RewardsController != e.msg.sender;
+    require _DummyERC20_aTokenUnderlying  != e.msg.sender;
+    require _DummyERC20_rewardToken != e.msg.sender;
+    require _SymbolicLendingPoolL1 != e.msg.sender;
+    require _TransferStrategy != e.msg.sender;
+    require _ScaledBalanceToken != e.msg.sender;
+    require _TransferStrategy != e.msg.sender;
+
+    require currentContract != reward;
+    require _AToken != reward;
+    require _RewardsController !=  reward;
+    require _DummyERC20_aTokenUnderlying  != reward;
+    require _SymbolicLendingPoolL1 != reward;
+    require _TransferStrategy != reward;
+    require _ScaledBalanceToken != reward;
+    require _TransferStrategy != reward;
+
+
+    mathint totalClaimableRewardsBefore = getTotalClaimableRewards(e, reward);
+    f(e, args); 
+    mathint totalClaimableRewardsAfter = getTotalClaimableRewards(e, reward);
+    assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
+}
+
+
 //fail
 //https://vaas-stg.certora.com/output/99352/ba0861e8dc5041798c08c829609172dd/?anonymousKey=7cea930ea4c17235e0c56ca78bd50bc58207ae07
 //https://vaas-stg.certora.com/output/99352/fd3b2507ac5546b4b1155c95ddeebb56/?anonymousKey=3ad66ba03ecfaf49d9c0258e60b8f4ef47a24e16
+/// @title getTotalClaimableRewards() is stable after initialized()
 rule totalClaimableRewards_stable_after_initialized()
 {
     env e;
@@ -411,7 +447,8 @@ rule totalClaimableRewards_stable_after_initialized()
 }
 
 
-//pass with setup() timeout on redeem
+//pass 
+/// @title getClaimableRewards() is stable unless rewards were claimed
 rule getClaimableRewards_stable(method f)
     filtered { f -> !f.isView
                     && !claimFunctions(f)
@@ -441,8 +478,38 @@ rule getClaimableRewards_stable(method f)
 }
 
 
+//should fail
+rule getClaimableRewards_stable_SANITY(method f)
+    filtered { f -> //claimFunctions(f)
+                    f.selector == claimRewardsOnBehalf(address, address,address[]).selector   
+    }
+{
+    env e;
+    calldataarg args;
+    address user;
+    address reward;
+    
+    require user != 0;
+
+    setup(e, user);    
+    //assume a single reward
+    require reward == _DummyERC20_rewardToken;
+    require getRewardTokensLength() == 1;
+    require getRewardToken(0) == _DummyERC20_rewardToken;
+    
+    require isRegisteredRewardToken(reward); //todo: review the assumption
+ 
+    mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
+    f(e, args); 
+    mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
+    assert claimableRewardsAfter == claimableRewardsBefore;
+}
+
+
 
 //pass
+/// @title getClaimableRewards() is stable unless rewards were claimed
+/// @dev case splitting
 rule getClaimableRewards_stable_after_deposit()
 {
     env e;
@@ -487,6 +554,8 @@ rule getClaimableRewards_stable_after_deposit()
 
 // timeout
 //todo: remove
+/// @title getClaimableRewards() is stable unless rewards were claimed
+/// @dev case splitting
 rule getClaimableRewards_stable_after_atoken_transferFrom()
 {
     env e;
@@ -507,6 +576,8 @@ rule getClaimableRewards_stable_after_atoken_transferFrom()
 
 // timeout
 //todo: remove
+/// @title getClaimableRewards() is stable unless rewards were claimed
+/// @dev case splitting, call setup()
 rule getClaimableRewards_stable_after_atoken_transferFrom_1()
 {
     env e;
@@ -529,6 +600,8 @@ rule getClaimableRewards_stable_after_atoken_transferFrom_1()
 /// @title special case of rule getClaimableRewards_stable for initialize
 //fail
 //todo: consider removing this rule. no method is called before initialize()
+/// @title getClaimableRewards() is stable after initialize()
+/// @dev case splitting
 rule getClaimableRewards_stable_after_initialize(method f)
     filtered { f -> !f.isView && !claimFunctions(f) }{
 
@@ -559,6 +632,8 @@ rule getClaimableRewards_stable_after_initialize(method f)
 }
 //todo: remove
 //pass
+/// @title getClaimableRewards() is stable unless rewards were claimed
+/// @dev case splitting, call setup()
 rule getClaimableRewards_stable_after_refreshRewardTokens()
 {
 
@@ -598,7 +673,7 @@ rule getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf(method f)
 
 
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 rule sanity(method f)
 {
