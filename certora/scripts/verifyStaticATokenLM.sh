@@ -17,15 +17,16 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
     --solc solc8.10 \
     --optimistic_loop \
     --optimistic_hashing \
-    --settings  -t=1400,-mediumTimeout=800,-depth=15   \
+    --settings  -t=1400,-mediumTimeout=800,-depth=15    \
     --staging \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
+               openzeppelin-contracts=lib/openzeppelin-contracts \
     --send_only \
     --rule getClaimableRewards_stable                        \
-    --msg "getClaimableRewards_stable        without hook            "
+    --msg "getClaimableRewards_stable"
 
 
 #--rule_sanity advanced \
