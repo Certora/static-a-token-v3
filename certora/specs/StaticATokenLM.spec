@@ -741,7 +741,7 @@ rule getClaimableRewards_stable_after_initialize(method f)
     require reward == _DummyERC20_rewardToken;
     require newAToken == _AToken;
     require getRewardTokensLength() == 1;
-    require getRewardToken(0) == re;
+    require getRewardToken(0) == reward;
     setup(e, user);    
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
