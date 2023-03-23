@@ -25,8 +25,8 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                solidity-utils=lib/solidity-utils/src \
                openzeppelin-contracts=lib/openzeppelin-contracts \
     --send_only \
-    --rule getClaimableRewards_stable                        \
-    --msg "getClaimableRewards_stable"
+    --rule getClaimableRewards_stable_after_deposit                        \
+    --msg "getClaimableRewards_stable_after_deposit"
 
 
 #--rule_sanity advanced \

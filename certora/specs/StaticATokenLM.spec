@@ -228,8 +228,8 @@ function setup(env e, address user)
 {
     
     //assume a single reward
-    require getRewardTokensLength() == 1;
-    require getRewardToken(0) == _DummyERC20_rewardToken;
+    require getRewardTokensLength() > 0;
+//    require getRewardToken(0) == _DummyERC20_rewardToken;
 
     require _RewardsController.getAvailableRewardsCount(_AToken)  > 0;
     require _RewardsController.getRewardsByAsset(_AToken, 0) == _DummyERC20_rewardToken;
@@ -481,6 +481,13 @@ rule getClaimableRewards_stable(method f)
     require _TransferStrategy != user;
     require _ScaledBalanceToken != user;
     
+    require currentContract != reward;
+    require _AToken != reward;
+    require _RewardsController !=  reward; //
+    require _DummyERC20_aTokenUnderlying  != reward;
+    require _SymbolicLendingPoolL1 != reward; 
+    require _TransferStrategy != reward;
+    require _ScaledBalanceToken != reward;
     
     //require isRegisteredRewardToken(reward); //todo: review the assumption
  
@@ -493,9 +500,6 @@ rule getClaimableRewards_stable(method f)
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
 
-
-//timeout
-//should fail
 rule getClaimableRewards_stable_SANITY(method f)
     filtered { f -> //claimFunctions(f)
                     f.selector == claimRewardsOnBehalf(address, address,address[]).selector   
@@ -505,22 +509,47 @@ rule getClaimableRewards_stable_SANITY(method f)
     calldataarg args;
     address user;
     address reward;
-    
+ 
     require user != 0;
 
-    setup(e, user);    
-    //assume a single reward
-    require reward == _DummyERC20_rewardToken;
-    require getRewardTokensLength() == 1;
-    require getRewardToken(0) == _DummyERC20_rewardToken;
+    require currentContract != e.msg.sender;
+    require _AToken != e.msg.sender;
+    require _RewardsController != e.msg.sender;
+    require _DummyERC20_aTokenUnderlying  != e.msg.sender;
+    require _DummyERC20_rewardToken != e.msg.sender;
+    require _SymbolicLendingPoolL1 != e.msg.sender;
+    require _TransferStrategy != e.msg.sender;
+    require _ScaledBalanceToken != e.msg.sender;
+    require _TransferStrategy != e.msg.sender;
+
+    require currentContract != user;
+    require _AToken != user;
+    require _RewardsController !=  user;
+    require _DummyERC20_aTokenUnderlying  != user;
+    require _DummyERC20_rewardToken != user;
+    require _SymbolicLendingPoolL1 != user;
+    require _TransferStrategy != user;
+    require _ScaledBalanceToken != user;
+    
+    require currentContract != reward;
+    require _AToken != reward;
+    require _RewardsController !=  reward; //
+    require _DummyERC20_aTokenUnderlying  != reward;
+    require _SymbolicLendingPoolL1 != reward; 
+    require _TransferStrategy != reward;
+    require _ScaledBalanceToken != reward;
     
     //require isRegisteredRewardToken(reward); //todo: review the assumption
  
     mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
+
+    require getRewardTokensLength() > 0;
+    require getRewardToken(0) == reward; //todo: review
     f(e, args); 
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
+
 
 
 rule getClaimableRewards_stable_after_deposit()
@@ -559,13 +588,79 @@ rule getClaimableRewards_stable_after_deposit()
     require _RewardsController !=  recipient;
     require _DummyERC20_aTokenUnderlying  != recipient;
     require _DummyERC20_rewardToken != recipient;
-    require _SymbolicLendingPoolL1 != recipient; //todo: review
+    require _SymbolicLendingPoolL1 != recipient; //
     require _TransferStrategy != recipient;
     require _ScaledBalanceToken != recipient;
+    
+    require currentContract != reward;
+    require _AToken != reward;
+    require _RewardsController !=  reward; //
+    require _DummyERC20_aTokenUnderlying  != reward;
+    require _SymbolicLendingPoolL1 != reward; 
+    require _TransferStrategy != reward;
+    require _ScaledBalanceToken != reward;
     
     mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
     require getRewardTokensLength() > 0;
     require getRewardToken(0) == reward; //todo: review
+    
+    deposit(e, assets, recipient,referralCode,fromUnderlying);
+    mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
+    assert claimableRewardsAfter == claimableRewardsBefore;
+}
+
+//should fail
+rule getClaimableRewards_stable_after_deposit_SANITY()
+{
+    env e;
+    address user;
+    address reward;
+    require currentContract != e.msg.sender;
+    require _AToken != e.msg.sender;
+    require _RewardsController != e.msg.sender;
+    require _DummyERC20_aTokenUnderlying  != e.msg.sender;
+    require _DummyERC20_rewardToken != e.msg.sender;
+    require _SymbolicLendingPoolL1 != e.msg.sender;
+    require _TransferStrategy != e.msg.sender;
+    require _ScaledBalanceToken != e.msg.sender;
+    require _TransferStrategy != e.msg.sender;
+
+    uint256 assets;
+    address recipient;
+    uint16 referralCode;
+    bool fromUnderlying;
+
+    require user != 0;
+
+    require currentContract != user;
+    require _AToken != user;
+    require _RewardsController !=  user;
+    require _DummyERC20_aTokenUnderlying  != user;
+    require _DummyERC20_rewardToken != user;
+    require _SymbolicLendingPoolL1 != user;
+    require _TransferStrategy != user;
+    require _ScaledBalanceToken != user;
+    
+    require currentContract != recipient;
+    require _AToken != recipient;
+    require _RewardsController !=  recipient;
+    require _DummyERC20_aTokenUnderlying  != recipient;
+    require _DummyERC20_rewardToken != recipient;
+    require _SymbolicLendingPoolL1 != recipient; //
+    require _TransferStrategy != recipient;
+    require _ScaledBalanceToken != recipient;
+    
+    require currentContract != reward;
+    require _AToken != reward;
+    require _RewardsController !=  reward; //
+    require _DummyERC20_aTokenUnderlying  != reward;
+    require _SymbolicLendingPoolL1 != reward; 
+    require _TransferStrategy != reward;
+    require _ScaledBalanceToken != reward;
+    
+    mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
+    require getRewardTokensLength() > 0;
+    //require getRewardToken(0) == reward; //todo: review
     
     deposit(e, assets, recipient,referralCode,fromUnderlying);
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
@@ -646,7 +741,7 @@ rule getClaimableRewards_stable_after_initialize(method f)
     require reward == _DummyERC20_rewardToken;
     require newAToken == _AToken;
     require getRewardTokensLength() == 1;
-    require getRewardToken(0) == _DummyERC20_rewardToken;
+    require getRewardToken(0) == re;
     setup(e, user);    
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
