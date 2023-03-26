@@ -146,6 +146,14 @@ invariant inv_balanceOf_leq_totalSupply(address user)
 		}
 	}
 
+//not proven
+//RewardsController can stored the reward at any index 
+invariant registered_reward_exists_in_controller(address asset, address reward)
+    (isRegisteredRewardToken(reward) =>  
+    (_RewardsController.getAvailableRewardsCount(asset)  > 0
+    && _RewardsController.getRewardsByAsset(asset, 0) == reward))
+
+
 /// @title AToken balancerOf(user) <= AToken totalSupply()
 //timeout on redeem metaWithdraw
 invariant inv_atoken_balanceOf_leq_totalSupply(address user)
@@ -495,6 +503,7 @@ rule getClaimableRewards_stable(method f)
 
     require getRewardTokensLength() > 0;
     require getRewardToken(0) == reward; //todo: review
+    requireInvariant registered_reward_exists_in_controller(_AToken, reward); //todo: review. invariant is not proven
     f(e, args); 
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
@@ -603,11 +612,13 @@ rule getClaimableRewards_stable_after_deposit()
     mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
     require getRewardTokensLength() > 0;
     require getRewardToken(0) == reward; //todo: review
-    
-    deposit(e, assets, recipient,referralCode,fromUnderlying);
+
+    requireInvariant registered_reward_exists_in_controller(_AToken, reward); //todo: review, unproven invariant
+       deposit(e, assets, recipient,referralCode,fromUnderlying);
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
+
 
 //should fail
 rule getClaimableRewards_stable_after_deposit_SANITY()
