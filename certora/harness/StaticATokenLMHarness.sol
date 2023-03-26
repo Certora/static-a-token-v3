@@ -26,23 +26,23 @@ constructor(
   }
 
 
-  // function claimSingleRewardOnBehalf(
-  //   address onBehalfOf,
-  //   address receiver,
-  //   address reward
-  // ) external 
-  // {
+  function claimSingleRewardOnBehalf(
+    address onBehalfOf,
+    address receiver,
+    address reward
+  ) external 
+  {
 
-  //   address[] memory rewards = new address[](1);
-  //   rewards[0] = address(reward);
+    address[] memory rewards = new address[](1);
+    rewards[0] = address(reward);
 
-  //     require(
-  //       msg.sender == onBehalfOf ||
-  //       msg.sender == INCENTIVES_CONTROLLER.getClaimer(onBehalfOf),
-  //     StaticATokenErrors.INVALID_CLAIMER
-  //   );
-  //   _claimRewardsOnBehalf(onBehalfOf, receiver, rewards);
-    
-  // }
+      require(
+        msg.sender == onBehalfOf ||
+        msg.sender == INCENTIVES_CONTROLLER.getClaimer(onBehalfOf),
+      StaticATokenErrors.INVALID_CLAIMER
+    );
+    _claimRewardsOnBehalf(onBehalfOf, receiver, rewards);
+  
+  }
 
 }
