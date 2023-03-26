@@ -5,11 +5,8 @@ import {IPool} from 'aave-v3-core/contracts/interfaces/IPool.sol';
 import {IRewardsController} from 'aave-v3-periphery/contracts/rewards/interfaces/IRewardsController.sol';
 import {SymbolicLendingPoolL1} from './SymbolicLendingPoolL1.sol';
 
-import {IRewardsController} from 'aave-v3-periphery/contracts/rewards/interfaces/IRewardsController.sol';
-import {SymbolicLendingPoolL1} from './SymbolicLendingPoolL1.sol';
-
 import {StaticATokenErrors} from '../../src/StaticATokenErrors.sol';
-import {StaticATokenLM} from 'certora/munged/StaticATokenLM.sol';
+import {StaticATokenLM} from '../munged/src/StaticATokenLM.sol';
 import {IERC20} from 'solidity-utils/contracts/oz-common/interfaces/IERC20.sol';
 
 

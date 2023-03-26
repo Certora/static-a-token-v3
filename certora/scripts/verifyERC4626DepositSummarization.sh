@@ -17,7 +17,7 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     certora/harness/TransferStrategyHarness.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
     certora/harness/DummyERC20_rewardToken.sol \
-    --verify StaticATokenLMHarness:certora/specs/erc4626.spec \
+    --verify StaticATokenLMHarness:certora/specs/erc4626DepositSummarization.spec \
     --link StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsController \
            StaticATokenLMHarness:POOL=SymbolicLendingPoolL1 \
             StaticATokenLMHarness:_aToken=AToken \
@@ -30,13 +30,17 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --rule_sanity basic \
-    --staging master\
     --send_only \
+    --cloud master \
     --optimistic_hashing \
     --settings -t=10000 \
+    --settings -mediumTimeout=1000 \
+    --settings -depth=15 \
     $RULE \
     --msg "StaticAToken - $RULE $MSG  "
 
+    # --staging master\
+    # --settings -medium_timeout=800 \
     # --settings -optimisticUnboundedHashing=true \
     # --settings -hashingLengthBound=224 \
 #link _aToken _aTokenUnderlying _aToken
