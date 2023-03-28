@@ -146,12 +146,20 @@ invariant inv_balanceOf_leq_totalSupply(address user)
 		}
 	}
 
-//not proven
-//RewardsController can stored the reward at any index 
-invariant registered_reward_exists_in_controller(address asset, address reward)
+
+/// @title a registered token in StaticATokenLM must exist in RewardsController._assets.[].availableRewards
+/// @dev Should fail becuase RewardsController can store the given reward at any index other than zero
+invariant registered_reward_exists_in_controller(address reward)
     (isRegisteredRewardToken(reward) =>  
-    (_RewardsController.getAvailableRewardsCount(asset)  > 0
-    && _RewardsController.getRewardsByAsset(asset, 0) == reward))
+    (_RewardsController.getAvailableRewardsCount(_AToken)  > 0
+    && _RewardsController.getRewardsByAsset(_AToken, 0) == reward))
+    {
+        //fail on initialized. Prerseve block causes CVL compilation error - CERT-1706
+        // preserved initialize(address newAToken,string staticATokenName, string staticATokenSymbol) {
+        //     require newAToken == _AToken;
+        // }
+    }
+
 
 
 /// @title AToken balancerOf(user) <= AToken totalSupply()
@@ -455,12 +463,16 @@ rule totalClaimableRewards_stable_after_initialized()
     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
 }
 
-
+//todo: add rules for redeem, mint
 rule getClaimableRewards_stable(method f)
     filtered { f -> !f.isView
                     && !claimFunctions(f)
                     && f.selector != initialize(address,string,string).selector
                     && f.selector != deposit(uint256,address,uint16,bool).selector
+                    && f.selector != redeem(uint256,address,address).selector
+                    && f.selector != redeem(uint256,address,address,bool).selector
+                    && f.selector != mint(uint256,address).selector
+                    && f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
     }
 {
     env e;
@@ -503,7 +515,7 @@ rule getClaimableRewards_stable(method f)
 
     require getRewardTokensLength() > 0;
     require getRewardToken(0) == reward; //todo: review
-    requireInvariant registered_reward_exists_in_controller(_AToken, reward); //todo: review. invariant is not proven
+    requireInvariant registered_reward_exists_in_controller(reward); //todo: review. invariant is not proven
     f(e, args); 
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
@@ -613,8 +625,8 @@ rule getClaimableRewards_stable_after_deposit()
     require getRewardTokensLength() > 0;
     require getRewardToken(0) == reward; //todo: review
 
-    requireInvariant registered_reward_exists_in_controller(_AToken, reward); //todo: review, unproven invariant
-       deposit(e, assets, recipient,referralCode,fromUnderlying);
+    requireInvariant registered_reward_exists_in_controller(reward); //todo: review, unproven invariant
+    deposit(e, assets, recipient,referralCode,fromUnderlying);
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
 }

@@ -25,8 +25,8 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                solidity-utils=lib/solidity-utils/src \
                openzeppelin-contracts=lib/openzeppelin-contracts \
     --send_only \
-    --rule getClaimableRewards_stable \
-    --msg "getClaimableRewards_stable"
+    --rule  registered_reward_exists_in_controller \
+    --msg "  registered_reward_exists_in_controller "
 
 
 #--rule_sanity advanced \
