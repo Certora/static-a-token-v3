@@ -10,10 +10,6 @@ methods
 	convertToShares(uint256 amount) returns (uint256) envfree
 	convertToAssets(uint256 amount) returns (uint256) envfree
 }
-	
-
-definition RAY() returns uint256 = (10 ^ 27);
-
 
 /**
  * @notice A note on the conversion functions
@@ -32,19 +28,31 @@ definition RAY() returns uint256 = (10 ^ 27);
  * - `S(A(s)) >= A(s)*R/r - 1 >= (s*r/R - 1)*R/r - 1 = (s*r - R)/r - 1 = s - R/r - 1`
  */
 
+definition RAY() returns uint256 = (10 ^ 27);
 
-// Converting amount to shares is rounded down.
+
+/// @title Converting amount to shares is properly rounded down
 rule amountConversionRoundedDown(uint256 amount) {
 	uint256 shares = convertToShares(amount);
 	assert convertToAssets(shares) <= amount, "Too many converted shares";
+
+    /* The next assertion shows that the rounding in `convertToAssets` is tight. This
+     * protects the user. For example, a function `convertToAssets` that always returns 
+     * zero would have passed the previous assertion, but not the next one.
+     */
 	assert convertToAssets(shares + 1) >= amount, "Too few converted shares";
 }
 
 
-// Converting shares to amount is rounded down.
+/// @title Converting shares to amount is properly rounded down
 rule sharesConversionRoundedDown(uint256 shares) {
 	uint256 amount = convertToAssets(shares);
 	assert convertToShares(amount) <= shares, "Amount converted is too high";
+
+    /* The next assertion shows that the rounding in `convertToShares` is tight.
+     * For example, a function `convertToShares` that always returns zero
+     * would have passed the previous assertion, but not the next one.
+     */
 	assert convertToShares(amount + 1) >= shares, "Amount converted is too low";
 }
 
