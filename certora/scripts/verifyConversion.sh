@@ -16,7 +16,7 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
            AToken:_incentivesController=RewardsControllerHarness \
     --solc solc8.10 \
     --optimistic_loop \
-	--loop_iter 1 \
+    --loop_iter 1 \
     --optimistic_hashing \
     --settings -t=2000,-mediumTimeout=900,-depth=40  \
     --staging \
@@ -25,5 +25,5 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-	--rule_sanity \
-    --msg "Shares to assets conversions"
+    --rule_sanity \
+    --msg "Shares to assets conversions" \

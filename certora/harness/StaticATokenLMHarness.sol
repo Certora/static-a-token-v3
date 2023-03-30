@@ -25,7 +25,6 @@ constructor(
     return _rewardTokens[i];
   }
 
-
   function getrewardsIndexOnLastInteraction(address user, address reward)
   external view returns (uint128) {
     UserRewardsData memory currentUserRewardsData = _userRewardsData[user][reward];
@@ -37,25 +36,21 @@ constructor(
     return _startIndex[reward].lastUpdatedIndex;
   }
 
+  function claimSingleRewardOnBehalf(
+    address onBehalfOf,
+    address receiver,
+    address reward
+  ) external 
+  {
+    address[] memory rewards = new address[](1);
+    rewards[0] = address(reward);
 
-
-  // function claimSingleRewardOnBehalf(
-  //   address onBehalfOf,
-  //   address receiver,
-  //   address reward
-  // ) external 
-  // {
-
-  //   address[] memory rewards = new address[](1);
-  //   rewards[0] = address(reward);
-
-  //     require(
-  //       msg.sender == onBehalfOf ||
-  //       msg.sender == INCENTIVES_CONTROLLER.getClaimer(onBehalfOf),
-  //     StaticATokenErrors.INVALID_CLAIMER
-  //   );
-  //   _claimRewardsOnBehalf(onBehalfOf, receiver, rewards);
-    
-  // }
+      require(
+        msg.sender == onBehalfOf ||
+        msg.sender == INCENTIVES_CONTROLLER.getClaimer(onBehalfOf),
+      StaticATokenErrors.INVALID_CLAIMER
+    );
+    _claimRewardsOnBehalf(onBehalfOf, receiver, rewards);
+  }
 
 }

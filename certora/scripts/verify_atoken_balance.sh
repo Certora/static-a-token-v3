@@ -18,12 +18,12 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
     --optimistic_loop \
 	--loop_iter 1 \
     --optimistic_hashing \
-    --settings -t=2000,-mediumTimeout=900,-depth=40  \
+    --settings -t=7200,-mediumTimeout=20,-depth=20  \
     --staging \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
+	--rule_sanity \
 	--msg "AToken balance is fixed - PARAMETRIC" \
-	--rule aTokenBalanceIsFixed \
