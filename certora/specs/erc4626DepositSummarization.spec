@@ -20,6 +20,8 @@ methods{
 // amount specified by the user. The amount of shares minted would be zero for less than 1AToken worth of assets.
 // STATUS: Verified
 // https://prover.certora.com/output/11775/0c902c255ba748e99e9f7c2f50395706/?anonymousKey=aeb7ec100e687a415dd05c0eb9a45f823ceaeb25
+///@title Deposit amount check for Index > RAY
+///@notice This rule checks that, for index > RAY, the deposit function will deposit upto 1 AToken more than the specified deposit amount
 rule depositCheckIndexGRayAssert1(env e){
     uint256 assets;
     address receiver;
@@ -40,6 +42,8 @@ rule depositCheckIndexGRayAssert1(env e){
 
 // STATUS: Verified
 //  https://prover.certora.com/output/11775/c149a926d08e44b98b05cec42ff97c0c/?anonymousKey=3a094dbfe8370e0ce3242e97cabd57a6df75a8c8
+///@title Deposit amount check for Index == RAY
+///@notice This rule checks that, for index == RAY, the deposit function will deposit upto 1/2AToken more than the amount specified deposit amount
 rule depositCheckIndexERayAssert1(env e){
     uint256 assets;
     address receiver;
@@ -58,9 +62,4 @@ rule depositCheckIndexERayAssert1(env e){
     assert contractAssetBalAfter <= contractAssetBalBefore + assets + index/(2 * RAY());
 }
 
-// use specific/ restricted values for assets/ index
-// harness function to change 
-// munged  the extra emit related code
-// summarize the handleAction function
-// 
 

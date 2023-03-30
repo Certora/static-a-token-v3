@@ -47,6 +47,9 @@ definition RAY() returns uint256 = 10^27;
 // STATUS: Verified, that the amount returned by previewDeposit is exactly equal to that returned by the deposit function.
 //         This is a stronger property than the one required by the EIP.
 // https://vaas-stg.certora.com/output/11775/1488de4bb1e24d37a7972b0c2785df65/?anonymousKey=6f68dd14376fa7d0109ef2687f72d1ef1903dda8
+
+///@title previewDeposit returns the right value
+///@notice EIP4626 dictates that previewDeposit must return as close to and no more than the exact amount of Vault shares that would be minted in a deposit call in the same transaction. The previewDeposit function in staticAToken contract returns a value exactly equal to that returned by the deposit function.
 rule previewDepositAmountCheck(){
     env e1;
     env e2;
@@ -67,6 +70,9 @@ rule previewDepositAmountCheck(){
 
 // STATUS: Verified
 // https://vaas-stg.certora.com/output/11775/05df2a231ec74da28ed10f627d3c7f72/?anonymousKey=70c692cbbf781597e0dc0b53a7d4ed6968bb467a
+
+///@title previewDeposit independent of Allowance
+///@notice This rule checks that the value returned by the previewDeposit function is independent of allowance that the contract might have for transferring assets from any user. The value retunred is the same regardless of the specified asset amount being more than, equal to or less than the allowance.
 rule previewDepositIndependentOfAllowanceApprove()
 {
     env e1;
@@ -105,6 +111,9 @@ rule previewDepositIndependentOfAllowanceApprove()
 // Since maxDeposit is a constant, it cannot have any impact on the previewDeposit value.
 // STATUS: Verified for all f except metaDeposit which has a reachability issue
 // https://vaas-stg.certora.com/output/11775/044c54bdf1c0414898e88d9b03dda5a5/?anonymousKey=aaa9c0c1c413cd1fd3cbb9fdfdcaa20a098274c5
+
+///@title maxDepost is constant
+///@notice This rule verifies that maxDeposit returns a constant value and therefore it cannot have any impact on the previewDeposit value.
 rule maxDepositConstant(method f)
 filtered {
     f -> f.selector != metaDeposit(address,address,uint256,uint16,bool,uint256,(address,address,uint256,uint256,uint8,bytes32,bytes32),(uint8,bytes32,bytes32)).selector
@@ -128,6 +137,8 @@ filtered {
 // STATUS: Verified, that the amount returned by previewDeposit is exactly equal to that returned by the deposit function.
 //         This is a stronger property than the one required by the EIP.
 // https://vaas-stg.certora.com/output/11775/97ed98809a464668b0bfbfb6f6a6277b/?anonymousKey=e8f91f54cebea2f42d809068cf55511670b817d4
+///@title previewMint returns the right value
+///@notice EIP4626 dictates that previewMint must return as close to and no more than the exact amount of assets that would be deposited in a mint call in the same transaction. The previewMint function in staticAToken contract returns a value exactly equal to that returned by the mint function.
 rule previewMintAmountCheck(env e){
     uint256 shares;
     address receiver;
@@ -150,6 +161,8 @@ rule previewMintAmountCheck(env e){
 // STATUS: Verified
 
 // https://vaas-stg.certora.com/output/11775/937cb9bc984947de98c9bf759b483017/?anonymousKey=db3080cc2ddcf91fe3e7dab4d4a56dad24e6bbce
+///@title previewMint independent of Allowance
+///@notice This rule checks that the value returned by the previewMint function is independent of allowance that the contract might have for transferring assets from any user. The value retunred is the same regardless of the equivalent asset amount being more than, equal to or less than the allowance.
 rule previewMintIndependentOfAllowance(){
 // allowance of currentContract for asset transfer from msg.sender to   
     address user;
@@ -194,6 +207,8 @@ rule previewMintIndependentOfAllowance(){
 // STATUS: Verified, that the amount returned by previewWithdraw is exactly equal to that returned by the withdraw function.
 //         This is a stronger property than the one required by the EIP.
 // https://vaas-stg.certora.com/output/11775/444832541b5f4f22ab7373f6de1ee782/?anonymousKey=86856741d701630321afe5bc573fc258bbd99739
+///@title previewWithdraw returns the right value
+///@notice EIP4626 dictates that previewWithdraw must return as close to and no more than the exact amount of shares that would be burned in a withdraw call in the same transaction. The previewWithdraw function in staticAToken contract returns a value exactly equal to that returned by the withdraw function.
 rule previewWithdrawAmountCheck(env e){
     uint256 assets;
     address receiver;
@@ -216,6 +231,8 @@ rule previewWithdrawAmountCheck(env e){
 // STATUS: Verified
 // https://vaas-stg.certora.com/output/11775/50abf537cd134084ab309788a0d4b95a/?anonymousKey=c9cbb863531b85f4a877260997f0acfb770e7e99
 
+///@title previewWithdraw independent of maxWithdraw
+///@notice This rule checks that the value returned by previewWithdraw is independent of the value returned by maxWithdraw.
 rule previewWithdrawIndependentOfMaxWithdraw(env e){
     env e1;
     env e2;
@@ -249,6 +266,9 @@ rule previewWithdrawIndependentOfMaxWithdraw(env e){
 // any user
 // STATUS: Verified
 // https://vaas-stg.certora.com/output/11775/8e8fd50a3fba4018b924eb6d8764d77f/?anonymousKey=3fee78908151c06e470add0ed2a9f4479f9bea7b
+
+///@title previewWithdraw independent of any user's share balance
+///@notice This rule checks that the value returned by the previewWithdraw function is independent of any user's share balance. The value retunred is the same regardless it being >, = or < any user's balance.
 rule previewWithdrawIndependentOfBalance1(){
     env e1;
     env e2;
@@ -275,6 +295,7 @@ rule previewWithdrawIndependentOfBalance1(){
 
 // STATUS: Verified
 // https://vaas-stg.certora.com/output/11775/c686d90f1baf4a77a093d5902125f08f/?anonymousKey=da2ce2f7098c87d89abb767139e689017bd618b1
+
 rule previewWithdrawIndependentOfBalance2(){
     env e1;
     env e2;
@@ -306,6 +327,9 @@ rule previewWithdrawIndependentOfBalance2(){
 // STATUS: Verified, that the amount returned by previewRedeem is exactly equal to that returned by the redeem function.
 //         This is a stronger property than the one required by the EIP.
 // https://vaas-stg.certora.com/output/11775/24e2fe4d485a42618e4e38f0d4376dd2/?anonymousKey=a117a61d3d1dea53fbc875be84292f27af3afd6a
+
+///@title previewRedeem returns the right value
+///@notice EIP4626 dictates that previewRedeem must return as close to and no more than the exact amount of assets that would be returned in a redeem call in the same transaction. The previewRedeem function in staticAToken contract returns a value exactly equal to that returned by the redeem function.
 rule previewRedeemAmountCheck(env e){
     uint256 shares;
     address receiver;
@@ -327,6 +351,9 @@ rule previewRedeemAmountCheck(env e){
 
 // STATUS: Verified
 // https://vaas-stg.certora.com/output/11775/e1d9f84456b04e3caa0c4495f3022bb8/?anonymousKey=d82a8ae9fd795f8206f8c117bf5698079c2239cb
+
+///@title previewRedeem independent of maxRedeem
+///@notice This rule checks that the value returned by the previewRedeem function is independent of the value returned by maxRedeem. The value retunred is the same regardless of it being >, = or < the value returned by maxRedeem.
 rule previewRedeemIndependentOfMaxRedeem1(){
     env e1;
     env e2;
@@ -375,6 +402,9 @@ rule previewRedeemIndependentOfMaxRedeem2(){
 // share amount) for any user.
 // STATUS: Verified
 // https://vaas-stg.certora.com/output/11775/de8e4742dbc44945b94e3a9b8e4375ae/?anonymousKey=65bd53e6365d5dd66f76004a80f45de06f088359
+
+///@title previewRedeem independent of any user's balance
+///@notice This rule checks that the value returned by the previewRedeem function is independent of any user's share balance. The value retunred is the same regardless of it being >, = or < any user's balance.
 rule previewRedeemIndependentOfBalance(){
     env e1;
     env e2;
@@ -412,6 +442,8 @@ rule previewRedeemIndependentOfBalance(){
 // violates #2 above. For any asset amount worth less than 1/2 AToken, the function will not withdrawn anything and not revert. EIP 4626 non compliant for assets < 1/2 AToken.
 // For assets amount worth less than 1/2 AToken 0 assets will be withdrawn. Asset amount worth 1/2 AToken and more the final withdrawn amount would be assets +- 1/2AToken.
 // https://vaas-stg.certora.com/output/11775/a2ff16b9d15d405cb11572afd0ea9413/?anonymousKey=2d51005a275559a456558660e33de6870aa19846
+///@title Allowance and withdrawn amount check for withdraw function
+///@notice This rules checks that the withdraw function burns shares upto the allowance for the msg.sender and that the assets withdrawn are within the specified asset amount +- 1/2ATokens range
 rule withdrawCheck(env e){    
     address owner;
     address receiver;
@@ -453,6 +485,8 @@ rule withdrawCheck(env e){
 */
 // STATUS: VERIFIED
 // https://vaas-stg.certora.com/output/11775/ff8f93d3158f40a5bb27ba35b15e771d/?anonymousKey=c0e02f130ff0d31552c6741d3b1751bda5177bfd
+///@title allowance and minted share amount check for redeem function
+///@notice This rules checks that the redeem function burns shares upto the allowance for the msg.sender and that the shares burned are exactly equal to the specified share amount
 rule redeemCheck(env e){
     uint256 shares;
     address receiver;
@@ -488,6 +522,8 @@ rule redeemCheck(env e){
 */
 // STATUS: VERIFIED
 // https://vaas-stg.certora.com/output/11775/52075caad70145798090e1038b16e6d0/?anonymousKey=b79fa800a2885356277ca6690c723fece38c7b40
+///@title convert to assets function check
+///@notice This rule checks that the convertToAssets function will return the same amount for assets for the given number of shares under all conditions and the calculation will always round down.
 rule convertToAssetsCheck(){
     env e1;
     env e2;
@@ -519,6 +555,8 @@ rule convertToAssetsCheck(){
 */
 // STATUS: VERIFIED
 // https://vaas-stg.certora.com/output/11775/a75adca8d9914e80bf09bbaeb168f0f8/?anonymousKey=34ac3fe43e28e4722c7d4211af6e3e1077dc3b22
+///@title convert to shares function check
+///@notice This rule checks that the convertToShares function will return the same amount for shares for the given number of assets under all conditions and the calculation will always round down.
 rule convertToSharesCheck(){
     env e1;
     env e2;
@@ -550,6 +588,8 @@ rule convertToSharesCheck(){
 
 // STATUS: VERIFIED
 // https://vaas-stg.certora.com/output/11775/58b7ee5ca6b34fa9a3cfe99885c87058/?anonymousKey=0ac1508681a604839aae8a2035f213d1d83b355c
+///@title maxWithdraw function check
+///@notice The rule checks that the maxWithdraw function should, as per the EIP4626 spec, return the maximum amount of assets that could be transferred from owner through withdraw and not cause a revert, which MUST NOT be higher than the actual maximum that would be accepted.
 rule maxWithdrawCheck(){
     address owner;
     uint256 maxAssets = maxWithdraw(owner);
@@ -570,6 +610,8 @@ rule maxWithdrawCheck(){
 
 // STATUS: VERIFIED
 // https://vaas-stg.certora.com/output/11775/50ecde42577f4d5b85cf8b0dcd3f34d9/?anonymousKey=8c2e9d6bc0407b7e7d5406f5fc38267dbc2dd42f
+///@title maxRedeem function check
+///@notice This rules checks that the maxRedeem function, as per the EIP4626 spec, returns the maximum amount of shares that could be transferred from owner through redeem and not cause a revert, which MUST NOT be higher than the actual maximum that would be accepted (it should underestimate if necessary.
 rule maxRedeemCheck(){
     address owner;
     uint256 maxRed = maxRedeem(owner);
