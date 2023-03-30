@@ -128,6 +128,8 @@ ghost sumAllATokenScaledBalance() returns mathint {
     init_state axiom sumAllATokenScaledBalance() == 0;
 }
 
+
+/// @dev sample struct UserState {uint128 balance; uint128 additionalData; }
 hook Sstore _AToken._userState[KEY address a] .(offset 0) uint128 balance (uint128 old_balance) STORAGE {
   havoc sumAllATokenScaledBalance assuming sumAllATokenScaledBalance@new() == sumAllATokenScaledBalance@old() + balance - old_balance;
 }
@@ -138,6 +140,11 @@ hook Sload uint128 balance _AToken._userState[KEY address a] .(offset 0) STORAGE
 
 
 /// @title Static AToeknLM balancerOf(user) <= totalSupply()
+//add explanation
+//pass with rule_sanity basic except metaDeposit()
+//https://vaas-stg.certora.com/output/99352/50b06419651b484393edadcb4d9c7eec/?anonymousKey=4c13f13bb792f11a1a73b1a9f85674a7beadce3c
+//https://vaas-stg.certora.com/output/99352/864a523dbba54186a390ea406d75110a/?anonymousKey=ba778aecce621d71de3e06d663acbc6b29857180
+
 invariant inv_balanceOf_leq_totalSupply(address user)
 	balanceOf(user) <= totalSupply()
 	{
@@ -149,16 +156,22 @@ invariant inv_balanceOf_leq_totalSupply(address user)
 
 /// @title a registered token in StaticATokenLM must exist in RewardsController._assets.[_atoken].availableRewards
 /// @dev May fail becuase RewardsController can store the given reward at any index other than zero
+//todo: check why it doesnt fail. it may fail with loop_iter=2
+//error with --loop_iter=2 --rule_sanity basic
+//https://vaas-stg.certora.com/output/99352/1719ac7a4e0943da9f9db0734696f14f/?anonymousKey=96f51b50dea2f5e8a6527b9817613207b7bacfdc
+
 invariant registered_reward_exists_in_controller(address reward)
     (isRegisteredRewardToken(reward) =>  
     (_RewardsController.getAvailableRewardsCount(_AToken)  > 0
     && _RewardsController.getRewardsByAsset(_AToken, 0) == reward))
     {
-        //fail on initialized. Prerseve block causes CVL compilation error - CERT-1703
-        // preserved initialize(address newAToken,string staticATokenName, string staticATokenSymbol) {
+        // 
+        // Currently fail on initialized.
+        // Todo - remove this comment when  CERT-1706
+        //preserved initialize(address newAToken,string staticATokenName, string staticATokenSymbol) {
         //     require newAToken == _AToken;
         // }
-        //runtime error - CERT-1706
+        //runtime error -  CERT-1703
         // preserved initialize(address newAToken,string staticATokenName, string staticATokenSymbol) {
         //     require false;
         // }
@@ -168,6 +181,8 @@ invariant registered_reward_exists_in_controller(address reward)
 
 /// @title AToken balancerOf(user) <= AToken totalSupply()
 //timeout on redeem metaWithdraw
+//error when running with rule_sanity
+//https://vaas-stg.certora.com/output/99352/509a56a1d46348eea0872b3a57c4d15a/?anonymousKey=3e15ac5a5b01e689eb3f71580e3532d8098e71b5
 invariant inv_atoken_balanceOf_leq_totalSupply(address user)
 	_AToken.balanceOf(user) <= _AToken.totalSupply()
      filtered { f -> !f.isView && f.selector != redeem(uint256,address,address,bool).selector}
@@ -179,6 +194,7 @@ invariant inv_atoken_balanceOf_leq_totalSupply(address user)
 
 /// @title AToken balancerOf(user) <= AToken totalSupply()
 /// @dev case split of inv_atoken_balanceOf_leq_totalSupply
+//pass, times out with rule_sanity basic
 invariant inv_atoken_balanceOf_leq_totalSupply_redeem(address user)
 	_AToken.balanceOf(user) <= _AToken.totalSupply()
     filtered { f -> f.selector == redeem(uint256,address,address,bool).selector}
@@ -188,6 +204,8 @@ invariant inv_atoken_balanceOf_leq_totalSupply_redeem(address user)
     	}
 	}
 
+//timeout when running with rule_sanity
+//https://vaas-stg.certora.com/output/99352/7840410509f94183bbef864770193ed9/?anonymousKey=b1a13994a4e51f586db837cc284b39c670532f50
 /// @title AToken sum of 2 balancers <= AToken totalSupply()
 invariant inv_atoken_balanceOf_2users_leq_totalSupply(address user1, address user2)
 	(_AToken.balanceOf(user1) + _AToken.balanceOf(user2))<= _AToken.totalSupply()
@@ -224,6 +242,8 @@ invariant inv_atoken_balanceOf_2users_leq_totalSupply(address user1, address use
 	}
 
 /// @title AToken scaledBalancerOf(user) <= AToken scaledTotalSupply()
+//pass with rule_sanity basic except metaDeposit()
+//https://vaas-stg.certora.com/output/99352/6798b502f97a4cd2b05fce30947911c0/?anonymousKey=c5808a8997a75480edbc45153165c8763488cd1e
 invariant inv_atoken_scaled_balanceOf_leq_totalSupply(address user)
 	_AToken.scaledBalanceOf(user) <= _AToken.scaledTotalSupply()
     {
@@ -233,10 +253,14 @@ invariant inv_atoken_scaled_balanceOf_leq_totalSupply(address user)
 	}
 
 /// @title Sum of balances=totalSupply()
+//pass with rule_sanity basic except metaDeposit()
+//https://vaas-stg.certora.com/output/99352/dc5165bb78374b3093fb5c90cd259be3/?anonymousKey=00cfd5d6c8999bf449630d2c63bdec082f292c7c
 invariant sumAllBalance_eq_totalSupply()
 	sumAllBalance() == totalSupply()
 
 /// @title Sum of AToken scaled balances = AToken scaled totalSupply()
+//pass with rule_sanity basic except metaDeposit()
+//https://vaas-stg.certora.com/output/99352/4f91637a96d647baab9accb1093f1690/?anonymousKey=53ccda4a9dd8988205d4b614d9989d1e4148533f
 invariant sumAllATokenScaledBalance_eq_totalSupply()
 	sumAllATokenScaledBalance() == _AToken.scaledTotalSupply()
 
@@ -255,15 +279,14 @@ function setup(env e, address user)
     require _RewardsController.getRewardsByAsset(_AToken, 0) == _DummyERC20_rewardToken;
 
     require currentContract != e.msg.sender;
-    require _AToken != e.msg.sender;
-    require _RewardsController != e.msg.sender;
-    require _DummyERC20_aTokenUnderlying  != e.msg.sender;
-    require _DummyERC20_rewardToken != e.msg.sender;
-    require _SymbolicLendingPoolL1 != e.msg.sender;
-    require _TransferStrategy != e.msg.sender;
-    require _ScaledBalanceToken != e.msg.sender;
-    require _TransferStrategy != e.msg.sender;
-   
+    // require _AToken != e.msg.sender;
+    // require _RewardsController != e.msg.sender;
+    // require _DummyERC20_aTokenUnderlying  != e.msg.sender;
+    // require _DummyERC20_rewardToken != e.msg.sender;
+    // require _SymbolicLendingPoolL1 != e.msg.sender;
+    // require _TransferStrategy != e.msg.sender;
+    // require _ScaledBalanceToken != e.msg.sender;
+    
 
     require currentContract != user;
     require _AToken != user;
@@ -279,6 +302,9 @@ function setup(env e, address user)
 //pass
 /// @title correct accrued value is fetched
 /// @notice assume a single asset
+//pass with rule_sanity basic except metaDeposit()
+//https://vaas-stg.certora.com/output/99352/ab6c92a9f96d4327b52da331d634d3ab/?anonymousKey=abb27f614a8656e6e300ce21c517009cbe0c4d3a
+//https://vaas-stg.certora.com/output/99352/d8c9a8bbea114d5caad43683b06d8ba0/?anonymousKey=a079d7f7dd44c47c05c866808c32235d56bca8e8
 invariant singleAssetAccruedRewards(env e0, address asset, address reward, address user)
     ((_RewardsController.getAssetListLength() == 1 && _RewardsController.getAssetByIndex(0) == asset)
         => (_RewardsController.getUserAccruedReward(asset, reward, user) == _RewardsController.getUserAccruedRewards(reward, user)))
@@ -296,8 +322,10 @@ invariant singleAssetAccruedRewards(env e0, address asset, address reward, addre
         }
 
 
-//pass
+
 /// @title Claiming rewards should not affect totalAssets() 
+//pass with --rule_sanity basic
+//https://vaas-stg.certora.com/output/99352/4df615c845e2445b8657ece2db477ce5/?anonymousKey=76379915d60fc1056ed4e5b391c69cd5bba3cce0
 rule totalAssets_stable(method f)
     filtered { f -> (f.selector == claimRewardsToSelf(address[]).selector ||
                     f.selector == claimRewards(address, address[]).selector ||
@@ -312,6 +340,7 @@ rule totalAssets_stable(method f)
 }
 
 //pass
+//https://vaas-stg.certora.com/output/99352/e67815032b314538b3eeca0fbd382ad6/?anonymousKey=b11c03daeef3c12990c8d5458335c4aab01bc673
 /// @title Claiming rewards should not affect totalAssets() 
 /// @dev case splitting
 rule totalAssets_stable_after_collectAndUpdateRewards()
@@ -327,8 +356,10 @@ rule totalAssets_stable_after_collectAndUpdateRewards()
 }
 
 
-//pass
 /// @title Receiving ATokens does not affect the amount of rewards fetched by collectAndUpdateRewards()
+//pass
+//timeout with rule_sanity 
+//https://vaas-stg.certora.com/output/99352/7d2ce2bb69ad4d71b4a179daa08633e4/?anonymousKey=7446e8a015ea9aa79cbc542c10b932e04169a0ab
 rule reward_balance_stable_after_collectAndUpdateRewards()
 {
     env e;
@@ -347,6 +378,8 @@ rule reward_balance_stable_after_collectAndUpdateRewards()
     assert reward_balance_before == reward_balance_after;
 }
 
+//timeout with rule_sanity
+//https://vaas-stg.certora.com/output/99352/5fc909b8815c4cfbaddb61c2197e8663/?anonymousKey=e560e7071843fad5b3967eac0d22c81c77bb06bd
 // timeout on mint, redeem, deposit, withdraw
 /// @title getTotalClaimableRewards() is stable unless rewards were claimed
 rule totalClaimableRewards_stable(method f)
@@ -366,8 +399,7 @@ rule totalClaimableRewards_stable(method f)
     require _SymbolicLendingPoolL1 != e.msg.sender;
     require _TransferStrategy != e.msg.sender;
     require _ScaledBalanceToken != e.msg.sender;
-    require _TransferStrategy != e.msg.sender;
-
+    
     require currentContract != reward;
     require _AToken != reward;
     require _RewardsController !=  reward;
@@ -387,6 +419,8 @@ rule totalClaimableRewards_stable(method f)
 
 //should fail
 //timeout
+//timeout with rule_sanity
+//https://vaas-stg.certora.com/output/99352/b7649460e64f4bee991a0a480b6240ee/?anonymousKey=36b52f602c157e15e357b5f0202ed5cb42d38771
 rule totalClaimableRewards_stable_SANITY(method f)
     filtered { f -> f.selector == claimRewardsOnBehalf(address, address,address[]).selector   }
 {
@@ -404,8 +438,7 @@ rule totalClaimableRewards_stable_SANITY(method f)
     require _SymbolicLendingPoolL1 != e.msg.sender;
     require _TransferStrategy != e.msg.sender;
     require _ScaledBalanceToken != e.msg.sender;
-    require _TransferStrategy != e.msg.sender;
-
+    
     require currentContract != reward;
     require _AToken != reward;
     require _RewardsController !=  reward;
@@ -424,8 +457,7 @@ rule totalClaimableRewards_stable_SANITY(method f)
 
 
 //fail
-//https://vaas-stg.certora.com/output/99352/ba0861e8dc5041798c08c829609172dd/?anonymousKey=7cea930ea4c17235e0c56ca78bd50bc58207ae07
-//https://vaas-stg.certora.com/output/99352/fd3b2507ac5546b4b1155c95ddeebb56/?anonymousKey=3ad66ba03ecfaf49d9c0258e60b8f4ef47a24e16
+//totalClaimableRewards_stable_after_initialized
 /// @title getTotalClaimableRewards() is stable after initialized()
 rule totalClaimableRewards_stable_after_initialized()
 {
@@ -446,8 +478,7 @@ rule totalClaimableRewards_stable_after_initialized()
     require _SymbolicLendingPoolL1 != e.msg.sender;
     require _TransferStrategy != e.msg.sender;
     require _ScaledBalanceToken != e.msg.sender;
-    require _TransferStrategy != e.msg.sender;
-
+    
     require currentContract != reward;
     require _AToken != reward;
     require _RewardsController !=  reward;
@@ -467,7 +498,11 @@ rule totalClaimableRewards_stable_after_initialized()
     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
 }
 
-//todo: add rules for redeem, mint
+//todo: add separate rules for redeem, mint
+//pass with rule_sanity basic, except metaDeposit, timeout withdraw(uint256,address,address)
+//https://vaas-stg.certora.com/output/99352/ee42e7f2603740de96a8a0aaf7c676ff/?anonymousKey=f7aaa1b8ed030a8f600136ec0b94ae0bc81a0e0c
+//pass
+//https://vaas-stg.certora.com/output/99352/109a4a815a9a4c3abcee760bf77c5f7d/?anonymousKey=f215580ed8e698028fdedecf096752c7a3e9363c
 rule getClaimableRewards_stable(method f)
     filtered { f -> !f.isView
                     && !claimFunctions(f)
@@ -486,16 +521,15 @@ rule getClaimableRewards_stable(method f)
  
     require user != 0;
 
-    require currentContract != e.msg.sender;
-    require _AToken != e.msg.sender;
-    require _RewardsController != e.msg.sender;
-    require _DummyERC20_aTokenUnderlying  != e.msg.sender;
-    require _DummyERC20_rewardToken != e.msg.sender;
-    require _SymbolicLendingPoolL1 != e.msg.sender;
-    require _TransferStrategy != e.msg.sender;
-    require _ScaledBalanceToken != e.msg.sender;
-    require _TransferStrategy != e.msg.sender;
-
+    // require currentContract != e.msg.sender;
+    // require _AToken != e.msg.sender;
+    // require _RewardsController != e.msg.sender;
+    // require _DummyERC20_aTokenUnderlying  != e.msg.sender;
+    // require _DummyERC20_rewardToken != e.msg.sender;
+    // require _SymbolicLendingPoolL1 != e.msg.sender;
+    // require _TransferStrategy != e.msg.sender;
+    // require _ScaledBalanceToken != e.msg.sender;
+    
     require currentContract != user;
     require _AToken != user;
     require _RewardsController !=  user;
@@ -525,6 +559,8 @@ rule getClaimableRewards_stable(method f)
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
 
+//fail
+//https://vaas-stg.certora.com/output/99352/1135c805b86b4a269dc28d822c6d1871/?anonymousKey=2c5aa6cc2ec507b70793d0ccecefa1aa74c61db0
 rule getClaimableRewards_stable_SANITY(method f)
     filtered { f -> //claimFunctions(f)
                     f.selector == claimRewardsOnBehalf(address, address,address[]).selector   
@@ -545,8 +581,7 @@ rule getClaimableRewards_stable_SANITY(method f)
     require _SymbolicLendingPoolL1 != e.msg.sender;
     require _TransferStrategy != e.msg.sender;
     require _ScaledBalanceToken != e.msg.sender;
-    require _TransferStrategy != e.msg.sender;
-
+    
     require currentContract != user;
     require _AToken != user;
     require _RewardsController !=  user;
@@ -576,22 +611,22 @@ rule getClaimableRewards_stable_SANITY(method f)
 }
 
 
-
+//pass with rule_sanity basic
+//https://vaas-stg.certora.com/output/99352/8c515f3691e74a3e987b6a46b4f58a90/?anonymousKey=046fb50a9835c09af77408c1621e8e664669e031
 rule getClaimableRewards_stable_after_deposit()
 {
     env e;
     address user;
     address reward;
-    require currentContract != e.msg.sender;
-    require _AToken != e.msg.sender;
-    require _RewardsController != e.msg.sender;
-    require _DummyERC20_aTokenUnderlying  != e.msg.sender;
-    require _DummyERC20_rewardToken != e.msg.sender;
-    require _SymbolicLendingPoolL1 != e.msg.sender;
-    require _TransferStrategy != e.msg.sender;
-    require _ScaledBalanceToken != e.msg.sender;
-    require _TransferStrategy != e.msg.sender;
-
+    // require currentContract != e.msg.sender;
+    // require _AToken != e.msg.sender;
+    // require _RewardsController != e.msg.sender;
+    // require _DummyERC20_aTokenUnderlying  != e.msg.sender;
+    // require _DummyERC20_rewardToken != e.msg.sender;
+    // require _SymbolicLendingPoolL1 != e.msg.sender;
+    // require _TransferStrategy != e.msg.sender;
+    // require _ScaledBalanceToken != e.msg.sender;
+    
     uint256 assets;
     address recipient;
     uint16 referralCode;
@@ -636,7 +671,9 @@ rule getClaimableRewards_stable_after_deposit()
 }
 
 
-//should fail
+//fail as expected
+//https://vaas-stg.certora.com/output/99352/1135c805b86b4a269dc28d822c6d1871/?anonymousKey=2c5aa6cc2ec507b70793d0ccecefa1aa74c61db0
+//todo: verify the fail root-cause
 rule getClaimableRewards_stable_after_deposit_SANITY()
 {
     env e;
@@ -650,8 +687,7 @@ rule getClaimableRewards_stable_after_deposit_SANITY()
     require _SymbolicLendingPoolL1 != e.msg.sender;
     require _TransferStrategy != e.msg.sender;
     require _ScaledBalanceToken != e.msg.sender;
-    require _TransferStrategy != e.msg.sender;
-
+    
     uint256 assets;
     address recipient;
     uint16 referralCode;
@@ -696,6 +732,8 @@ rule getClaimableRewards_stable_after_deposit_SANITY()
 
 
 // timeout
+// timeout with rule_sanity
+//https://vaas-stg.certora.com/output/99352/3a8f3cb41d244c7bbff58d03d6e933ca/?anonymousKey=991cd5e8f3ae50d167220adc04f2cff31b1e76ae
 //todo: remove
 /// @title getClaimableRewards() is stable unless rewards were claimed
 /// @dev case splitting
@@ -718,6 +756,8 @@ rule getClaimableRewards_stable_after_atoken_transferFrom()
 
 
 // timeout
+//timeout with rule sanity
+//https://vaas-stg.certora.com/output/99352/fc7a6df8eaa04c9e80eb213e0c279ce9/?anonymousKey=80cca37444f2f933f7c28df9075cdb0cc3d575bc
 //todo: remove
 /// @title getClaimableRewards() is stable unless rewards were claimed
 /// @dev case splitting, call setup()
@@ -742,6 +782,7 @@ rule getClaimableRewards_stable_after_atoken_transferFrom_1()
  
 /// @title special case of rule getClaimableRewards_stable for initialize
 //fail
+//https://vaas-stg.certora.com/output/99352/e6d2c3c3eba84ff0adceacb6c4117a87/?anonymousKey=51ee72a41e2936755decbef08a134c348c368097
 //todo: consider removing this rule. no method is called before initialize()
 /// @title getClaimableRewards() is stable after initialize()
 /// @dev case splitting
@@ -774,7 +815,8 @@ rule getClaimableRewards_stable_after_initialize(method f)
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
 //todo: remove
-//pass
+//pass with --loop_iter=2 --rule_sanity basic
+//https://vaas-stg.certora.com/output/99352/290a1108baa64316ac4f20b5501b4617/?anonymousKey=930379a90af5aa498ec3fed2110a08f5c096efb3
 /// @title getClaimableRewards() is stable unless rewards were claimed
 /// @dev case splitting, call setup()
 rule getClaimableRewards_stable_after_refreshRewardTokens()
@@ -788,14 +830,14 @@ rule getClaimableRewards_stable_after_refreshRewardTokens()
     mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
     refreshRewardTokens(e);
 
-    setup(e, user);    
+    //setup(e, user);    
 
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
 }
 
-
-
+// pass with rule_sanity
+//https://vaas-stg.certora.com/output/99352/0bb74dd0bccd458597bd9bf79c26e98c/?anonymousKey=26ea39f49871aa2ecf8e076b534735a4cc9cfe7d
 /// @title The amount of rewards that was actually received by claimRewards() cannot exceed the initial amount of rewards
 rule getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf(method f)
 {   

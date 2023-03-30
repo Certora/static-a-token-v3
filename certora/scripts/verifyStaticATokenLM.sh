@@ -25,8 +25,7 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                solidity-utils=lib/solidity-utils/src \
                openzeppelin-contracts=lib/openzeppelin-contracts \
     --send_only \
-    --rule  inv_balanceOf_leq_totalSupply   \
-    --msg "  inv_balanceOf_leq_totalSupply "
+    --msg "  ALL  no Sload .  no require about e.msg.sender "
 
 
 #--rule_sanity advanced \
