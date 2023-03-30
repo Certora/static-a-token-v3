@@ -20,12 +20,12 @@ methods
  * where a=assets, s=shares, R=RAY, r=rate.
  * 
  * These imply:
- * - `a * R - r <= S(a) * r <= a * R    a*R/r - 1 <= S(a) <= a*R/r`
- * - `s * r - R <= A(s) * R <= s * r    s*r/R - 1 <= A(s) <= s*r/R`
+ * - `a * R - r < S(a) * r <= a * R    a*R/r - 1 < S(a) <= a*R/r`
+ * - `s * r - R < A(s) * R <= s * r    s*r/R - 1 < A(s) <= s*r/R`
  * 
  * Hence:
- * - `A(S(a)) >= S(a)*r/R - 1 >= (a*R/r - 1)*r/R - 1 = (a*R - r)/R - 1 = a - r/R - 1`
- * - `S(A(s)) >= A(s)*R/r - 1 >= (s*r/R - 1)*R/r - 1 = (s*r - R)/r - 1 = s - R/r - 1`
+ * - `A(S(a)) > S(a)*r/R - 1 > (a*R/r - 1)*r/R - 1 = (a*R - r)/R - 1 = a - r/R - 1`
+ * - `S(A(s)) > A(s)*R/r - 1 > (s*r/R - 1)*R/r - 1 = (s*r - R)/r - 1 = s - R/r - 1`
  */
 
 definition RAY() returns uint256 = (10 ^ 27);
@@ -57,8 +57,10 @@ rule sharesConversionRoundedDown(uint256 shares) {
 }
 
 
-// Converting amount to shares and back to amount is preserved (up to rounding).
-/// @formula The precision depends on the ratio `rate/RAY`.
+/**
+ * @title Inequality for conversion of amount to shares and back
+ * Note the precision depends on the ratio **`rate / RAY`**.
+ */
 rule amountConversionPreserved(uint256 amount) {
  	mathint mathamount = to_mathint(amount);
  	mathint converted = to_mathint(convertToAssets(convertToShares(amount)));
@@ -68,19 +70,22 @@ rule amountConversionPreserved(uint256 amount) {
  }
  
 
-// Converting shares to amount and back to shares is preserved up to RAY.
-/// @formula The precision depends on the ratio `RAY/rate`.
+/**
+ * @title Inequality for conversion of shares to amount and back
+ * Note the precision depends on the ratio **`RAY / rate`**.
+ */
 rule sharesConversionPreserved(uint256 shares) {
 	mathint mathshares = to_mathint(shares);
 	uint256 amount = convertToAssets(shares);
 	mathint converted = to_mathint(convertToShares(amount));
 
-	// That converted <= mathshare was proved in sharesConversionRoundedDown.
+	// That `converted <= mathshare` was proved in `sharesConversionRoundedDown`
 	assert mathshares - converted <= 1 + RAY() / rate(), "Too few converted shares";
 }
 
 
-/* Joining and splitting accounts provides limited advantage.
+/** 
+ * @title Joining and splitting shares provides limited advantage
  * This rule verifies that joining accounts (by combining shares), and splitting accounts
  * (by splitting shares between accounts) provides limited advantage when converting to
  * asset amounts.
@@ -93,12 +98,22 @@ rule accountsJoiningSplittingIsLimited(uint256 shares1, uint256 shares2) {
     uint256 jointAmount = convertToAssets(jointShares);
 
     assert jointAmount >= amount1 + amount2, "Found advantage in combining accounts";
+
+    /* Example as to why the following assertion should be true. Suppose conversion of shares
+     * to assets is division by 2 rounded down, and suppose shares1 = shares2 = 11.
+     * Then amount1 + amount2 = 5 + 5 = 10, but jointAmount = 22 // 2 = 11.
+     */
     assert jointAmount < amount1 + amount2 + 2, "Found advantage in splitting accounts";
-    // The following assertion fails (as expected):
-    // assert jointAmount < amount1 + amount2 + 1, "Found advantage in splitting accounts";
+
+    /* The following assertion fails (as expected):
+     * assert jointAmount < amount1 + amount2 + 1, "Found advantage in splitting accounts";
+     */
 }
 
-// Similar rule as above for shares
+/** 
+ * @title Joining and splitting assets provides limited advantage
+ * Similar to `accountsJoiningSplittingIsLimited` rule.
+ */
 rule convertSumOfAssetsPreserved(uint256 assets1, uint256 assets2) {
     uint256 shares1 = convertToShares(assets1);
     uint256 shares2 = convertToShares(assets2);
@@ -110,7 +125,7 @@ rule convertSumOfAssetsPreserved(uint256 assets1, uint256 assets2) {
 	assert jointShares < shares1 + shares2 + 2, "Convert sum of assets far smaller than parts";
 }
 
-// Ensure that maxWithdraw and maxRedeem are in line with the conversion functions.
+/// @title Ensure `maxWithdraw` and `maxRedeem` conform to conversion functions
 rule maxWithdrawRedeemCompliance(address owner) {
     uint256 shares = balanceOf(owner);
     uint256 amountConverted = convertToAssets(shares);
@@ -120,22 +135,22 @@ rule maxWithdrawRedeemCompliance(address owner) {
 }
 
 
-// Ensure that previewWithdraw and previewRedeem are in line with the conversion functions.
+/// @title Ensure `previewWithdraw` and `previewRedeem` conform to conversion functions
 rule previewWithdrawRedeemCompliance(uint256 value) {
     env e;
     uint256 assets = convertToAssets(value);
     uint256 shares = convertToShares(value);
 
     assert previewWithdraw(e, value) >= shares, "Preview withdraw takes less shares than converted";
-    assert previewRedeem(e, value) <= assets, "Preview redeem yields more assets than converted";
-
-	// The following rules protect the client.
     assert previewWithdraw(e, value) <= shares + 1, "Preview withdraw costs too many shares";
+
+    assert previewRedeem(e, value) <= assets, "Preview redeem yields more assets than converted";
 	assert previewRedeem(e, value) + 1 + rate() / RAY() >= assets, "Preview redeem yields too few assets";
 }
 
 
 /**
+ * @title `previewWithdraw` is nearly `withdraw`
  * @notice From ERC4626:
  * > previewWithdraw ... MUST return as close to and no fewer than the exact amount of Vault 
  * > shares that would be burned in a withdraw call in the same transaction. I.e. withdraw
@@ -154,6 +169,7 @@ rule previewWithdrawNearlyWithdraw(uint256 assets) {
 
 
 /**
+ * @title `previewRedeem` is nearly `redeem`
  * @notice From ERC4626:
  * > previewRedeem ... MUST return as close to and no more than the exact amount
  * >  of assets that would be withdrawn in a redeem call in the same transaction.
@@ -208,7 +224,7 @@ rule previewRedeemNearlyRedeem(uint256 shares) {
 //}
 
 
-// Redeeming sum of assets is nearly equal to sum of redeeming
+/// @title Redeeming sum of assets is nearly equal to sum of redeeming
 rule redeemSum(uint256 shares1, uint256 shares2) {
     env e;
 	address owner = e.msg.sender;  // Handy alias
@@ -218,5 +234,9 @@ rule redeemSum(uint256 shares1, uint256 shares2) {
 	uint256 assetsSum = redeem(e, shares1 + shares2, owner, owner);
 
 	assert assetsSum >= assets1 + assets2, "Redeemed sum smaller than parts";
+
+    /* See `accountsJoiningSplittingIsLimited` rule for why the following assertion
+     * is correct.
+     */
 	assert assetsSum < assets1 + assets2 + 2, "Redeemed sum far larger than parts";
 }
