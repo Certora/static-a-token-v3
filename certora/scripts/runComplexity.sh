@@ -7,5 +7,4 @@ certoraRun src/StaticATokenLM.sol \
     --packages aave-v3-core=lib/aave-v3-core \
                 aave-v3-periphery=lib/aave-v3-periphery \
                 solidity-utils/contracts=lib/solidity-utils/src/contracts \
-    --send_only \
     --msg "StaticATokenLM complexity check"
