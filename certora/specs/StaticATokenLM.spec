@@ -147,16 +147,20 @@ invariant inv_balanceOf_leq_totalSupply(address user)
 	}
 
 
-/// @title a registered token in StaticATokenLM must exist in RewardsController._assets.[].availableRewards
-/// @dev Should fail becuase RewardsController can store the given reward at any index other than zero
+/// @title a registered token in StaticATokenLM must exist in RewardsController._assets.[_atoken].availableRewards
+/// @dev May fail becuase RewardsController can store the given reward at any index other than zero
 invariant registered_reward_exists_in_controller(address reward)
     (isRegisteredRewardToken(reward) =>  
     (_RewardsController.getAvailableRewardsCount(_AToken)  > 0
     && _RewardsController.getRewardsByAsset(_AToken, 0) == reward))
     {
-        //fail on initialized. Prerseve block causes CVL compilation error - CERT-1706
+        //fail on initialized. Prerseve block causes CVL compilation error - CERT-1703
         // preserved initialize(address newAToken,string staticATokenName, string staticATokenSymbol) {
         //     require newAToken == _AToken;
+        // }
+        //runtime error - CERT-1706
+        // preserved initialize(address newAToken,string staticATokenName, string staticATokenSymbol) {
+        //     require false;
         // }
     }
 
@@ -811,6 +815,38 @@ rule getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf(method f)
     assert deltaBalance <= claimableRewardsBefore;
 }
 
+//from unregistered_atoken.spec
+// fail
+//todo: remove 
+rule claimable_leq_total_claimable() {
+    require _RewardsController.getAvailableRewardsCount(_AToken) == 1;
+    
+	require _RewardsController.getRewardsByAsset(_AToken, 0) == _DummyERC20_rewardToken;
+
+    env e;
+    address user;
+   
+    require currentContract != user;
+    require _AToken != user;
+    require _RewardsController != user;
+    require _DummyERC20_aTokenUnderlying  != user;
+    require _DummyERC20_rewardToken != user;
+    require _SymbolicLendingPoolL1 != user;
+    require _TransferStrategy != user;
+    require _ScaledBalanceToken != user;
+    require _TransferStrategy != user;
+
+    requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
+    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
+    
+
+    require getrewardsIndexOnLastInteraction(e, user, _DummyERC20_rewardToken) == 0;
+    require getUnclaimedRewards(e, user, _DummyERC20_rewardToken) == 0;
+    
+    uint256 total = getTotalClaimableRewards(e, _DummyERC20_rewardToken);
+    uint256 claimable = getClaimableRewards(e, user, _DummyERC20_rewardToken);
+    assert claimable <= total, "Too much claimable";
+}
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
