@@ -1,110 +1,75 @@
-import "erc20.spec"
+import "methods_base.spec"
 
+/// Latest run succeeded (with rule_sanity): job-id=`9c3c36b91b594b0f9a57c21e2d667979`
 
 methods
 {
-    /*******************
-    *     envfree      *
-    ********************/
+	// envfree
+	// -------
 	rate() returns (uint256) envfree
 	convertToShares(uint256 amount) returns (uint256) envfree
 	convertToAssets(uint256 amount) returns (uint256) envfree
+}
 
-    balanceOf(address owner) returns (uint256) envfree
-    maxWithdraw(address owner) returns (uint256) envfree
-    maxRedeem(address owner) returns (uint256) envfree
-
-    /*******************
-    *     Pool.sol     *
-    ********************/
-
-    //in RewardsDistributor.sol called by RewardsController.sol
-    getAssetIndex(address, address) returns (uint256, uint256) =>  DISPATCHER(true)
-
-    //in RewardsDistributor.sol called by RewardsController.sol
-    finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET  
-
-    //in ScaledBalanceTokenBase.sol called by getAssetIndex
-    scaledTotalSupply() returns (uint256)  => DISPATCHER(true) 
-    
-    /**********************************
-    *     RewardsController.sol     *
-    **********************************/
-    //call by RewardsController.IncentivizedERC20.sol and also by StaticATokenLM.sol
-    handleAction(address,uint256,uint256) => DISPATCHER(true)
-
-    // called by  StaticATokenLM.claimRewardsToSelf  -->  RewardsController._getUserAssetBalances
-    // get balanceOf and totalSupply of _aToken
-    // todo - link to the actual token.
-    getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => DISPATCHER(true)
-
-    // called by StaticATokenLM.collectAndUpdateRewards --> RewardsController._transferRewards()
-    //implemented as simple transfer() in TransferStrategyHarness
-    performTransfer(address,address,uint256) returns (bool) =>  DISPATCHER(true)
-
- }
-
-/* Latest run succeeded (without rule_sanity):
- * https://vaas-stg.certora.com/output/98279/ea328af594d24ad49a4e23519ca59172?anonymousKey=c3eaa5b7731775680b95c88fab035485a145cf29
- * With rule sanity - redeemSum and previewWithdrawNearlyWithdraw timed out:
- * https://vaas-stg.certora.com/output/98279/fd6985c3fe384be1a9d27df93632ede6?anonymousKey=b024adf8aaa95430cd4e6e1d285db399a979902f
- * With rule sanityy - redeemSum and previewWithdrawNearlyWithdraw only:
- * https://vaas-stg.certora.com/output/98279/73356e092d3f45e48d6e0adf4988beeb?anonymousKey=0adf45f0ed985353a3dd8616e804b6dfd26f9952
+/**
+ * @notice A note on the conversion functions
+ * ------------------------------------------
+ * The conversion functions are:
+ * - assets to shares = `S(a) = (a * R) // r`
+ * - shares to assets = `A(s) = (s * r) // R`
+ * where a=assets, s=shares, R=RAY, r=rate.
+ * 
+ * These imply:
+ * - `a * R - r <= S(a) * r <= a * R    a*R/r - 1 <= S(a) <= a*R/r`
+ * - `s * r - R <= A(s) * R <= s * r    s*r/R - 1 <= A(s) <= s*r/R`
+ * 
+ * Hence:
+ * - `A(S(a)) >= S(a)*r/R - 1 >= (a*R/r - 1)*r/R - 1 = (a*R - r)/R - 1 = a - r/R - 1`
+ * - `S(A(s)) >= A(s)*R/r - 1 >= (s*r/R - 1)*R/r - 1 = (s*r - R)/r - 1 = s - R/r - 1`
  */
-
 
 definition RAY() returns uint256 = (10 ^ 27);
 
 
-/* A not on the conversion functions
- * ---------------------------------
- * The conversion functions are:
- * - assets to shares = S(a) = (a * R) // r
- * - shares to assets = A(s) = (s * r) // R
- * where a=assets, s=shares, R=RAY, r=rate
- * 
- * These imply:
- *   a * R - r <= S(a) * r <= a * R    a*R/r - 1 <= S(a) <= a*R/r
- *   s * r - R <= A(s) * R <= s * r    s*r/R - 1 <= A(s) <= s*r/R
- * 
- * Hence:
- *   A(S(a)) >= S(a)*r/R - 1 >= (a*R/r - 1)*r/R - 1 = (a*R - r)/R - 1 = a - r/R - 1
- *   S(A(s)) >= A(s)*R/r - 1 >= (s*r/R - 1)*R/r - 1 = (s*r - R)/r - 1 = s - R/r - 1
- */
-
-
-// Converting amount to shares is rounded down.
+/// @title Converting amount to shares is properly rounded down
 rule amountConversionRoundedDown(uint256 amount) {
 	uint256 shares = convertToShares(amount);
 	assert convertToAssets(shares) <= amount, "Too many converted shares";
+
+    /* The next assertion shows that the rounding in `convertToAssets` is tight. This
+     * protects the user. For example, a function `convertToAssets` that always returns 
+     * zero would have passed the previous assertion, but not the next one.
+     */
 	assert convertToAssets(shares + 1) >= amount, "Too few converted shares";
 }
 
 
-// Converting shares to amount is rounded down.
+/// @title Converting shares to amount is properly rounded down
 rule sharesConversionRoundedDown(uint256 shares) {
 	uint256 amount = convertToAssets(shares);
 	assert convertToShares(amount) <= shares, "Amount converted is too high";
+
+    /* The next assertion shows that the rounding in `convertToShares` is tight.
+     * For example, a function `convertToShares` that always returns zero
+     * would have passed the previous assertion, but not the next one.
+     */
 	assert convertToShares(amount + 1) >= shares, "Amount converted is too low";
 }
 
 
 // Converting amount to shares and back to amount is preserved (up to rounding).
-/* NOTE: The precision depends on the ratio rate/ray.
- */
+/// @formula The precision depends on the ratio `rate/RAY`.
 rule amountConversionPreserved(uint256 amount) {
- 	require rate() <= RAY();
  	mathint mathamount = to_mathint(amount);
  	mathint converted = to_mathint(convertToAssets(convertToShares(amount)));
 
-	// That converted <= mathamount was proved in amountConversionRoundedDown,
+	// That `converted <= mathamount` was proved in `amountConversionRoundedDown`
  	assert mathamount - converted <= 1 + rate() / RAY(), "Too few converted assets";
  }
  
 
 // Converting shares to amount and back to shares is preserved up to RAY.
-/* NOTE: The precision depends on the ratio RAY/rate.
- */
+/// @formula The precision depends on the ratio `RAY/rate`.
 rule sharesConversionPreserved(uint256 shares) {
 	mathint mathshares = to_mathint(shares);
 	uint256 amount = convertToAssets(shares);
@@ -164,16 +129,18 @@ rule previewWithdrawRedeemCompliance(uint256 value) {
     assert previewWithdraw(e, value) >= shares, "Preview withdraw takes less shares than converted";
     assert previewRedeem(e, value) <= assets, "Preview redeem yields more assets than converted";
 
-	// The following rule protects the client.
+	// The following rules protect the client.
     assert previewWithdraw(e, value) <= shares + 1, "Preview withdraw costs too many shares";
+	assert previewRedeem(e, value) + 1 + rate() / RAY() >= assets, "Preview redeem yields too few assets";
 }
 
 
-/* From ERC4626:
- * "previewWithdraw ... MUST return as close to and no fewer than the exact amount of Vault 
- *  shares that would be burned in a withdraw call in the same transaction. I.e. withdraw
- *  should return the same or fewer shares as previewWithdraw if called in the same
- *  transaction."
+/**
+ * @notice From ERC4626:
+ * > previewWithdraw ... MUST return as close to and no fewer than the exact amount of Vault 
+ * > shares that would be burned in a withdraw call in the same transaction. I.e. withdraw
+ * > should return the same or fewer shares as previewWithdraw if called in the same
+ * > transaction.
  */
 rule previewWithdrawNearlyWithdraw(uint256 assets) {
     env e;
@@ -186,11 +153,12 @@ rule previewWithdrawNearlyWithdraw(uint256 assets) {
 }
 
 
-/* From ERC4626:
- * "previewRedeem ... MUST return as close to and no more than the exact amount
- *  of assets that would be withdrawn in a redeem call in the same transaction.
- *  I.e. redeem should return the same or more assets as previewRedeem if called
- *  in the same transaction."
+/**
+ * @notice From ERC4626:
+ * > previewRedeem ... MUST return as close to and no more than the exact amount
+ * >  of assets that would be withdrawn in a redeem call in the same transaction.
+ * >  I.e. redeem should return the same or more assets as previewRedeem if called
+ * > in the same transaction.
  */
 rule previewRedeemNearlyRedeem(uint256 shares) {
     env e;
@@ -244,9 +212,6 @@ rule previewRedeemNearlyRedeem(uint256 shares) {
 rule redeemSum(uint256 shares1, uint256 shares2) {
     env e;
 	address owner = e.msg.sender;  // Handy alias
-
-	// Additional requirement to speed up calculation
-	require balanceOf(owner) > 2 * (shares1 + shares2);
 
 	uint256 assets1 = redeem(e, shares1, owner, owner);
 	uint256 assets2 = redeem(e, shares2, owner, owner);

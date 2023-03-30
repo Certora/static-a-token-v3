@@ -18,11 +18,12 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
     --optimistic_loop \
 	--loop_iter 1 \
     --optimistic_hashing \
-    --settings -t=7200,-mediumTimeout=3600,-depth=80  \
+    --settings -t=7200,-mediumTimeout=10,-depth=10  \
     --staging \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
     --send_only \
-    --msg "Rewards consistency - FULL"
+	--rule_sanity \
+    --msg "Rewards consistency"
