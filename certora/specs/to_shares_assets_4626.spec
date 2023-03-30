@@ -55,8 +55,10 @@ rule nonDecreasingRate(method f) {
  * Shares Assets 4626 Conversion Rules
  * -----------------------------------
  * The rules below deal with conversion of shares to/from assets according to EIP4626.
- * Latest run for these rules: job-id=`e275f83f426046c58ab89d72f9652c16`
- * Both `toAssetsDoesNotRevert` and `toSharesDoesNotRevert` fail!
+ * - Latest run for these rules (except for `toAssetsDoesNotRevert` and `toSharesDoesNotRevert`):
+ *   job-id=`e275f83f426046c58ab89d72f9652c16`
+ * - Both `toAssetsDoesNotRevert` and `toSharesDoesNotRevert` passed in:
+ *   job-id=`35677d80cb8744408968063e7efbe3b9`
  *
  * Properties of `ConvertToShares` (from EIP4626):
  * - Must not be dependent on the caller
@@ -97,10 +99,13 @@ rule toSharesCallerIndependent(uint256 assets) {
  * @title ConvertToShares must not revert except for overflow
  * From EIP4626:
  * > MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
- * We define large input as 10^45.
+ * We define large input as `10^50`. To be precise, we need that `RAY * assets < 2^256`, since
+ * `2^256~=10^77` and `RAY=10^27` we get that `assets < 10^50`.
+ * 
+ * Note. *We also require that:* **`rate > 0`**.
  */
 rule toSharesDoesNotRevert(uint256 assets) {
-	require assets < 10^45;
+	require assets < 10^50;
 	env e;
 
 	// Prevent revert due to overflow.
@@ -108,7 +113,7 @@ rule toSharesDoesNotRevert(uint256 assets) {
 	mathint ray_math = to_mathint(RAY());
 	mathint rate_math = to_mathint(rate(e));
 	mathint assets_math = to_mathint(assets);
-	require (assets_math * ray_math) < rate_math * 2^256;
+	require rate_math > 0;
 
 	uint256 shares = convertToShares@withrevert(e, assets);
 	bool reverted = lastReverted;
@@ -135,7 +140,10 @@ rule toAssetsCallerIndependent(uint256 shares) {
  * @title ConvertToAssets must not revert unless due to integer overflow
  * From EIP4626:
  * > MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
- * We define large input as 10^45.
+ * We define large input as 10^45. To be precise we need that `shares * rate < 2^256 ~= 10^77`,
+ * hence we require that:
+ * - `shares < 10^45`
+ * - `rate < 10^32`
  */
 rule toAssetsDoesNotRevert(uint256 shares) {
 	require shares < 10^45;
@@ -146,7 +154,7 @@ rule toAssetsDoesNotRevert(uint256 shares) {
 	mathint ray_math = to_mathint(RAY());
 	mathint rate_math = to_mathint(rate(e));
 	mathint shares_math = to_mathint(shares);
-	require (shares_math * rate_math) < ray_math * 2^256;
+	require rate_math < 10^32;
 
 	uint256 assets = convertToAssets@withrevert(e, shares);
 	bool reverted = lastReverted;
