@@ -31,11 +31,6 @@ constructor(
     return currentUserRewardsData.rewardsIndexOnLastInteraction;
   }
 
-  
-  function getlastUpdatedIndex(address reward) external view returns (uint248){
-    return _startIndex[reward].lastUpdatedIndex;
-  }
-
   function claimSingleRewardOnBehalf(
     address onBehalfOf,
     address receiver,
