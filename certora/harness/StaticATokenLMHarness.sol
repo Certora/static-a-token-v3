@@ -47,6 +47,11 @@ constructor(
     return _rewardTokens[i];
   }
 
+  function getrewardsIndexOnLastInteraction(address user, address reward)
+  external view returns (uint128) {
+    UserRewardsData memory currentUserRewardsData = _userRewardsData[user][reward];
+    return currentUserRewardsData.rewardsIndexOnLastInteraction;
+  }
 
   function claimSingleRewardOnBehalf(
     address onBehalfOf,
@@ -54,7 +59,6 @@ constructor(
     address reward
   ) external 
   {
-
     address[] memory rewards = new address[](1);
     rewards[0] = address(reward);
 
@@ -64,6 +68,6 @@ constructor(
       StaticATokenErrors.INVALID_CLAIMER
     );
     _claimRewardsOnBehalf(onBehalfOf, receiver, rewards);
-    
   }
+
 }
