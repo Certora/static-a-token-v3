@@ -11,8 +11,8 @@ using StaticATokenLMHarness as _StaticATokenLM
 methods
 {
 
-    totalSupply() returns uint256 envfree
-	balanceOf(address) returns (uint256) envfree
+    // totalSupply() returns uint256 envfree
+	// balanceOf(address) returns (uint256) envfree
     rewardTokens() returns (address[]) envfree
 
     // getters from munged/harness
