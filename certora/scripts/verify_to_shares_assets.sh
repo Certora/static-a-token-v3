@@ -19,11 +19,9 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     --loop_iter 1 \
     --optimistic_hashing \
     --settings -t=1500,-mediumTimeout=60,-depth=30 \
-    --staging \
+    --cloud \
     --packages aave-v3-core=lib/aave-v3-core \
             @aave/core-v3=lib/aave-v3-core \
             aave-v3-periphery=lib/aave-v3-periphery \
             solidity-utils=lib/solidity-utils/src \
-    --send_only \
-    --rule_sanity \
-    --msg "check shares assets conversions and preview functions conform to EIP4626 and rate is non-decreasing"
+    --msg "verify_to_shares_assets"
