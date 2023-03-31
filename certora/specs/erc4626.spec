@@ -1,20 +1,19 @@
-import "erc20.spec"
 import "StaticATokenLM.spec"
 
-using DummyERC20_aTokenUnderlying as underlying
 using StaticATokenLMHarness as SAT
 using AToken as ATok
 using SymbolicLendingPoolL1 as pool
 
+
 methods{
-    convertToAssets(uint256) returns (uint256) envfree
-    previewDeposit(uint256) returns(uint256) envfree
+    asset() returns (address) envfree
+    convertToAssets(uint256) returns (uint256)
+    convertToShares(uint256) returns (uint256)
     deposit(uint256, address) returns (uint256)
-    underlying.balanceOf(address) returns(uint256) envfree
-    ATok.balanceOf(address) returns(uint256) envfree
+    _DummyERC20_aTokenUnderlying.balanceOf(address) returns(uint256) envfree
+    
     getULBalanceOf(address) returns(uint256) envfree
     getATokenBalanceOf(address) returns (uint256) envfree
-    totalSupply() returns (uint256) envfree
     assetsTotal(address) returns (uint256) envfree
     totalAssets() returns (uint256) envfree
     pool.getReserveNormalizedIncome(address) returns (uint256)
@@ -31,11 +30,13 @@ methods{
     previewWithdraw(address) returns (uint256) envfree
     maxWithdraw(address) returns (uint256) envfree
     maxMint(address) returns (uint256) envfree
+    ATok.approve(address, uint256) returns (bool)
+
 }
 
+///////////////// DEFINITIONS ///////////////////////
 
 definition RAY() returns uint256 = 10^27;
-definition HALF_RAY() returns uint256 = 5 * 10^27;
 
 ///////////////// PREVIEW RULES ///////////////////////
 
@@ -43,69 +44,82 @@ definition HALF_RAY() returns uint256 = 5 * 10^27;
 * rule to check the following for the previewDeposit function:
 * _1. MUST return as close to and no more than the exact amount of Vault shares that would 
 *     be minted in a deposit call in the same transaction. I.e. deposit should return the same or more shares as previewDeposit if called in the same transaction.
-* 2. Must not account for maxDeposit limit or the allowance of asset tokens
-*  a. Check against maxDeposit
-*  b. Check against allowance
-* 3. Must be inclusive of fees
-* 4. Must not revert due to vault specific user/global limits
 */
 // STATUS: Verified, that the amount returned by previewDeposit is exactly equal to that returned by the deposit function.
 //         This is a stronger property than the one required by the EIP.
+// https://vaas-stg.certora.com/output/11775/1488de4bb1e24d37a7972b0c2785df65/?anonymousKey=6f68dd14376fa7d0109ef2687f72d1ef1903dda8
 
+///@title previewDeposit returns the right value
+///@notice EIP4626 dictates that previewDeposit must return as close to and no more than the exact amount of Vault shares that would be minted in a deposit call in the same transaction. The previewDeposit function in staticAToken contract returns a value exactly equal to that returned by the deposit function.
 rule previewDepositAmountCheck(){
-    env e;
+    env e1;
+    env e2;
     uint256 assets;
     address receiver;   
     uint256 previewShares;
     uint256 shares;
 
-    previewShares = previewDeposit(assets);
-    shares = deposit(e, assets, receiver);
+    previewShares = previewDeposit(e1, assets);
+    shares = deposit(e2, assets, receiver);
 
     assert previewShares == shares,"preview shares should be equal to actual shares";
-    // assert assets > maxdeposit() => !lastReverted; //investige this 
 }
 
+// The EIP4626 spec requires that the previewDeposit function must not account for maxDeposit limit or the allowance of asset tokens.
+// The following rule checks that the value returned by the previewDeposit function is independent of allowance that the contract might have 
+// for transferring assets from any user.
 
-// checking that the previewDeposit value is independent of allowance of assets
 // STATUS: Verified
+// https://vaas-stg.certora.com/output/11775/05df2a231ec74da28ed10f627d3c7f72/?anonymousKey=70c692cbbf781597e0dc0b53a7d4ed6968bb467a
 
-rule previewDepositIndependentOfAllowance()
+///@title previewDeposit independent of Allowance
+///@notice This rule checks that the value returned by the previewDeposit function is independent of allowance that the contract might have for transferring assets from any user. The value retunred is the same regardless of the specified asset amount being more than, equal to or less than the allowance.
+rule previewDepositIndependentOfAllowanceApprove()
 {
-// allowance of currentContract for asset transfer from msg.sender to   
+    env e1;
+    env e2;
+    env e3;
+    env e4;
+    env e5;
     address user;
     uint256 ATokAllowance1 = ATok.allowance(currentContract, user);
     uint256 assets1;
     uint256 assets2;
     uint256 assets3;
     require assets1 < ATokAllowance1;
-    uint256 previewShares1 = previewDeposit(assets1);
+    uint256 previewShares1 = previewDeposit(e1, assets1);
 
-    env e1;
-    address receiver1;
-    deposit(e1, assets2, receiver1);
+    uint256 amount1;
+    ATok.approve(e2, currentContract, amount1);
     
     uint256 ATokAllowance2 = ATok.allowance(currentContract, user);
     require assets1 == ATokAllowance2;
-    uint256 previewShares2 = previewDeposit(assets1);
+    uint256 previewShares2 = previewDeposit(e3, assets1);
     
-    env e2;
-    address receiver2;
-    deposit(e2, assets3, receiver2); 
+    uint256 amount2;
+    ATok.approve(e4, currentContract, amount2);
     
     uint256 ATokAllowance3 = ATok.allowance(currentContract, user);
     require assets1 > ATokAllowance3;
-    uint256 previewShares3 = previewDeposit(assets1);
+    uint256 previewShares3 = previewDeposit(e5, assets1);
 
     assert previewShares1 == previewShares2,"previewDeposit should not change regardless of assets > or = allowance";
     assert previewShares2 == previewShares3,"previewDeposit should not change regardless of assets < or = allowance";
 }
 
 
+// The EIP4626 spec requires that the previewDeposit function must not account for maxDeposit limit or the allowance of asset tokens.
 // Since maxDeposit is a constant, it cannot have any impact on the previewDeposit value.
 // STATUS: Verified for all f except metaDeposit which has a reachability issue
-// https://vaas-stg.certora.com/output/11775/42e457472f3eeb222744/?anonymousKey=d8e2a760f475fde4ccd07c0bbc4f5703887b9280
-rule maxDepositConstant(method f){
+// https://vaas-stg.certora.com/output/11775/044c54bdf1c0414898e88d9b03dda5a5/?anonymousKey=aaa9c0c1c413cd1fd3cbb9fdfdcaa20a098274c5
+
+///@title maxDepost is constant
+///@notice This rule verifies that maxDeposit returns a constant value and therefore it cannot have any impact on the previewDeposit value.
+rule maxDepositConstant(method f)
+filtered {
+    f -> f.selector != metaDeposit(address,address,uint256,uint16,bool,uint256,(address,address,uint256,uint256,uint8,bytes32,bytes32),(uint8,bytes32,bytes32)).selector
+}
+{
     address receiver;
     uint256 maxDep1 = maxDeposit(receiver);
     calldataarg args;
@@ -114,37 +128,18 @@ rule maxDepositConstant(method f){
     uint256 maxDep2 = maxDeposit(receiver);
 
     assert maxDep1 == maxDep2,"maxDeposit should not change";
-
-    // address receiver;
-    // uint256 maxDepositAssets1 = maxDeposit(receiver);
-    // uint256 assets;
-    // assert false;
-    // require assets = maxDepositAssets1;
-    // uint256 previewShares1 = previewDeposit(assets);
-    
-    // calldataarg args;
-    // env e1;
-    // f(e1, args);
-    // uint256 maxDepositAssets2 = maxDeposit(receiver);
-    
-    // // require assets <= maxDepositAssets2;
-    // uint256 previewShares2 = previewDeposit(assets);
-    
-    // assert previewShares2 == previewShares1,"previewDeposit should be independent of maxDeposit";
 }
 
 /***
 * rule to check the following for the previewMint function:
-* _1. MUST return as close to and no fewer than the exact amount of assets that would be deposited in a mint call in the same transaction. I.e. mint should return the same or fewer assets as previewMint if called in the same transaction.
-* _2. MUST NOT account for mint limits like those returned from maxMint and should always act as though the mint would be accepted, regardless if the user has enough tokens approved
-*  a. Check against maxDeposit
-*  b. Check against allowance
-* 3. MUST be inclusive of deposit fees. Integrators should be aware of the existence of deposit fees.
-* 4. MUST NOT revert due to vault specific user/global limits
+* _1. MUST return as close to and no fewer than the exact amount of assets that would be deposited in a mint call in the same transaction. 
+* I.e. mint should return the same or fewer assets as previewMint if called in the same transaction.
 */
 // STATUS: Verified, that the amount returned by previewDeposit is exactly equal to that returned by the deposit function.
 //         This is a stronger property than the one required by the EIP.
-// Need to investigate the revert behaviour
+// https://vaas-stg.certora.com/output/11775/97ed98809a464668b0bfbfb6f6a6277b/?anonymousKey=e8f91f54cebea2f42d809068cf55511670b817d4
+///@title previewMint returns the right value
+///@notice EIP4626 dictates that previewMint must return as close to and no more than the exact amount of assets that would be deposited in a mint call in the same transaction. The previewMint function in staticAToken contract returns a value exactly equal to that returned by the mint function.
 rule previewMintAmountCheck(env e){
     uint256 shares;
     address receiver;
@@ -153,42 +148,50 @@ rule previewMintAmountCheck(env e){
 
     previewAssets = previewMint(shares);
     assets = mint(e, shares, receiver);
-
-    // assert previewAssets >= assets,"previewMint should return assets more than or equal to actual assets returned by the mint function";
-    // will not revert if the value passed in is greater than maxmint
-    // assert !lastReverted,"should not revert";
     assert previewAssets == assets,"preview should be equal to actual";
 }
 
-// checking that the previewDeposit value is independent of allowance of assets
+
+// The EIP4626 spec requires that the previewMint function must not account for mint limits like those returned from maxMint 
+// and should always act as though the mint would be accepted, regardless if whether the user has approved the contract to transfer
+// the specified amount of assets
+
+// The following rule checks that the previewMint returned value is independent of allowance of assets. The value returned by 
+// previewMind under three conditions a. amount < allowance from any user b. amount = allowance from any user c. amount > allowance
+// from any user. The returned value is the same in all cases thus making it independent of the allowance from any user 
 // STATUS: Verified
 
-rule previewMintIndependentOfAllowance()
-{
+// https://vaas-stg.certora.com/output/11775/937cb9bc984947de98c9bf759b483017/?anonymousKey=db3080cc2ddcf91fe3e7dab4d4a56dad24e6bbce
+///@title previewMint independent of Allowance
+///@notice This rule checks that the value returned by the previewMint function is independent of allowance that the contract might have for transferring assets from any user. The value retunred is the same regardless of the equivalent asset amount being more than, equal to or less than the allowance.
+rule previewMintIndependentOfAllowance(){
 // allowance of currentContract for asset transfer from msg.sender to   
     address user;
     uint256 ATokAllowance1 = ATok.allowance(currentContract, user);
     uint256 shares1;
     uint256 assets1;
     uint256 assets2;
-    require convertToAssets(shares1) < ATokAllowance1;
+    env e1;
+    require convertToAssets(e1, shares1) < ATokAllowance1;
     uint256 previewAssets1 = previewMint(shares1);
 
-    env e1;
+    env e2;
     address receiver1;
-    deposit(e1, assets1, receiver1);
+    deposit(e2, assets1, receiver1);
     
     uint256 ATokAllowance2 = ATok.allowance(currentContract, user);
-    require convertToAssets(shares1) == ATokAllowance2;
-    uint256 previewAssets2 = previewDeposit(shares1);
+    env e3;
+    require convertToAssets(e3, shares1) == ATokAllowance2;
+    uint256 previewAssets2 = previewMint(shares1);
     
-    env e2;
+    env e4;
     address receiver2;
     deposit(e2, assets2, receiver2); 
     
+    env e5;
     uint256 ATokAllowance3 = ATok.allowance(currentContract, user);
-    require convertToAssets(shares1) > ATokAllowance3;
-    uint256 previewAssets3 = previewDeposit(shares1);
+    require convertToAssets(e4, shares1) > ATokAllowance3;
+    uint256 previewAssets3 = previewMint(shares1);
 
     assert previewAssets1 == previewAssets2,"previewMint should not change regardless of C2A(shares) > or = allowance";
     assert previewAssets2 == previewAssets3,"previewMint should not change regardless of C2A(shares) < or = allowance";
@@ -197,13 +200,16 @@ rule previewMintIndependentOfAllowance()
 
 /***
 * rule to check the following for the previewWithdraw function:
-* _1. MUST return as close to and no fewer than the exact amount of Vault shares that would be burned in a withdraw call in the same transaction. I.e. withdraw should return the same or fewer shares as previewWithdraw if called in the same transaction
-* 2. MUST NOT account for withdrawal limits like those returned from maxWithdraw and should always act as though the withdrawal would be accepted, regardless if the user has enough shares, etc.
-* 3. MUST be inclusive of withdrawal fees
-* 4. MUST NOT revert due to vault specific user/global limits.
+* _1. MUST return as close to and no fewer than the exact amount of Vault shares that would be burned in a withdraw call in the 
+* same transaction. I.e. withdraw should return the same or fewer shares as previewWithdraw if called in the same transaction
+* 2. MUST NOT account for withdrawal limits like those returned from maxWithdraw and should always act as though the withdrawal 
+* would be accepted, regardless if the user has enough shares, etc.
 */
 // STATUS: Verified, that the amount returned by previewWithdraw is exactly equal to that returned by the withdraw function.
 //         This is a stronger property than the one required by the EIP.
+// https://vaas-stg.certora.com/output/11775/444832541b5f4f22ab7373f6de1ee782/?anonymousKey=86856741d701630321afe5bc573fc258bbd99739
+///@title previewWithdraw returns the right value
+///@notice EIP4626 dictates that previewWithdraw must return as close to and no more than the exact amount of shares that would be burned in a withdraw call in the same transaction. The previewWithdraw function in staticAToken contract returns a value exactly equal to that returned by the withdraw function.
 rule previewWithdrawAmountCheck(env e){
     uint256 assets;
     address receiver;
@@ -217,30 +223,37 @@ rule previewWithdrawAmountCheck(env e){
     assert previewShares == shares,"preview should be equal to actual shares";
 }
 
-// independent of maxWithdraw
-// STATUS: Verified
-// https://vaas-stg.certora.com/output/11775/438c5c7cdfe5aeb2e748/?anonymousKey=db46b6405216cc52722b118ee776e153aef43145
+// The EIP4626 spec requires that the previewWithdraw function must not account for withdrawal limits like those returned 
+// from maxWithdraw and should always act as though the withdrawal would be accepted, regardless of whether or not the user 
+// has enough shares, etc. 
+// This rules checks that the previewWithdraw function return value is independent of any level of maxWithdraw (relative to 
+// the asset amount) for any user
 
+// STATUS: Verified
+// https://vaas-stg.certora.com/output/11775/50abf537cd134084ab309788a0d4b95a/?anonymousKey=c9cbb863531b85f4a877260997f0acfb770e7e99
+
+///@title previewWithdraw independent of maxWithdraw
+///@notice This rule checks that the value returned by previewWithdraw is independent of the value returned by maxWithdraw.
 rule previewWithdrawIndependentOfMaxWithdraw(env e){
     env e1;
     env e2;
     address user;
     uint256 maxWithdraw1 = maxWithdraw(user);
     uint256 assets1;
-    uint256 assets2;
-    uint256 assets3;
-    address receiver1;
-    address receiver2;
+    uint256 shares1;
+    uint256 shares2;
 
     require assets1 > maxWithdraw1;
     uint256 previewShares1 = previewWithdraw(assets1);
 
-    deposit(e1, assets2, receiver1);
+    mint(e1, shares1, user);
+
     uint256 maxWithdraw2 = maxWithdraw(user);
     require assets1 ==  maxWithdraw2;
     uint256 previewShares2 = previewWithdraw(assets1);
     
-    deposit(e2, assets2, receiver2);
+    mint(e2, shares2, user);
+
     uint256 maxWithdraw3 = maxWithdraw(user);
     require assets1 <  maxWithdraw3;
     uint256 previewShares3 = previewWithdraw(assets1);
@@ -248,101 +261,151 @@ rule previewWithdrawIndependentOfMaxWithdraw(env e){
     assert previewShares1 == previewShares2 && previewShares2 == previewShares3,"preview withdraw should be independent of allowance";
 }
 
+// The EIP4626 spec requires that the previewWithdraw function must not account for withdrawal limits like those returned by 
+// maxWithdraw and should always act as though the withdrawal would be accepted, regardless if the user has enough shares, etc.
+// The following two rules checks that the previewWithdraw function is independent of any level of share balance(relative to asset amount) of
+// any user
 // STATUS: Verified
-// https://vaas-stg.certora.com/output/11775/f3b94b16a348c246559c/?anonymousKey=06dd3d3fcb718f74115c8b8e463225e37b25c005
+// https://vaas-stg.certora.com/output/11775/8e8fd50a3fba4018b924eb6d8764d77f/?anonymousKey=3fee78908151c06e470add0ed2a9f4479f9bea7b
 
-rule previewWithdrawIndependentOfBalance(){
+///@title previewWithdraw independent of any user's share balance
+///@notice This rule checks that the value returned by the previewWithdraw function is independent of any user's share balance. The value retunred is the same regardless it being >, = or < any user's balance.
+rule previewWithdrawIndependentOfBalance1(){
     env e1;
     env e2;
+    env e3;
+
     address user;
     uint256 shareBal1 = balanceOf(user);
     uint256 assets1;
-    uint256 assets2;
-    uint256 assets3;
-    address receiver1;
-    address receiver2;
+    uint256 shares1;
+    uint256 shares2;
     
-    require assets1 > convertToAssets(shareBal1);
+    require assets1 > convertToAssets(e1, shareBal1);//asset amount greater than what the user is entitled to on account of his share balance
     uint256 previewShares1 = previewWithdraw(assets1);
 
-    deposit(e1, assets2, receiver1);
+    _mint(e2, user, shares1);
+    
     uint256 shareBal2 = balanceOf(user);
-    require assets1 ==  convertToAssets(shareBal2);
+    require assets1 ==  convertToAssets(e3, shareBal2); //asset amount equal to what the user is entitled to on account of his share balance
     uint256 previewShares2 = previewWithdraw(assets1);
 
-    deposit(e2, assets3, receiver2);
-    uint256 shareBal3 = balanceOf(user);
-    require assets1 <  convertToAssets(shareBal3);
-    uint256 previewShares3 = previewWithdraw(assets1);
+    assert previewShares1 == previewShares2,
+    "preview withdraw should be independent of allowance";
+}
+
+// STATUS: Verified
+// https://vaas-stg.certora.com/output/11775/c686d90f1baf4a77a093d5902125f08f/?anonymousKey=da2ce2f7098c87d89abb767139e689017bd618b1
+
+rule previewWithdrawIndependentOfBalance2(){
+    env e1;
+    env e2;
+    env e3;
+
+    address user;
+    uint256 shareBal1 = balanceOf(user);
+    uint256 assets1;
+    uint256 shares1;
+    uint256 shares2;
     
-    assert previewShares1 == previewShares2 && previewShares2 == previewShares3,"preview withdraw should be independent of allowance";
+    require assets1 == convertToAssets(e1, shareBal1);//asset amount greater than what the user is entitled to on account of his share balance
+    uint256 previewShares1 = previewWithdraw(assets1);
+
+    _mint(e2, user, shares1);
+    
+    uint256 shareBal2 = balanceOf(user);
+    require assets1 <  convertToAssets(e3, shareBal2); //asset amount equal to what the user is entitled to on account of his share balance
+    uint256 previewShares2 = previewWithdraw(assets1);
+
+    assert previewShares1 == previewShares2,
+    "preview withdraw should be independent of allowance";
 }
 
 /***
 * rule to check the following for the withdraw function:
 * _1. MUST return as CLOSE to and no more than the exact amount of assets that would be withdrawn in a redeem call in the same transaction. I.e. redeem should return the same or more assets as previewRedeem if called in the same transaction.
-* 2. MUST NOT account for redemption limits like those returned from maxRedeem and should always act as though the redemption would be accepted, regardless if the user has enough shares, etc.
-* 3. MUST be inclusive of withdrawal fees. Integrators should be aware of the existence of withdrawal fees.
-* 4. MUST NOT revert due to vault specific user/global limits. MAY revert due to other conditions that would also cause redeem to revert.
 */
-// STATUS: Verified
+// STATUS: Verified, that the amount returned by previewRedeem is exactly equal to that returned by the redeem function.
+//         This is a stronger property than the one required by the EIP.
+// https://vaas-stg.certora.com/output/11775/24e2fe4d485a42618e4e38f0d4376dd2/?anonymousKey=a117a61d3d1dea53fbc875be84292f27af3afd6a
 
+///@title previewRedeem returns the right value
+///@notice EIP4626 dictates that previewRedeem must return as close to and no more than the exact amount of assets that would be returned in a redeem call in the same transaction. The previewRedeem function in staticAToken contract returns a value exactly equal to that returned by the redeem function.
 rule previewRedeemAmountCheck(env e){
     uint256 shares;
     address receiver;
     address owner;
     uint256 previewAssets;
     uint256 assets;
-    // allowance of the contract over the owner's shares
-    // uint256 allowance = allowance(owner, currentContract);
-    // actual share balance of owner
-    // uint256 shareBalOwner = balanceOf(owner);
-    // require shares > shareBalOwner;
-    // require shares > allowance; 
-
     
-    // require shares > maxRedeemableShares;
     previewAssets = previewRedeem(shares);
     assets = redeem(e, shares, receiver, owner);
-    // assert false;
-    // assert previewAssets <= assets,"preview should return no more than the actual assets received";
+    
     assert previewAssets == assets,"preview should the same as the actual assets received";
-    // assert !lastReverted;
-
 }
 
-// the preview function is independent of any user and should not be impacted in anyway by any user level restrictions
-// STATUS: Verified
-// https://vaas-stg.certora.com/output/11775/e9dd774b10dccbb1570b/?anonymousKey=93a72f054ee636cfaf2772dbaed64bc3b64861fa
+// The EIP4626 spec requires that the previewRedeem function must not account for redemption limits like those returned by 
+// the maxRedeem function and should always act as though the redemption would be accepted, regardless if the user has enough 
+// shares, etc.
+// 
+// The following two rules checks that the previewRedeem return value is independent of any level of maxRedeem (relative to the share amount) for any user.
 
-rule previewRedeemIndependentOfMaxRedeem(){
+// STATUS: Verified
+// https://vaas-stg.certora.com/output/11775/e1d9f84456b04e3caa0c4495f3022bb8/?anonymousKey=d82a8ae9fd795f8206f8c117bf5698079c2239cb
+
+///@title previewRedeem independent of maxRedeem
+///@notice This rule checks that the value returned by the previewRedeem function is independent of the value returned by maxRedeem. The value retunred is the same regardless of it being >, = or < the value returned by maxRedeem.
+rule previewRedeemIndependentOfMaxRedeem1(){
     env e1;
     env e2;
-    address user1;
-    address user2;
-    address user3;
+    address user;
     uint256 shares1;
     uint256 shares2;
-    uint256 shares3;
-    uint256 maxRedeemableShares1 = maxRedeem(user1);
+
+    uint256 maxRedeemableShares1 = maxRedeem(user);
+    require shares1 == maxRedeemableShares1;
+    uint256 previewAssets1 = previewRedeem(shares1);
+    
+    _mint(e1, user, shares2);
+
+    uint256 maxRedeemableShares2 = maxRedeem(user);
+    require shares1 < maxRedeemableShares2;
+    uint256 previewAssets2 = previewRedeem(shares1);
+
+    assert previewAssets1 == previewAssets2,"previewRedeem should be independent of maxRedeem";
+}
+
+// STATUS: Verified
+// https://vaas-stg.certora.com/output/11775/16a4a248207b4ae28d778b0f405a3161/?anonymousKey=5efc898c58a75e7fa35d104b23ea3ef4ffe7ecf3
+rule previewRedeemIndependentOfMaxRedeem2(){
+    env e1;
+    env e2;
+    address user;
+    uint256 shares1;
+    uint256 shares2;
+    
+    uint256 maxRedeemableShares1 = maxRedeem(user);
     require shares1 > maxRedeemableShares1;
     uint256 previewAssets1 = previewRedeem(shares1);
     
-    mint(e1, shares2, user2);
-    uint256 maxRedeemableShares2 = maxRedeem(user1);
+    _mint(e1, user, shares2);
+
+    uint256 maxRedeemableShares2 = maxRedeem(user);
     require shares1 == maxRedeemableShares2;
     uint256 previewAssets2 = previewRedeem(shares1);
 
-    mint(e2, shares3, user3);
-    uint256 maxRedeemableShares3 = maxRedeem(user1);
-    require shares1 == maxRedeemableShares3;
-    uint256 previewAssets3 = previewRedeem(shares1);
-
-    assert previewAssets1 == previewAssets2 && previewAssets2 == previewAssets3,"previewRedeem should be independent of maxRedeem";
+    assert previewAssets1 == previewAssets2,"previewRedeem should be independent of maxRedeem";
 }
 
+// The EIP4626 spec requires that the previewRedeem function must not account for redemption limits like those returned by maxRedeem
+//  and should always act as though the redemption would be accepted, regardless of whether the user has enough shares, etc.
+// The following rule checks that the previewRedeem return value is independent of any level of share balance (relative to the redemption 
+// share amount) for any user.
 // STATUS: Verified
-// https://vaas-stg.certora.com/output/11775/a5c56d072ebd15d4c52d/?anonymousKey=ed5d24165ed3c04f953785b5213dacfdf369cd1c
+// https://vaas-stg.certora.com/output/11775/de8e4742dbc44945b94e3a9b8e4375ae/?anonymousKey=65bd53e6365d5dd66f76004a80f45de06f088359
+
+///@title previewRedeem independent of any user's balance
+///@notice This rule checks that the value returned by the previewRedeem function is independent of any user's share balance. The value retunred is the same regardless of it being >, = or < any user's balance.
 rule previewRedeemIndependentOfBalance(){
     env e1;
     env e2;
@@ -351,18 +414,16 @@ rule previewRedeemIndependentOfBalance(){
     uint256 shares2;
     uint256 shares3;
     address user1;
-    address user2;
-    address user3;
     uint256 balance1 = balanceOf(user1);
     require shares1 > balance1;
     uint256 previewAssets1 = previewRedeem(shares1);
 
-    mint(e1, shares2, user2);
+    mint(e1, shares2, user1);
     uint256 balance2 = balanceOf(user1);
     require shares1 == balance2;
     uint256 previewAssets2 = previewRedeem(shares1);
     
-    mint(e1, shares3, user3);
+    mint(e1, shares3, user1);
     uint256 balance3 = balanceOf(user1);
     require shares1 < balance3;
     uint256 previewAssets3 = previewRedeem(shares1);
@@ -371,138 +432,62 @@ rule previewRedeemIndependentOfBalance(){
 }
 
 
-///////////////// DEPOSIT, MINT, WITHDRAW & REDEEM RULES ///////////////////////
-
-/***
-* rule to check the following for the depost function:
-* 1. Must emit deposit event
-* 2. MUST support EIP-20 approve / transferFrom on asset as a deposit flow
-* 3. MUST revert if all of assets cannot be deposited
-*/
-// STATUS: Verified
-// https://vaas-stg.certora.com/output/11775/ad5044ac72360e52ca0a/?anonymousKey=d12f43484902bab7d37b1499d45eb13cc04a8cc1
-
-rule depositCheck(env e){
-    uint256 assets; //547
-    address receiver;
-    // uint256 userAtokenBalBefore = ATok.scaledBalanceOf(e, e.msg.sender);
-    uint256 contractAssetBalBefore = ATok.balanceOf(currentContract);
-    uint256 userAssetBalBefore = ATok.balanceOf(e.msg.sender);
-    uint256 userStaticBalBefore = balanceOf(e.msg.sender);
-    require getStaticATokenUnderlying() == ATok._underlyingAsset();
-    uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
-    require e.msg.sender != currentContract;
-    // uint256 a;
-    // require index == 7* RAY();
-    require assets * RAY() >= index;//keep the asset amount greater than 1 Atoken
-
-    uint256 shares = deposit(e, assets, receiver); // 548
-    // index ~= 10^27
-
-    uint256 contractAssetBalAfter = ATok.balanceOf(currentContract);
-    uint256 userAssetBalAfter = ATok.balanceOf(e.msg.sender); 
-    uint256 userStaticBalAfter = balanceOf(e.msg.sender);
-
-    // assert contractAssetBalAfter == contractAssetBalBefore + assets,"contract's assets should increase by the 'assets' amount";
-    // assert contractAssetBalAfter <= contractAssetBalBefore + assets + index/(2 * RAY());
-    // assert contractAssetBalAfter >= contractAssetBalBefore + assets - index/(2 * RAY());
-    // assert contractAssetBalAfter == contractAssetBalBefore + assets;
-    // assert contractAssetBalAfter == contractAssetBalBefore => userStaticBalAfter == userStaticBalBefore,"user shouldn't get shares is no assets are deposited";
-    assert shares != 0;
-    assert 2 * shares * index > 2 * assets * RAY() - index,"shares should not be more than 1 AToken less than the number of ATokensßß";  
-}
-
-// shares = (asset * RAY + index/2)/index
-// 2 * shares * index = 2 * asset * RAY + index
-// X.5 -> 0.4999999 - 0.5
-// shares > (asset * RAY/index) - 1/2
-
-// USER DEPOSITING ATLEAST 1 ATOKEN, THEY SHOULD GET NONZERO SHARES
-
-// index/ (2*RAY())
-
-
-/***
-* rule to check the following for the mint function:
-* 1. MUST emit the Deposit event.
-* 2. MUST support EIP-20 approve / transferFrom on asset as a mint flow.
-* _3. MUST revert if all of shares cannot be minted 
-*/
-// STATUS: FAILED
-// When the index is less than RAY, the function can mint a higher number of shares than it was asked to
-// https://vaas-stg.certora.com/output/11775/ea6a9c19c1b1b315017d/?anonymousKey=8d63aadfe646514e1229219e510e4bcb492144f0 (user asked for 101 shares but got 200, ref change in receiverBalBefore/After)
-// 
-rule mintCheck(env e){
-    uint256 shares;
-    address receiver;
-    uint256 assets;
-    require getStaticATokenUnderlying() == ATok._underlyingAsset();
-    require e.msg.sender != currentContract;
-    uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
-
-    uint256 receiverBalBefore = balanceOf(receiver);
-    require 100 * index == RAY();
-    
-    assets = mint(e, shares, receiver);
-    
-    uint256 receiverBalAfter = balanceOf(receiver);
-    // index to be RAY/100 *****CHECK THIS
-    // index to be greater than ray. then check ifthe 1 error limit holds
-
-    // assert receiverBalAfter == receiverBalBefore + shares,"receiver should get exactly the number of shares requested";
-    assert receiverBalAfter <= receiverBalBefore + shares + 1,"receiver should get no more than the 1 extra share";
-    assert receiverBalAfter >= receiverBalBefore + shares,"receiver should get no less than the amount of shares requested";
-    
-}
-
-// (shares * <RAY/3 + RAY -1)/RAY = 1 
-// (RAY  + index/2)/index 
-// 
-
+///////////////// WITHDRAW & REDEEM RULES ///////////////////////
 
 /***
 * rule to check the following for the withdraw function:
-* 1. MUST emit the Withdraw event.
-* 2. MUST support a withdraw flow where the shares are burned from owner directly where owner is msg.sender.
-* 3. MUST support a withdraw flow where the shares are burned from owner directly where msg.sender has EIP-20 approval over the shares of owner.
-* 4. SHOULD check msg.sender can spend owner funds, assets needs to be converted to shares and shares should be checked for allowance.
-* 5. MUST revert if all of assets cannot be withdrawn (due to withdrawal limit being reached, slippage, the owner not having enough shares, etc).
+* 1. SHOULD check msg.sender can spend owner funds, assets needs to be converted to shares and shares should be checked for allowance.
+* 2. MUST revert if all of assets cannot be withdrawn (due to withdrawal limit being reached, slippage, the owner not having enough shares, etc).
 */
-// STATUS
-rule withdrawCheck(env e){
-    
+// STATUS: VERIFIED
+// violates #2 above. For any asset amount worth less than 1/2 AToken, the function will not withdrawn anything and not revert. EIP 4626 non compliant for assets < 1/2 AToken.
+// For assets amount worth less than 1/2 AToken 0 assets will be withdrawn. Asset amount worth 1/2 AToken and more the final withdrawn amount would be assets +- 1/2AToken.
+// https://vaas-stg.certora.com/output/11775/a2ff16b9d15d405cb11572afd0ea9413/?anonymousKey=2d51005a275559a456558660e33de6870aa19846
+///@title Allowance and withdrawn amount check for withdraw function
+///@notice This rules checks that the withdraw function burns shares upto the allowance for the msg.sender and that the assets withdrawn are within the specified asset amount +- 1/2ATokens range
+rule withdrawCheck(env e){    
     address owner;
     address receiver;
     uint256 assets;
     
     uint256 allowed = allowance(e, owner, e.msg.sender);
     uint256 balBefore = ATok.balanceOf(receiver);
+    uint256 shareBalBefore = balanceOf(owner);
     require getStaticATokenUnderlying() == ATok._underlyingAsset();
     uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
     require e.msg.sender != currentContract;
-    require assets * RAY() >= index;//keep the asset amount greater than 1 Atoken
-
-    uint256 sharesBurnt;
+    require receiver != currentContract;
+    require owner != currentContract;
     
-    sharesBurnt = withdraw(e, assets, receiver, owner);
+    require index >= RAY();
+    
+    uint256 sharesBurnt = withdraw(e, assets, receiver, owner);
 
     uint256 balAfter = ATok.balanceOf(receiver);
-    // assert msg.sender == owner || allowance(msg.sender, owner) >= shares
-    assert allowed >= sharesBurnt,"msg.sender should have allowane to spend owner's shares";
-    assert balBefore + assets == balAfter,"assets should be transferred correctly";
+    uint256 shareBalAfter = balanceOf(owner);
+
+    // checking for allowance in case msg.sender is not the owner
+    assert e.msg.sender != owner => allowed >= sharesBurnt,"msg.sender should have allowane to spend owner's shares";
+
+    // lower bound. First part means atleast 1/2 AToken worth of UL is being deposited
+    assert assets * 2 * RAY() >= index => balAfter - balBefore > assets - index/2*RAY(),
+    "withdrawn amount should be no less than 1/2 AToken worth of UL less than the assets amount"; 
+    
+    //upper bound 
+    assert balAfter - balBefore <= assets + index/2*RAY(),
+    "withdrawn amount should be no more than 1/2 AToken worth of UL more than the number of assets ";
 }
 
 
 /***
 * rule to check the following for the withdraw function:
-* 1. MUST emit the Withdraw event.
-* 2. MUST support a redeem flow where the shares are burned from owner directly where owner is msg.sender.
-* 3. MUST support a redeem flow where the shares are burned from owner directly where msg.sender has EIP-20 approval over the shares of owner.
-* 4. SHOULD check msg.sender can spend owner funds using allowance.
-* 5. MUST revert if all of shares cannot be redeemed (due to withdrawal limit being reached, slippage, the owner not having enough shares, etc).
+* 1. SHOULD check msg.sender can spend owner funds using allowance.
+* 2. MUST revert if all of shares cannot be redeemed (due to withdrawal limit being reached, slippage, the owner not having enough shares, etc).
 */
-// STATUS: WIP
-
+// STATUS: VERIFIED
+// https://vaas-stg.certora.com/output/11775/ff8f93d3158f40a5bb27ba35b15e771d/?anonymousKey=c0e02f130ff0d31552c6741d3b1751bda5177bfd
+///@title allowance and minted share amount check for redeem function
+///@notice This rules checks that the redeem function burns shares upto the allowance for the msg.sender and that the shares burned are exactly equal to the specified share amount
 rule redeemCheck(env e){
     uint256 shares;
     address receiver;
@@ -513,165 +498,66 @@ rule redeemCheck(env e){
 
     require getStaticATokenUnderlying() == ATok._underlyingAsset();
     uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
+    require index > RAY();
     require e.msg.sender != currentContract;
+    require receiver != currentContract;
     
     assets = redeem(e, shares, receiver, owner);
     
     uint256 balAfter = balanceOf(owner);
 
-    assert allowed >= balBefore - balAfter,"msg.sender should have allowance for transferring owner's shares";
+    assert e.msg.sender != owner => allowed >= (balBefore - balAfter),"msg.sender should have allowance for transferring owner's shares";
     assert shares == balBefore -balAfter,"exactly the specified amount of shares must be burnt";
-
 }
 
-
-///////////////// NON-ERC4626 DEPOSIT, MINT, WITHDRAW & REDEEM RULES ///////////////////////
-// rule metaDepositCheck(env e){
-    
-//     calldataarg args;
-//     uint256 _ULBal = getULBalanceOf(currentContract);
-//     uint256 _ATBal = getATokenBalanceOf(currentContract);
-//     bool fromUnderlying;
-//     uint256 sharesReceived;
-//     uint256 value;
-    
-//     fromUnderlying, value = metaDepositHelper(e, args);
-    
-//     uint256 ULBal_ = getULBalanceOf(currentContract);
-//     uint256 ATBal_ = getATokenBalanceOf(currentContract);
-
-//     assert balanceCheck(fromUnderlying, _ULBal, ULBal_, _ATBal, ATBal_, value),"assets should be transferred correctly";
-// }
-
-
-rule deposit4Check(env e){
-    uint256 assets;
-    address recipient;
-    uint16 referralCode;
-    bool fromUnderlying;
-
-    uint256 _ULBal = getULBalanceOf(currentContract);
-    uint256 _ATBal = getATokenBalanceOf(currentContract);
-
-    uint256 sharesReceived;
-    
-    sharesReceived = deposit(e, assets, recipient, referralCode, fromUnderlying);
-
-    uint256 ULBal_ = getULBalanceOf(currentContract);
-    uint256 ATBal_ = getATokenBalanceOf(currentContract);
-
-    assert balanceCheck(fromUnderlying, _ULBal, ULBal_, _ATBal, ATBal_, assets),"assets should be transferred correctly";
-}
- 
-/***
-* rule to check the following for the withdraw function:
-* 1. MUST emit the Withdraw event.
-* 2. MUST support a withdraw flow where the shares are burned from owner directly where owner is msg.sender.
-* 3. MUST support a withdraw flow where the shares are burned from owner directly where msg.sender has EIP-20 approval over the shares of owner.
-* _4. SHOULD check msg.sender can spend owner funds, assets needs to be converted to shares and shares should be checked for allowance.
-* 5. MUST revert if all of assets cannot be withdrawn (due to withdrawal limit being reached, slippage, the owner not having enough shares, etc).
-*/
-// STATUS: WIP
-
-// rule metaWithdrawCheck(env e){
-    
-//     address owner;
-//     address recipient;
-//     uint256 shares;
-//     uint256 assets;
-//     bool toUnderlying;
-//     uint256 deadline;
-//     uint8 v;
-//     bytes32 r;
-//     bytes32 s;
-//     // SAT.SignatureParams SP;
-//     calldataarg args;
-    
-//     uint256 allowed = allowance(e, owner, e.msg.sender);
-//     uint256 _ULBal = getULBalanceOf(recipient);
-//     uint256 _ATBal = getATokenBalanceOf(recipient);
-
-//     uint256 sharesBurnt;
-//     uint256 assetsReceived;
-    
-//     sharesBurnt, assetsReceived = metaWithdrawCallHelper(e, owner, recipient, shares, assets, toUnderlying, deadline, v, r, s);
-    
-//     uint256 ULBal_ = getULBalanceOf(recipient);
-//     uint256 ATBal_ = getATokenBalanceOf(recipient);
-
-//     // assertions
-//     // assert !lastReverted => allowed >= sharesBurnt,"msg.sender should have allowane to spend owner's shares";
-//     // assert !lastReverted => shares ==0 || assets == 0,"either shares or assets to be supplied";
-//     // assert !lastReverted => balanceCheck(toUnderlying, _ULBal, ULBal_, _ATBal, ATBal_, assetsReceived),"";
-//     assert allowed >= sharesBurnt,"msg.sender should have allowane to spend owner's shares";
-//     assert shares ==0 || assets == 0,"either shares or assets to be supplied";
-//     assert balanceCheck(toUnderlying, _ULBal, ULBal_, _ATBal, ATBal_, assetsReceived),"assets should be transferred correctly";
-// }
 
 
 /////////////////////////////// OTHER ERC4626 FUNCTIONS ////////////////////////////////////
 
-rule totalAssetCheck(){
-    totalAssets@withrevert();
-    assert !lastReverted;
-}
 
-// ghost to track sum of balances of atoken contract and check is equal to totalSupply
-// rule totalAssetCheck(){
-
-// }
-
-// should be able to deposit an amount as long as it's less than maxdeposit amount
-// rule maxDepositCheck(){
-//     maxDeposit@withrevert();
-//     assert !lastReverted;
-// }
-
-// 
-// rule maxdepLimit(){
-//     uint256 asset;
-//     deposit@withrevert(assets);
-    
-//     assert !lastReverted => assets<= maxDeposit();
-//     assert !lastReverted && assets == maxuint256 => maxDeposit() == maxuint;
-// }
 
 /***
 * rule to check the following for the covertToAssets function:
-* 1. Independent of the user
-* 2. No revert unless overflow
-* 3. Must round down
+* 1. MUST NOT show any variations depending on the caller.
+* 2. MUST round down towards 0.
 */
-// STATUS: WIP
-// rule convertToAssetsCheck(){
-//     env e1;
-//     env e2;
-//     env e3;
-//     uint256 shares1;
-//     uint256 shares2;
-//     uint256 assets1;
-//     uint256 assets2;
-//     uint256 assets3;
-//     uint256 combinedAssets;
-//     storage before  = lastStorage;
+// STATUS: VERIFIED
+// https://vaas-stg.certora.com/output/11775/52075caad70145798090e1038b16e6d0/?anonymousKey=b79fa800a2885356277ca6690c723fece38c7b40
+///@title convert to assets function check
+///@notice This rule checks that the convertToAssets function will return the same amount for assets for the given number of shares under all conditions and the calculation will always round down.
+rule convertToAssetsCheck(){
+    env e1;
+    env e2;
+    env e3;
+    uint256 shares1;
+    uint256 shares2;
+    uint256 assets1;
+    uint256 assets2;
+    uint256 assets3;    
+    uint256 combinedAssets;
+    storage before  = lastStorage;
     
-//     assets1         = convertToAssets@withrevert(e1, shares1)           at before;
-//     assets2         = convertToAssets@withrevert(e2, shares1)           at before;
-//     assets3         = convertToAssets@withrevert(e2, shares2)           at before;
-//     combinedAssets  = convertToAssets@withrevert(e3, shares1 +shares2)  at before;
+    
+    assets1         = convertToAssets(e1, shares1)           at before;
+    assets2         = convertToAssets(e2, shares1)           at before;
+    assets3         = convertToAssets(e2, shares2)           at before;
+    combinedAssets  = convertToAssets(e3, shares1 +shares2)  at before;
 
-//     // assert !lastReverted,"should not revert except for overflow";
-//     assert assets1 == assets2,"conversion to assets should be independent of env such as msg.sender";
-//     assert assets1 + assets3 <= combinedAssets,"conversion should round down and not up";
-// }
+    // assert !lastReverted,"should not revert except for overflow";
+    assert assets1 == assets2,"conversion to assets should be independent of env such as msg.sender";
+    assert shares1 + shares2 <= max_uint256 => assets1 + assets3 <= combinedAssets,"conversion should round down and not up";
+}
+
 
 /***
-* rule to check the following for the covertToShares function:
-* 1. Independent of the user
-* 2. No revert unless overflow
-* 3. Must round down
+* rule to check the following for the convertToShares function:
+* 1. MUST NOT show any variations depending on the caller.
+* 2. MUST round down towards 0.
 */
-// STATUS: WIP
+// STATUS: VERIFIED
+// https://vaas-stg.certora.com/output/11775/a75adca8d9914e80bf09bbaeb168f0f8/?anonymousKey=34ac3fe43e28e4722c7d4211af6e3e1077dc3b22
+///@title convert to shares function check
+///@notice This rule checks that the convertToShares function will return the same amount for shares for the given number of assets under all conditions and the calculation will always round down.
 rule convertToSharesCheck(){
     env e1;
     env e2;
@@ -684,110 +570,60 @@ rule convertToSharesCheck(){
     uint256 combinedShares;
     storage before  = lastStorage;
     
-    shares1         = convertToShares@withrevert(e1, assets1)            at before;
+    
+    shares1         = convertToShares           (e1, assets1)            at before;
     shares2         = convertToShares           (e2, assets1)            at before;
     shares3         = convertToShares           (e2, assets2)            at before;
     combinedShares  = convertToShares           (e3, assets1 + assets2)  at before;
 
     
-    assert shares1 == shares2,"conversion to shares should be independent of env such as msg.sender";
+    assert shares1 == shares2,"conversion to shares should be independent of env variables including msg.sender";
     assert shares1 + shares3 <= combinedShares,"conversion should round down and not up";
 }
 
-// maxDeposit
-// rule maxDepositCheck(){
-//     address receiver;
-//     uint256 maxDep = maxDeposit(receiver);
-//     uint256 depositAmt;
-//     require depositAmt > maxDep;
-
-//     deposit(receiver, maxDep);
-//     deposit@withrevert(receiver, depositAmt);
-//     assert lastReverted,"should revert for any amount greater than maxDep";
-// }
-
 
 /***
-* rule to check the following for the withdraw function:
-* 1. MUST return the maximum amount of assets that could be transferred from owner through withdraw and not cause a revert, 
-*    which MUST NOT be higher than the actual maximum that would be accepted (it should underestimate if necessary).
-* 2. MUST factor in both global and user-specific limits, like if withdrawals are entirely disabled (even temporarily) it MUST return 0.
-* 3. MUST NOT revert
+* rule to check the following for the maxWithdraw function:
+* _1. MUST return the maximum amount of assets that could be transferred from owner through withdraw and not cause a revert, which MUST NOT be higher than the actual maximum that would be accepted (it should underestimate if necessary).
 */
 
-// STATUS: WIP
-// rule maxWithdrawCheck(){
+// STATUS: VERIFIED
+// https://vaas-stg.certora.com/output/11775/58b7ee5ca6b34fa9a3cfe99885c87058/?anonymousKey=0ac1508681a604839aae8a2035f213d1d83b355c
+///@title maxWithdraw function check
+///@notice The rule checks that the maxWithdraw function should, as per the EIP4626 spec, return the maximum amount of assets that could be transferred from owner through withdraw and not cause a revert, which MUST NOT be higher than the actual maximum that would be accepted.
+rule maxWithdrawCheck(){
+    address owner;
+    uint256 maxAssets = maxWithdraw(owner);
+    address receiver;
+    uint256 assets;
 
-// }
+    env e;
+    withdraw@withrevert(e, assets, receiver, owner);
 
-// asset 200
-// rate 100
-// ray 10
-// share 20
-
-// asset 222
-// rate 100
-// ray 10
-// share 22
-// lost 20/100
-
-
-
-
-
-function balanceCheck(bool toUnderlying, uint256 _ULBal, uint256 ULBal_, uint256 _ATBal, uint256 ATBal_, uint256 assetReceived) returns bool{
-    if (toUnderlying){
-        return(ULBal_ == _ULBal + assetReceived);
-    }else{
-        return(ATBal_ == _ATBal + assetReceived);
-    }
+    // assert assets <= maxAssets => !lastReverted;
+    assert !lastReverted => assets <= maxAssets;
 }
 
-
-
-
-
-
-
-
 /***
-* If there is a non-zero supply of shares, there must be a non-zero amount of assets backing the shares
+* rule to check the following for the maxRedeem function:
+* _1. MUST return the maximum amount of shares that could be transferred from owner through redeem and not cause a revert, which MUST NOT be higher than the actual maximum that would be accepted (it should underestimate if necessary).
 */
-// STATUS: WIP
-invariant noSupplyIfNoAssets()
-    totalSupply() != 0 => assetsTotal(currentContract) != 0
 
+// STATUS: VERIFIED
+// https://vaas-stg.certora.com/output/11775/50ecde42577f4d5b85cf8b0dcd3f34d9/?anonymousKey=8c2e9d6bc0407b7e7d5406f5fc38267dbc2dd42f
+///@title maxRedeem function check
+///@notice This rules checks that the maxRedeem function, as per the EIP4626 spec, returns the maximum amount of shares that could be transferred from owner through redeem and not cause a revert, which MUST NOT be higher than the actual maximum that would be accepted (it should underestimate if necessary.
+rule maxRedeemCheck(){
+    address owner;
+    uint256 maxRed = maxRedeem(owner);
+    address receiver;
+    uint256 shares;
+    
+    env e;
+    redeem@withrevert(e, shares, receiver, owner);
 
-/***
-* If a user converts some assets to shares and then converts back to assets or start with shares and convert to and back from assets,
-* the user will have LE the starting amount
-*/
-// STATUS: WIP
-
-// rule houseAlwaysWins(env e){
-//     uint256 _assets;
-//     uint256 _shares;
-//     uint256 _assets_;
-//     uint256 _shares_;
-//     uint256 assets_;
-//     uint256 shares_;
-//     address a1;
-//     address a2;
-//     address a3;
-//     address a4;
-//     address a5;
-//     address a6;
-
-//     _assets_ = redeem(e, _shares, a1, a2);
-//     shares_ = deposit(e, _assets_, a3);
-
-//     _shares_ = deposit(e, _assets, a4);
-//     assets_ = redeem
-//     assert shares_ <= _shares,"shares after converting to and back from assets, should be less than before";
-
-
-// }
-
+    assert !lastReverted => shares <= maxRed;
+}
 
 
 /****************************

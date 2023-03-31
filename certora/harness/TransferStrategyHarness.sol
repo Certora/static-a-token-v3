@@ -1,9 +1,8 @@
 
 pragma solidity ^0.8.10;
 
-//import "./DummyERC20Impl.sol";
-import {IERC20} from '../../lib/aave-v3-core/contracts/dependencies/openzeppelin/contracts/IERC20.sol';
-import {TransferStrategyBase} from '../../lib/aave-v3-periphery/contracts/rewards/transfer-strategies/TransferStrategyBase.sol';
+import {IERC20} from '../munged/lib/aave-v3-core/contracts/dependencies/openzeppelin/contracts/IERC20.sol';
+import {TransferStrategyBase} from '../munged/lib/aave-v3-periphery/contracts/rewards/transfer-strategies/TransferStrategyBase.sol';
 
 contract TransferStrategyHarness is TransferStrategyBase{
 
@@ -14,7 +13,6 @@ function performTransfer(
     address reward,
     uint256 amount
   ) external override(TransferStrategyBase) returns (bool){
-
     return IERC20(reward).transfer(to, amount);
   }
 }

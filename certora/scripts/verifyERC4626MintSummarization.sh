@@ -17,7 +17,7 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     certora/harness/TransferStrategyHarness.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
     certora/harness/DummyERC20_rewardToken.sol \
-    --verify StaticATokenLMHarness:certora/specs/erc4626.spec \
+    --verify StaticATokenLMHarness:certora/specs/erc4626MintSummarization.spec \
     --link StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsController \
            StaticATokenLMHarness:POOL=SymbolicLendingPoolL1 \
             StaticATokenLMHarness:_aToken=AToken \
@@ -36,3 +36,14 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     --settings -t=10000 \
     $RULE \
     --msg "StaticAToken - $RULE $MSG  "
+
+    # --settings -optimisticUnboundedHashing=true \
+    # --settings -hashingLengthBound=224 \
+#link _aToken _aTokenUnderlying _aToken
+#           StaticATokenLM:_aToken=DummyERC20_aToken \
+#           StaticATokenLM:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
+#           StaticATokenLM:_rewardToken=DummyERC20_rewardToken \
+#    certora/harness/ScaledBalanceTokenHarness.sol \
+#    lib/aave-v3-periphery/contracts/rewards/transfer-strategies/StakedTokenTransferStrategy.sol \
+#    lib/aave-v3-periphery/contracts/rewards/transfer-strategies/PullRewardsTransferStrategy.sol \
+    

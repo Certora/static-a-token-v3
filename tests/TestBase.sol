@@ -2,10 +2,16 @@
 pragma solidity ^0.8.10;
 
 import 'forge-std/Test.sol';
+import {IRewardsController} from 'aave-v3-periphery/contracts/rewards/interfaces/IRewardsController.sol';
+import {TransparentUpgradeableProxy} from 'solidity-utils/contracts/transparent-proxy/TransparentUpgradeableProxy.sol';
 import {TransparentProxyFactory} from 'solidity-utils/contracts/transparent-proxy/TransparentProxyFactory.sol';
 import {AaveV3Avalanche, IPool, IPoolAddressesProvider} from 'aave-address-book/AaveV3Avalanche.sol';
+import {StaticATokenFactory} from '../src/StaticATokenFactory.sol';
 import {StaticATokenLM, IERC20, IERC20Metadata, ERC20} from '../src/StaticATokenLM.sol';
 import {IStaticATokenLM} from '../src/interfaces/IStaticATokenLM.sol';
+import {IAToken} from '../src/interfaces/IAToken.sol';
+
+import {DeployATokenFactory} from '../scripts/Deploy.s.sol';
 
 abstract contract BaseTest is Test {
   address constant OWNER = address(1234);
@@ -19,8 +25,8 @@ abstract contract BaseTest is Test {
   uint256 internal spenderPrivateKey;
 
   StaticATokenLM public staticATokenLM;
-
-  function REWARD_TOKEN() external virtual returns (address);
+  address public proxyAdmin;
+  StaticATokenFactory public factory;
 
   function UNDERLYING() external virtual returns (address);
 
@@ -34,22 +40,17 @@ abstract contract BaseTest is Test {
     user = address(vm.addr(userPrivateKey));
     user1 = address(vm.addr(2));
     spender = vm.addr(spenderPrivateKey);
+
     TransparentProxyFactory proxyFactory = new TransparentProxyFactory();
-    StaticATokenLM staticATokenLMImpl = new StaticATokenLM();
-    hoax(OWNER);
-    staticATokenLM = StaticATokenLM(
-      proxyFactory.create(
-        address(staticATokenLMImpl),
-        ADMIN,
-        abi.encodeWithSelector(
-          StaticATokenLM.initialize.selector,
-          this.pool(),
-          this.A_TOKEN(),
-          'Static Aave WETH',
-          'stataWETH'
-        )
-      )
+    proxyAdmin = proxyFactory.createProxyAdmin(ADMIN);
+    factory = DeployATokenFactory._deploy(
+      proxyFactory,
+      proxyAdmin,
+      this.pool(),
+      IRewardsController(IAToken(this.A_TOKEN()).getIncentivesController())
     );
+
+    staticATokenLM = StaticATokenLM(factory.getStaticAToken(this.UNDERLYING()));
     vm.startPrank(user);
   }
 
@@ -76,5 +77,18 @@ abstract contract BaseTest is Test {
     _underlyingToAToken(amountToDeposit, targetUser);
     IERC20(this.A_TOKEN()).approve(address(staticATokenLM), amountToDeposit);
     return staticATokenLM.deposit(amountToDeposit, targetUser);
+  }
+
+  function testAdmin() public {
+    vm.stopPrank();
+    vm.startPrank(proxyAdmin);
+    assertEq(
+      TransparentUpgradeableProxy(payable(address(staticATokenLM))).admin(),
+      proxyAdmin
+    );
+    assertEq(
+      TransparentUpgradeableProxy(payable(address(factory))).admin(),
+      proxyAdmin
+    );
   }
 }
