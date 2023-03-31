@@ -1,44 +1,13 @@
-diff -ruN ../src/StaticATokenLM.sol StaticATokenLM.sol
---- ../src/StaticATokenLM.sol	2023-02-21 15:36:15.000000000 +0000
-+++ StaticATokenLM.sol	2023-03-07 13:55:56.000000000 +0000
-@@ -121,7 +121,7 @@
-     uint256 deadline,
-     PermitParams calldata permit,
-     SignatureParams calldata sigParams
--  ) external returns (uint256) {
-+  ) public returns (uint256) { //HARNESS external -> public
-     require(depositor != address(0), StaticATokenErrors.INVALID_DEPOSITOR);
-     //solium-disable-next-line
-     require(deadline >= block.timestamp, StaticATokenErrors.INVALID_EXPIRATION);
-@@ -180,8 +180,8 @@
-     uint256 dynamicAmount,
-     bool toUnderlying,
-     uint256 deadline,
--    SignatureParams calldata sigParams
--  ) external returns (uint256, uint256) {
-+    SignatureParams memory sigParams //HARNESS calldata -> memory
-+  ) public returns (uint256, uint256) {  //HARNESS external -> public
-     require(owner != address(0), StaticATokenErrors.INVALID_OWNER);
-     //solium-disable-next-line
-     require(deadline >= block.timestamp, StaticATokenErrors.INVALID_EXPIRATION);
-@@ -471,7 +471,7 @@
-     if (fromUnderlying) {
-       address cachedATokenUnderlying = _aTokenUnderlying;
-       IERC20(cachedATokenUnderlying).safeTransferFrom(
--        depositor,
-+        depositor, 
-         address(this),
-         assets
-       );
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 02:00:00
-+++ .gitignore	2023-03-14 15:56:40
++++ .gitignore	2023-04-01 01:24:40
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
+\ No newline at end of file
 diff -ruN lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol
---- lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol	2023-03-14 15:57:48
-+++ lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol	2023-03-14 15:57:40
+--- lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol	2023-04-01 01:25:57
++++ lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol	2023-04-01 01:25:34
 @@ -71,16 +71,16 @@
  
      _domainSeparator = _calculateDomainSeparator();

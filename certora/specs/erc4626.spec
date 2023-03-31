@@ -602,7 +602,7 @@ using SymbolicLendingPoolL1 as pool
             withdraw@withrevert(e, assets, receiver, owner);
 
             // assert assets <= maxAssets => !lastReverted;
-            assert !lastReverted => assets <= maxAssets;
+            assert !lastReverted => maxAssets <= assets;
         }
 
         // maxWithdraw must not revert
@@ -633,7 +633,7 @@ using SymbolicLendingPoolL1 as pool
             env e;
             redeem@withrevert(e, shares, receiver, owner);
 
-            assert !lastReverted => shares <= maxRed;
+            assert !lastReverted => maxRed <= shares;
         }
 
         // maxRedeem must not revert

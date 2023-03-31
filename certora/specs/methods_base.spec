@@ -6,7 +6,7 @@ methods
 	// envfree
 	// -------
 	asset() returns (address) envfree
-    balanceOf(address owner) returns (uint256) envfree
+    // balanceOf(address owner) returns (uint256) envfree
     maxWithdraw(address owner) returns (uint256) envfree
     maxRedeem(address owner) returns (uint256) envfree
 
