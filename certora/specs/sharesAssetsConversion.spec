@@ -40,7 +40,7 @@ import "methods_base.spec"
     *       convertToAssets      *
     ******************************/
         
-        /* NOTE - move to the relevant section in ERC4626. 
+        /* @MM - NOTE - move to the relevant section in ERC4626. 
                   double check that the summarizations, links, etc. are the same across both files */
         /// @title Converting amount to shares is properly rounded down
         rule amountConversionRoundedDown(uint256 amount) {
@@ -58,7 +58,7 @@ import "methods_base.spec"
     *       convertToShares      *
     ******************************/
 
-        /* NOTE - move to the relevant section in ERC4626. 
+        /* @MM - NOTE - move to the relevant section in ERC4626. 
                   double check that the summarizations, links, etc. are the same across both files */
         /// @title Converting shares to amount is properly rounded down
         rule sharesConversionRoundedDown(uint256 shares) {
@@ -79,9 +79,9 @@ import "methods_base.spec"
     *       maxRedeem      *
     ************************/
 
-        /* NOTE - move to the relevant section in ERC4626. 
+        /* @MM - NOTE - move to the relevant section in ERC4626. 
                   double check that the summarizations, links, etc. are the same across both files */
-        // either split this rule, or just place it either in maxWithdraw section or in maxRedeem section.
+        // @MM - either split this rule, or just place it either in maxWithdraw section or in maxRedeem section.
         /// @title Ensure `maxWithdraw` and `maxRedeem` conform to conversion functions
         rule maxWithdrawRedeemCompliance(address owner) {
             uint256 shares = balanceOf(owner);
@@ -95,7 +95,7 @@ import "methods_base.spec"
     *       previewRedeem      *
     ****************************/
 
-        /* NOTE - move to the relevant section in ERC4626. 
+        /* @MM - NOTE - move to the relevant section in ERC4626. 
                   double check that the summarizations, links, etc. are the same across both files */
         /**
         * @title `previewRedeem` is nearly `redeem`
@@ -119,7 +119,7 @@ import "methods_base.spec"
     *       rounding range       *
     ******************************/
 
-        /* Note - The assert regarding prevWithdraw are correct because of roundUP vs roundDown
+        /* @MM - Note - The assert regarding prevWithdraw are correct because of roundUP vs roundDown
                   however in prevRedeem they aren't. What's the thought process behind this spec? */
         /// @title Ensure `previewWithdraw` and `previewRedeem` conform to conversion functions
         rule previewWithdrawRedeemCompliance(uint256 value) {
