@@ -6,6 +6,12 @@ using DummyERC20_rewardToken as _DummyERC20_rewardToken
 using DummyERC20_aTokenUnderlying as _DummyERC20_aTokenUnderlying 
 
 
+/**
+ * @dev Passed in job-id=`3bbb6bc807e44f399d05bc401e65284e`
+ * Note that `UNDERLYING_ASSET_ADDRESS()` was unresolved.
+ */
+
+
 /////////////////// Methods ////////////////////////
 
     methods
@@ -47,13 +53,9 @@ using DummyERC20_aTokenUnderlying as _DummyERC20_aTokenUnderlying
     *
     * Note. `UNDERLYING_ASSET_ADDRESS()` was unresolved!
     */
-    rule aTokenBalanceIsFixed(method f) {
-        require _AToken == asset();
-        require _AToken.UNDERLYING_ASSET_ADDRESS() == _DummyERC20_aTokenUnderlying;
-        
-        // Limit f values
-        require (
-            (f.selector != deposit(uint256,address).selector) &&
+    rule aTokenBalanceIsFixed(method f) filtered {
+        // Exclude balance changing methods
+        f -> (f.selector != deposit(uint256,address).selector) &&
             (f.selector != deposit(uint256,address,uint16,bool).selector) &&
             (f.selector != withdraw(uint256,address,address).selector) &&
             (f.selector != redeem(uint256,address,address).selector) &&
@@ -67,17 +69,16 @@ using DummyERC20_aTokenUnderlying as _DummyERC20_aTokenUnderlying
             (f.selector != metaWithdraw(
                 address,address,uint256,uint256,bool,uint256,
                 (uint8, bytes32, bytes32)
-            ).selector)
-        );
-
-        // Exclude reward related methods
-        require (
+            ).selector) &&
+            // Exclude reward related methods - these are handled below
             (f.selector != collectAndUpdateRewards(address).selector) &&
             (f.selector != claimRewardsOnBehalf(address,address,address[]).selector) &&
             (f.selector != claimSingleRewardOnBehalf(address,address,address).selector) &&
             (f.selector != claimRewardsToSelf(address[]).selector) &&
             (f.selector != claimRewards(address,address[]).selector)
-        );
+    } {
+        require _AToken == asset();
+        require _AToken.UNDERLYING_ASSET_ADDRESS() == _DummyERC20_aTokenUnderlying;
 
         env e;
 
