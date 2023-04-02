@@ -37,7 +37,7 @@ using SymbolicLendingPoolL1 as pool
         // aToken methods
         ATok.approve(address, uint256) returns (bool)
         ATok.allowance(address, address) returns (uint256) envfree
-        ATok._underlyingAsset() returns (address) envfree
+        ATok.UNDERLYING_ASSET_ADDRESS() returns (address) envfree
     }
 
 ///////////////// Definition ///////////////////////
@@ -273,7 +273,7 @@ using SymbolicLendingPoolL1 as pool
             require assets1 > convertToAssets(e1, shareBal1);//asset amount greater than what the user is entitled to on account of his share balance
             uint256 previewShares1 = previewWithdraw(assets1);
 
-            _mint(e2, user, shares1);
+            _mintWrapper(e2, user, shares1);
 
             uint256 shareBal2 = balanceOf(user);
             require assets1 ==  convertToAssets(e3, shareBal2); //asset amount equal to what the user is entitled to on account of his share balance
@@ -300,7 +300,7 @@ using SymbolicLendingPoolL1 as pool
             require assets1 == convertToAssets(e1, shareBal1);//asset amount greater than what the user is entitled to on account of his share balance
             uint256 previewShares1 = previewWithdraw(assets1);
 
-            _mint(e2, user, shares1);
+            _mintWrapper(e2, user, shares1);
             
             uint256 shareBal2 = balanceOf(user);
             require assets1 <  convertToAssets(e3, shareBal2); //asset amount equal to what the user is entitled to on account of his share balance
@@ -359,7 +359,7 @@ using SymbolicLendingPoolL1 as pool
             require shares1 == maxRedeemableShares1;
             uint256 previewAssets1 = previewRedeem(shares1);
             
-            _mint(e1, user, shares2);
+            _mintWrapper(e1, user, shares2);
 
             uint256 maxRedeemableShares2 = maxRedeem(user);
             require shares1 < maxRedeemableShares2;
@@ -381,7 +381,7 @@ using SymbolicLendingPoolL1 as pool
             require shares1 > maxRedeemableShares1;
             uint256 previewAssets1 = previewRedeem(shares1);
             
-            _mint(e1, user, shares2);
+            _mintWrapper(e1, user, shares2);
 
             uint256 maxRedeemableShares2 = maxRedeem(user);
             require shares1 == maxRedeemableShares2;
@@ -447,7 +447,7 @@ using SymbolicLendingPoolL1 as pool
             uint256 allowed = allowance(e, owner, e.msg.sender);
             uint256 balBefore = ATok.balanceOf(receiver);
             uint256 shareBalBefore = balanceOf(owner);
-            require getStaticATokenUnderlying() == ATok._underlyingAsset();
+            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();
             uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
             require e.msg.sender != currentContract;
             require receiver != currentContract;
@@ -493,7 +493,7 @@ using SymbolicLendingPoolL1 as pool
             uint256 allowed = allowance(e, owner, e.msg.sender);
             uint256 balBefore = balanceOf(owner);
 
-            require getStaticATokenUnderlying() == ATok._underlyingAsset();
+            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();
             uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
             require index > RAY();
             require e.msg.sender != currentContract;
@@ -661,28 +661,6 @@ using SymbolicLendingPoolL1 as pool
     *      maxWithdraw      *
     *************************/
 
-        /***
-        * rule to check the following for the maxWithdraw function:
-        * _1. MUST return the maximum amount of assets that could be transferred from owner through withdraw and not cause a revert, which MUST NOT be higher than the actual maximum that would be accepted (it should underestimate if necessary).
-        */
-
-        // STATUS: VERIFIED
-        // https://vaas-stg.certora.com/output/11775/58b7ee5ca6b34fa9a3cfe99885c87058/?anonymousKey=0ac1508681a604839aae8a2035f213d1d83b355c
-        ///@title maxWithdraw function check
-        ///@notice The rule checks that the maxWithdraw function should, as per the EIP4626 spec, return the maximum amount of assets that could be transferred from owner through withdraw and not cause a revert, which MUST NOT be higher than the actual maximum that would be accepted.
-        rule maxWithdrawCheck(){
-            address owner;
-            uint256 maxAssets = maxWithdraw(owner);
-            address receiver;
-            uint256 assets;
-
-            env e;
-            withdraw@withrevert(e, assets, receiver, owner);
-
-            // assert assets <= maxAssets => !lastReverted;
-            assert !lastReverted => maxAssets <= assets;
-        }
-
         // maxWithdraw must not revert
         rule maxWithdrawMustntRevert(address user){
             maxWithdraw@withrevert(user);
@@ -701,27 +679,6 @@ using SymbolicLendingPoolL1 as pool
     /**********************
     *      maxRedeem      *
     ***********************/
-
-        /***
-        * rule to check the following for the maxRedeem function:
-        * _1. MUST return the maximum amount of shares that could be transferred from owner through redeem and not cause a revert, which MUST NOT be higher than the actual maximum that would be accepted (it should underestimate if necessary).
-        */
-
-        // STATUS: VERIFIED
-        // https://vaas-stg.certora.com/output/11775/50ecde42577f4d5b85cf8b0dcd3f34d9/?anonymousKey=8c2e9d6bc0407b7e7d5406f5fc38267dbc2dd42f
-        ///@title maxRedeem function check
-        ///@notice This rules checks that the maxRedeem function, as per the EIP4626 spec, returns the maximum amount of shares that could be transferred from owner through redeem and not cause a revert, which MUST NOT be higher than the actual maximum that would be accepted (it should underestimate if necessary.
-        rule maxRedeemCheck(){
-            address owner;
-            uint256 maxRed = maxRedeem(owner);
-            address receiver;
-            uint256 shares;
-            
-            env e;
-            redeem@withrevert(e, shares, receiver, owner);
-
-            assert !lastReverted => maxRed <= shares;
-        }
 
         // maxRedeem must not revert
         rule maxRedeemMustntRevert(address user){

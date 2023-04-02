@@ -17,7 +17,7 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     certora/harness/TransferStrategyHarness.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
     certora/harness/DummyERC20_rewardToken.sol \
-    --verify StaticATokenLMHarness:certora/specs/erc4626MintSummarization.spec \
+    --verify StaticATokenLMHarness:certora/specs/erc4626MintDepositSummarization.spec \
     --link StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsController \
            StaticATokenLMHarness:POOL=SymbolicLendingPoolL1 \
             StaticATokenLMHarness:_aToken=AToken \
@@ -25,10 +25,10 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
            AToken:POOL=SymbolicLendingPoolL1 \
     --solc solc8.10 \
     --optimistic_loop \
-    --packages aave-v3-core=lib/aave-v3-core \
-               @aave/core-v3=lib/aave-v3-core \
-               aave-v3-periphery=lib/aave-v3-periphery \
-               solidity-utils=lib/solidity-utils/src \
+    --packages aave-v3-core=certora/munged/lib/aave-v3-core \
+               @aave/core-v3=certora/munged/lib/aave-v3-core \
+               aave-v3-periphery=certora/munged/lib/aave-v3-periphery \
+               solidity-utils=certora/munged/lib/solidity-utils/src \
     --cloud \
     --optimistic_hashing \
     --settings -t=10000 \

@@ -31,7 +31,7 @@ import "erc4626.spec"
             uint256 contractAssetBalBefore = ATok.balanceOf(currentContract);
             uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
             
-            require getStaticATokenUnderlying() == ATok._underlyingAsset();//Without this a different index will be used for conversions in the Atoken contract compared to the one used in StaticAToken
+            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();//Without this a different index will be used for conversions in the Atoken contract compared to the one used in StaticAToken
             require e.msg.sender != currentContract;
             require index > RAY();//since the index is initiated as RAY and only increases after that. index < RAY gives strange behaviors causing wildly inaccurate amounts being deposited and minted
 
@@ -53,7 +53,7 @@ import "erc4626.spec"
             uint256 contractAssetBalBefore = ATok.balanceOf(currentContract);
             uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
             
-            require getStaticATokenUnderlying() == ATok._underlyingAsset();//Without this a different index will be used for conversions in the Atoken contract compared to the one used in StaticAToken
+            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();//Without this a different index will be used for conversions in the Atoken contract compared to the one used in StaticAToken
             require e.msg.sender != currentContract;
             require index == RAY();//since the index is initiated as RAY and only increases after that. index < RAY gives strange behaviors causing wildly inaccurate amounts being deposited and minted
 

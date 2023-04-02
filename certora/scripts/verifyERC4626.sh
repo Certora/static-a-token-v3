@@ -19,17 +19,18 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     --verify StaticATokenLMHarness:certora/specs/erc4626.spec \
     --link StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
            StaticATokenLMHarness:POOL=SymbolicLendingPoolL1 \
-            StaticATokenLMHarness:_aToken=AToken \
+           StaticATokenLMHarness:_aToken=AToken \
            StaticATokenLMHarness:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
            AToken:POOL=SymbolicLendingPoolL1 \
+           AToken:_underlyingAsset=DummyERC20_aTokenUnderlying \
     --solc solc8.10 \
     --optimistic_loop \
-    --packages aave-v3-core=lib/aave-v3-core \
-               @aave/core-v3=lib/aave-v3-core \
-               aave-v3-periphery=lib/aave-v3-periphery \
-               solidity-utils=lib/solidity-utils/src \
+    --packages aave-v3-core=certora/munged/lib/aave-v3-core \
+               @aave/core-v3=certora/munged/lib/aave-v3-core \
+               aave-v3-periphery=certora/munged/lib/aave-v3-periphery \
+               solidity-utils=certora/munged/lib/solidity-utils/src \
     --cloud \
-    --send_only \
+    --rule_sanity \
     --optimistic_hashing \
     --settings -t=10000 \
     $RULE \

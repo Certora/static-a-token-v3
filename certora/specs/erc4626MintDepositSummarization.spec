@@ -10,7 +10,7 @@ using SymbolicLendingPoolL1 as pool
 
         pool.getReserveNormalizedIncome(address) returns (uint256)
         getStaticATokenUnderlying() returns (address) envfree
-        ATok._underlyingAsset() returns (address) envfree
+        ATok.UNDERLYING_ASSET_ADDRESS() returns (address) envfree
     }
 
 ///////////////// DEFINITIONS //////////////////////
@@ -37,7 +37,7 @@ using SymbolicLendingPoolL1 as pool
             address receiver;
             uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
             
-            require getStaticATokenUnderlying() == ATok._underlyingAsset();//Without this a different index will be used for conversions in the Atoken contract compared to the one used in StaticAToken
+            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();//Without this a different index will be used for conversions in the Atoken contract compared to the one used in StaticAToken
             require e.msg.sender != currentContract;
             require index > RAY();//since the index is initiated as RAY and only increases after that. index < RAY gives strange behaviors causing wildly inaccurate amounts being deposited and minted
 
@@ -56,7 +56,7 @@ using SymbolicLendingPoolL1 as pool
             address receiver;
             uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
             
-            require getStaticATokenUnderlying() == ATok._underlyingAsset();//Without this a different index will be used for conversions in the Atoken contract compared to the one used in StaticAToken
+            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();//Without this a different index will be used for conversions in the Atoken contract compared to the one used in StaticAToken
             require e.msg.sender != currentContract;
             require index == RAY();//since the index is initiated as RAY and only increases after that. index < RAY gives strange behaviors causing wildly inaccurate amounts being deposited and minted
 
@@ -84,7 +84,7 @@ using SymbolicLendingPoolL1 as pool
             uint256 shares;
             address receiver;
             uint256 assets;
-            require getStaticATokenUnderlying() == ATok._underlyingAsset();
+            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();
             require e.msg.sender != currentContract;
             uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
 
@@ -107,7 +107,7 @@ using SymbolicLendingPoolL1 as pool
             uint256 shares;
             address receiver;
             uint256 assets;
-            require getStaticATokenUnderlying() == ATok._underlyingAsset();
+            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();
             require e.msg.sender != currentContract;
             uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
 
@@ -130,7 +130,7 @@ using SymbolicLendingPoolL1 as pool
             uint256 shares;
             address receiver;
             uint256 assets;
-            require getStaticATokenUnderlying() == ATok._underlyingAsset();
+            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();
             require e.msg.sender != currentContract;
             uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
 

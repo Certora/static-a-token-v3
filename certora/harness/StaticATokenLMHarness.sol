@@ -65,4 +65,8 @@ constructor(
     _claimRewardsOnBehalf(onBehalfOf, receiver, rewards);
   }
 
+  function _mintWrapper(address to, uint256 amount) external {
+    _mint(to, amount);
+  }
+
 }

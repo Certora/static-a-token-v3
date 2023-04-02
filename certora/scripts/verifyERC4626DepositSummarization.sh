@@ -25,17 +25,17 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
            AToken:POOL=SymbolicLendingPoolL1 \
     --solc solc8.10 \
     --optimistic_loop \
-    --packages aave-v3-core=lib/aave-v3-core \
-               @aave/core-v3=lib/aave-v3-core \
-               aave-v3-periphery=lib/aave-v3-periphery \
-               solidity-utils=lib/solidity-utils/src \
+    --packages aave-v3-core=certora/munged/lib/aave-v3-core \
+               @aave/core-v3=certora/munged/lib/aave-v3-core \
+               aave-v3-periphery=certora/munged/lib/aave-v3-periphery \
+               solidity-utils=certora/munged/lib/solidity-utils/src \
     --cloud \
     --optimistic_hashing \
     --settings -t=10000 \
     --settings -mediumTimeout=1000 \
     --settings -depth=15 \
     $RULE \
-    --msg "StaticAToken - $RULE $MSG  "
+    --msg "StaticAToken - $RULE $MSG"
 
     # --staging master\
     # --settings -medium_timeout=800 \
