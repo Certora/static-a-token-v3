@@ -1,8 +1,7 @@
 
 pragma solidity ^0.8.10;
 
-import {RewardsController} from '../munged/lib/aave-v3-periphery/contracts/rewards/RewardsController.sol';
-import {RewardsDataTypes} from '../munged/lib/aave-v3-periphery/contracts/rewards/libraries/RewardsDataTypes.sol';
+import {RewardsController, RewardsDataTypes} from 'aave-v3-periphery/contracts/rewards/RewardsController.sol';
 
 contract RewardsControllerHarness is RewardsController{
 
