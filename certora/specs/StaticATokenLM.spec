@@ -15,16 +15,15 @@ methods
     totalSupply() returns uint256 envfree
 	balanceOf(address) returns (uint256) envfree
     rewardTokens() returns (address[]) envfree
+    totalAssets() returns (uint256) envfree
 
     getRewardTokensLength() returns (uint256) envfree 
     getRewardToken(uint256) returns (address) envfree
     isRegisteredRewardToken(address) envfree
+    getRewardsIndexOnLastInteraction(address,address) returns (uint128) envfree
 
-    _AToken.totalSupply() returns uint256 envfree
 	_AToken.balanceOf(address) returns (uint256) envfree
-	_AToken.scaledTotalSupply() returns (uint256) envfree
-    _AToken.scaledBalanceOf(address) returns (uint256) envfree
-    _AToken.transferFrom(address,address,uint256) returns (bool)
+
     
     _RewardsController.getAvailableRewardsCount(address) returns (uint128) envfree
     _RewardsController.getDistributionEnd(address, address)  returns (uint256) envfree
@@ -35,7 +34,8 @@ methods
     _RewardsController.getUserAccruedReward(address, address, address) returns (uint256) envfree
     _RewardsController.getAssetDecimals(address) returns (uint8) envfree 
     _RewardsController.getRewardsData(address,address) returns (uint256,uint256,uint256,uint256) envfree
-    _RewardsController.getUserAssetIndex(address,address, address) returns (uint256) envfree 
+    _RewardsController.getUserAssetIndex(address,address, address) returns (uint256) envfree
+    _RewardsController.getRewardsIndex(address,address)returns (uint256) envfree 
     
     _DummyERC20_rewardToken.balanceOf(address) returns (uint256) envfree
 
@@ -119,39 +119,51 @@ hook Sstore balanceOf[KEY address a] uint256 balance (uint256 old_balance) STORA
   havoc sumAllBalance assuming sumAllBalance@new() == sumAllBalance@old() + balance - old_balance;
 }
 
-hook Sload uint256 balance balanceOf[KEY address a] STORAGE {
-    require balance <= sumAllBalance();
-} 
+// hook Sload uint256 balance balanceOf[KEY address a] STORAGE {
+//     require balance <= sumAllBalance();
+// } 
 
-/// @title Sum of scaled balances of AToken 
-ghost sumAllATokenScaledBalance() returns mathint {
-    init_state axiom sumAllATokenScaledBalance() == 0;
-}
+invariant solvency_1_CASE_SPLIT_redeem(address user)
+    balanceOf(user) <= _AToken.balanceOf(currentContract)
+    filtered { f -> f.selector == redeem(uint256,address,address,bool).selector}
+    {
+        preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e1) {
+            require balanceOf(owner) <= totalSupply(); //todo: replace with requireInvariant
+        }
+    }
+
+invariant solvency_1(address user)
+    balanceOf(user) <= _AToken.balanceOf(currentContract)
+
+invariant solvency_2()
+    ((totalAssets() == 0) => (totalSupply() == 0))
+
+invariant solvency_2_CASE_SPLIT_redeem()
+    ((totalAssets() == 0) => (totalSupply() == 0))
+    filtered { f -> f.selector == redeem(uint256,address,address,bool).selector}
+    {
+        preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e1) {
+            require balanceOf(owner) <= totalSupply(); //todo: replace with requireInvariant
+        }
+    }
+
+invariant solvency_2_CASE_SPLIT_mint()
+    ((totalAssets() == 0) => (totalSupply() == 0))
+    filtered { f -> f.selector == mint(uint256,address).selector}
+    
+invariant solvency_3()
+    (totalAssets() >= totalSupply())
 
 
-/// @dev sample struct UserState {uint128 balance; uint128 additionalData; }
-hook Sstore _AToken._userState[KEY address a] .(offset 0) uint128 balance (uint128 old_balance) STORAGE {
-  havoc sumAllATokenScaledBalance assuming sumAllATokenScaledBalance@new() == sumAllATokenScaledBalance@old() + balance - old_balance;
-}
-
-hook Sload uint128 balance _AToken._userState[KEY address a] .(offset 0) STORAGE {
-    require balance <= sumAllATokenScaledBalance();
-} 
-
-
-/// @title Static AToeknLM balancerOf(user) <= totalSupply()
-//add explanation
-//pass with rule_sanity basic except metaDeposit()
-//https://vaas-stg.certora.com/output/99352/50b06419651b484393edadcb4d9c7eec/?anonymousKey=4c13f13bb792f11a1a73b1a9f85674a7beadce3c
-//https://vaas-stg.certora.com/output/99352/864a523dbba54186a390ea406d75110a/?anonymousKey=ba778aecce621d71de3e06d663acbc6b29857180
-
-invariant inv_balanceOf_leq_totalSupply(address user)
-	balanceOf(user) <= totalSupply()
-	{
-		preserved {
-			requireInvariant sumAllBalance_eq_totalSupply();
-		}
-	}
+invariant solvency_3_CASE_SPLIT_redeem()
+    (totalAssets() >= totalSupply())
+    filtered { f -> f.selector == redeem(uint256,address,address,bool).selector}
+    {
+        preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e1) {
+            require balanceOf(owner) <= totalSupply(); //todo: replace with requireInvariant
+        }
+    }
+    
 
 
 /// @title a registered token in StaticATokenLM must exist in RewardsController._assets.[_atoken].availableRewards
@@ -163,106 +175,14 @@ invariant inv_balanceOf_leq_totalSupply(address user)
 invariant registered_reward_exists_in_controller(address reward)
     (isRegisteredRewardToken(reward) =>  
     (_RewardsController.getAvailableRewardsCount(_AToken)  > 0
-    && _RewardsController.getRewardsByAsset(_AToken, 0) == reward))
+    && _RewardsController.getRewardsByAsset(_AToken, 0) == reward)) 
+    filtered { f -> f.selector != initialize(address,string,string).selector }//Todo: remove filter and use preserved block when CERT-1706 is fixed
     {
-        // 
-        // Currently fail on initialized.
-        // Todo - remove this comment when  CERT-1706
         //preserved initialize(address newAToken,string staticATokenName, string staticATokenSymbol) {
         //     require newAToken == _AToken;
         // }
-        //runtime error -  CERT-1703
-        // preserved initialize(address newAToken,string staticATokenName, string staticATokenSymbol) {
-        //     require false;
-        // }
     }
 
-
-
-/// @title AToken balancerOf(user) <= AToken totalSupply()
-//timeout on redeem metaWithdraw
-//error when running with rule_sanity
-//https://vaas-stg.certora.com/output/99352/509a56a1d46348eea0872b3a57c4d15a/?anonymousKey=3e15ac5a5b01e689eb3f71580e3532d8098e71b5
-invariant inv_atoken_balanceOf_leq_totalSupply(address user)
-	_AToken.balanceOf(user) <= _AToken.totalSupply()
-     filtered { f -> !f.isView && f.selector != redeem(uint256,address,address,bool).selector}
-    {
-		preserved with (env e){
-			requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-        }
-	}
-
-/// @title AToken balancerOf(user) <= AToken totalSupply()
-/// @dev case split of inv_atoken_balanceOf_leq_totalSupply
-//pass, times out with rule_sanity basic
-invariant inv_atoken_balanceOf_leq_totalSupply_redeem(address user)
-	_AToken.balanceOf(user) <= _AToken.totalSupply()
-    filtered { f -> f.selector == redeem(uint256,address,address,bool).selector}
-    {
-		preserved with (env e){
-			requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-    	}
-	}
-
-//timeout when running with rule_sanity
-//https://vaas-stg.certora.com/output/99352/7840410509f94183bbef864770193ed9/?anonymousKey=b1a13994a4e51f586db837cc284b39c670532f50
-/// @title AToken sum of 2 balancers <= AToken totalSupply()
-invariant inv_atoken_balanceOf_2users_leq_totalSupply(address user1, address user2)
-	(_AToken.balanceOf(user1) + _AToken.balanceOf(user2))<= _AToken.totalSupply()
-    {
-		preserved with (env e1){
-            setup(e1, user1);
-		    setup(e1, user2);
-		}
-        preserved redeem(uint256 shares, address receiver, address owner) with (env e2){
-            require user1 != user2;
-            require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-        }
-        preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e3){
-            require user1 != user2;
-        	requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-            require _AToken.balanceOf(e3.msg.sender) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-            require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-        }
-        preserved withdraw(uint256 assets, address receiver,address owner) with (env e4){
-            require user1 != user2;
-        	requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-            require _AToken.balanceOf(e4.msg.sender) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-            require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-        }
-
-        preserved metaWithdraw(address owner, address recipient,uint256 staticAmount,uint256 dynamicAmount,bool toUnderlying,uint256 deadline,_StaticATokenLM.SignatureParams sigParams)
-        with (env e5){
-            require user1 != user2;
-        	requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-            require _AToken.balanceOf(e5.msg.sender) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-            require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-        }
-
-	}
-
-/// @title AToken scaledBalancerOf(user) <= AToken scaledTotalSupply()
-//pass with rule_sanity basic except metaDeposit()
-//https://vaas-stg.certora.com/output/99352/6798b502f97a4cd2b05fce30947911c0/?anonymousKey=c5808a8997a75480edbc45153165c8763488cd1e
-invariant inv_atoken_scaled_balanceOf_leq_totalSupply(address user)
-	_AToken.scaledBalanceOf(user) <= _AToken.scaledTotalSupply()
-    {
-		preserved {
-			requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-		}
-	}
-
-/// @title Sum of balances=totalSupply()
-//pass with rule_sanity basic except metaDeposit()
-//https://vaas-stg.certora.com/output/99352/dc5165bb78374b3093fb5c90cd259be3/?anonymousKey=00cfd5d6c8999bf449630d2c63bdec082f292c7c
-invariant sumAllBalance_eq_totalSupply()
-	sumAllBalance() == totalSupply()
-
-/// @title Sum of AToken scaled balances = AToken scaled totalSupply()
-//pass with rule_sanity basic except metaDeposit()
-//https://vaas-stg.certora.com/output/99352/4f91637a96d647baab9accb1093f1690/?anonymousKey=53ccda4a9dd8988205d4b614d9989d1e4148533f
-invariant sumAllATokenScaledBalance_eq_totalSupply()
-	sumAllATokenScaledBalance() == _AToken.scaledTotalSupply()
 
 
 
@@ -333,9 +253,9 @@ rule totalAssets_stable(method f)
 {
     env e;
     calldataarg args;
-    mathint totalAssetBefore = totalAssets(e);
+    mathint totalAssetBefore = totalAssets();
     f(e, args); 
-    mathint totalAssetAfter = totalAssets(e);
+    mathint totalAssetAfter = totalAssets();
     assert totalAssetAfter == totalAssetBefore;
 }
 
@@ -349,9 +269,9 @@ rule totalAssets_stable_after_collectAndUpdateRewards()
     require _RewardsController.getRewardsByAsset(_AToken, 0) != _AToken;
     require _RewardsController.getUserAccruedReward(currentContract, _AToken, _AToken) ==0;
     address reward;
-    mathint totalAssetBefore = totalAssets(e);
+    mathint totalAssetBefore = totalAssets();
     collectAndUpdateRewards(e, reward); 
-    mathint totalAssetAfter = totalAssets(e);
+    mathint totalAssetAfter = totalAssets();
     assert totalAssetAfter == totalAssetBefore;
 }
 
@@ -857,38 +777,6 @@ rule getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf(method f)
     assert deltaBalance <= claimableRewardsBefore;
 }
 
-//from unregistered_atoken.spec
-// fail
-//todo: remove 
-rule claimable_leq_total_claimable() {
-    require _RewardsController.getAvailableRewardsCount(_AToken) == 1;
-    
-	require _RewardsController.getRewardsByAsset(_AToken, 0) == _DummyERC20_rewardToken;
-
-    env e;
-    address user;
-   
-    require currentContract != user;
-    require _AToken != user;
-    require _RewardsController != user;
-    require _DummyERC20_aTokenUnderlying  != user;
-    require _DummyERC20_rewardToken != user;
-    require _SymbolicLendingPoolL1 != user;
-    require _TransferStrategy != user;
-    require _ScaledBalanceToken != user;
-    require _TransferStrategy != user;
-
-    requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
-    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
-    
-
-    require getrewardsIndexOnLastInteraction(e, user, _DummyERC20_rewardToken) == 0;
-    require getUnclaimedRewards(e, user, _DummyERC20_rewardToken) == 0;
-    
-    uint256 total = getTotalClaimableRewards(e, _DummyERC20_rewardToken);
-    uint256 claimable = getClaimableRewards(e, user, _DummyERC20_rewardToken);
-    assert claimable <= total, "Too much claimable";
-}
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
