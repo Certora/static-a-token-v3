@@ -33,12 +33,6 @@ using DummyERC20_aTokenUnderlying as _DummyERC20_aTokenUnderlying
 
 ///////////////// Properties ///////////////////////
 
-    /* @MM - NOTE - Is this timing out? are the other rules just a case splitting of this rule?
-                    the requires can be changed to filter
-       @SH - NOTE - It does not time out.
-                  - I changed the require to filters.
-                  - Indeed the other rules are splitting of this one (they need special input)
-    */
     /**
     * @title User AToken balance is fixed
     * Interaction with `StaticAtokenLM` should not change a user's AToken balance,
