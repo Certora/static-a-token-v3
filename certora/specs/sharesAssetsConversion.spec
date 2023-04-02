@@ -1,6 +1,6 @@
 import "methods_base.spec"
 
-/// Latest run succeeded (with rule_sanity): job-id=`9c3c36b91b594b0f9a57c21e2d667979`
+//// @dev Latest run succeeded (with rule_sanity): job-id=`9c3c36b91b594b0f9a57c21e2d667979`
 
 /////////////////// Methods ////////////////////////
 
@@ -19,9 +19,8 @@ import "methods_base.spec"
 
 ///////////////// Properties ///////////////////////
 
-    /**
-    * @notice A note on the conversion functions
-    * ------------------------------------------
+    /*** 
+	* #### A note on the conversion functions
     * The conversion functions are:
     * - assets to shares = `S(a) = (a * R) // r`
     * - shares to assets = `A(s) = (s * r) // R`
@@ -37,101 +36,33 @@ import "methods_base.spec"
     */
 
     /*****************************
-    *       convertToAssets      *
-    ******************************/
-        
-        /* @MM - NOTE - move to the relevant section in ERC4626. 
-                  double check that the summarizations, links, etc. are the same across both files */
-        /// @title Converting amount to shares is properly rounded down
-        rule amountConversionRoundedDown(uint256 amount) {
-            uint256 shares = convertToShares(amount);
-            assert convertToAssets(shares) <= amount, "Too many converted shares";
-
-            /* The next assertion shows that the rounding in `convertToAssets` is tight. This
-            * protects the user. For example, a function `convertToAssets` that always returns 
-            * zero would have passed the previous assertion, but not the next one.
-            */
-            assert convertToAssets(shares + 1) >= amount, "Too few converted shares";
-        }
-
-    /*****************************
-    *       convertToShares      *
-    ******************************/
-
-        /* @MM - NOTE - move to the relevant section in ERC4626. 
-                  double check that the summarizations, links, etc. are the same across both files */
-        /// @title Converting shares to amount is properly rounded down
-        rule sharesConversionRoundedDown(uint256 shares) {
-            uint256 amount = convertToAssets(shares);
-            assert convertToShares(amount) <= shares, "Amount converted is too high";
-
-            /* The next assertion shows that the rounding in `convertToShares` is tight.
-            * For example, a function `convertToShares` that always returns zero
-            * would have passed the previous assertion, but not the next one.
-            */
-            assert convertToShares(amount + 1) >= shares, "Amount converted is too low";
-        }
-
-    /*************************
-    *       maxWithdraw      *
-    **************************/
-    /***********************
-    *       maxRedeem      *
-    ************************/
-
-        /* @MM - NOTE - move to the relevant section in ERC4626. 
-                  double check that the summarizations, links, etc. are the same across both files */
-        // @MM - either split this rule, or just place it either in maxWithdraw section or in maxRedeem section.
-        /// @title Ensure `maxWithdraw` and `maxRedeem` conform to conversion functions
-        rule maxWithdrawRedeemCompliance(address owner) {
-            uint256 shares = balanceOf(owner);
-            uint256 amountConverted = convertToAssets(shares);
-
-            assert maxWithdraw(owner) <= amountConverted, "Can withdraw more than converted amount";
-            assert maxRedeem(owner) <= shares, "Can redeem more than available shares)";
-        }
-
-    /***************************
-    *       previewRedeem      *
-    ****************************/
-
-        /* @MM - NOTE - move to the relevant section in ERC4626. 
-                  double check that the summarizations, links, etc. are the same across both files */
-        /**
-        * @title `previewRedeem` is nearly `redeem`
-        * @notice From ERC4626:
-        * > previewRedeem ... MUST return as close to and no more than the exact amount
-        * >  of assets that would be withdrawn in a redeem call in the same transaction.
-        * >  I.e. redeem should return the same or more assets as previewRedeem if called
-        * > in the same transaction.
-        */
-        rule previewRedeemNearlyRedeem(uint256 shares) {
-            env e;
-            address owner = e.msg.sender;  // Handy alias
-            uint256 previewAssets = previewRedeem(e, shares);
-            uint256 redeemAssets = redeem(e, shares, owner, owner);
-
-            assert redeemAssets >= previewAssets, "Redeem returns less assets than preview";
-            assert redeemAssets <= previewAssets + 1, "Redeem returns far more assets than preview";
-        }
-
-    /*****************************
     *       rounding range       *
     ******************************/
 
-        /* @MM - Note - The assert regarding prevWithdraw are correct because of roundUP vs roundDown
-                  however in prevRedeem they aren't. What's the thought process behind this spec? */
-        /// @title Ensure `previewWithdraw` and `previewRedeem` conform to conversion functions
-        rule previewWithdrawRedeemCompliance(uint256 value) {
+        /**
+		 * @title Ensure `previewWithdraw` tightly rounds up shares
+		 * The lower bound (i.e. `previewWithdraw <= convertToShares`) follows from ERC4626. The upper bound
+		 * is based on the current implementation.
+		 */
+        rule previewWithdrawRoundingRange(uint256 assets) {
             env e;
-            uint256 assets = convertToAssets(value);
-            uint256 shares = convertToShares(value);
+            uint256 shares = convertToShares(assets);
 
-            assert previewWithdraw(e, value) >= shares, "Preview withdraw takes less shares than converted";
-            assert previewWithdraw(e, value) <= shares + 1, "Preview withdraw costs too many shares";
+            assert previewWithdraw(e, assets) >= shares, "Preview withdraw takes less shares than converted";
+            assert previewWithdraw(e, assets) <= shares + 1, "Preview withdraw costs too many shares";
+        }
 
-            assert previewRedeem(e, value) <= assets, "Preview redeem yields more assets than converted";
-            assert previewRedeem(e, value) + 1 + rate() / RAY() >= assets, "Preview redeem yields too few assets";
+        /**
+		 * @title Ensure `previewRedeem` tightly rounds down assets
+		 * The upper bound (i.e. `previewRedeem >= convertToAssets`) follows from ERC4626. The lower bound
+		 * is based on the current implementation.
+		 */
+        rule previewRedeemRoundingRange(uint256 shares) {
+            env e;
+            uint256 assets = convertToAssets(shares);
+
+            assert previewRedeem(e, shares) <= assets, "Preview redeem yields more assets than converted";
+            assert previewRedeem(e, shares) + 1 + rate() / RAY() >= assets, "Preview redeem yields too few assets";
         }
 
         /**

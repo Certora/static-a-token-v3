@@ -542,6 +542,19 @@ using SymbolicLendingPoolL1 as pool
             assert assets1 == assets2,"conversion to assets should be independent of env such as msg.sender";
             assert shares1 + shares2 <= max_uint256 => assets1 + assets3 <= combinedAssets,"conversion should round down and not up";
         }
+        
+		/// @title Converting amount to shares is properly rounded down
+        rule amountConversionRoundedDown(uint256 amount) {
+			env e;
+            uint256 shares = convertToShares(e, amount);
+            assert convertToAssets(e, shares) <= amount, "Too many converted shares";
+
+            /* The next assertion shows that the rounding in `convertToAssets` is tight. This
+            * protects the user. For example, a function `convertToAssets` that always returns 
+            * zero would have passed the previous assertion, but not the next one.
+            */
+            assert convertToAssets(e, shares + 1) >= amount, "Too few converted shares";
+        }
 
     /*****************************
     *      convertToShares      *
@@ -578,6 +591,19 @@ using SymbolicLendingPoolL1 as pool
             assert shares1 == shares2,"conversion to shares should be independent of env variables including msg.sender";
             assert shares1 + shares3 <= combinedShares,"conversion should round down and not up";
         }
+        
+		/// @title Converting shares to amount is properly rounded down
+        rule sharesConversionRoundedDown(uint256 shares) {
+			env e;
+            uint256 amount = convertToAssets(e, shares);
+            assert convertToShares(e, amount) <= shares, "Amount converted is too high";
+
+            /* The next assertion shows that the rounding in `convertToShares` is tight.
+            * For example, a function `convertToShares` that always returns zero
+            * would have passed the previous assertion, but not the next one.
+            */
+            assert convertToShares(e, amount + 1) >= shares, "Amount converted is too low";
+        }
 
     /************************
     *      maxWithdraw      *
@@ -611,6 +637,15 @@ using SymbolicLendingPoolL1 as pool
             assert !lastReverted;
         }
 
+		/// @title Ensure `maxWithdraw` conforms to conversion functions
+        rule maxWithdrawConversionCompliance(address owner) {
+			env e;
+            uint256 shares = balanceOf(owner);
+            uint256 amountConverted = convertToAssets(e, shares);
+
+            assert maxWithdraw(owner) <= amountConverted, "Can withdraw more than converted amount";
+        }
+
     /**********************
     *      maxRedeem      *
     ***********************/
@@ -640,6 +675,12 @@ using SymbolicLendingPoolL1 as pool
         rule maxRedeemMustntRevert(address user){
             maxRedeem@withrevert(user);
             assert !lastReverted;
+        }
+
+		/// @title Ensure `maxRedeem` is not higher than balance
+        rule maxWithdrawRedeemCompliance(address owner) {
+            uint256 shares = balanceOf(owner);
+            assert maxRedeem(owner) <= shares, "Can redeem more than available shares)";
         }
 
     /************************
