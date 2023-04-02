@@ -1,6 +1,6 @@
 import "methods_base.spec"
 
-//// @dev Latest run succeeded (with rule_sanity): job-id=`9c3c36b91b594b0f9a57c21e2d667979`
+//// @dev Latest run succeeded (without rule_sanity): job-id=`f2935fc2c0234b6e9710f40e20d5dc07`
 
 /////////////////// Methods ////////////////////////
 
