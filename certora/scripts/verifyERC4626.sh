@@ -11,14 +11,13 @@ fi
 
 certoraRun certora/harness/StaticATokenLMHarness.sol \
     certora/munged/lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
-    certora/munged/lib/aave-v3-periphery/contracts/rewards/RewardsController.sol \
     certora/harness/RewardsControllerHarness.sol \
     certora/harness/SymbolicLendingPoolL1.sol \
     certora/harness/TransferStrategyHarness.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
     certora/harness/DummyERC20_rewardToken.sol \
     --verify StaticATokenLMHarness:certora/specs/erc4626.spec \
-    --link StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsController \
+    --link StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
            StaticATokenLMHarness:POOL=SymbolicLendingPoolL1 \
             StaticATokenLMHarness:_aToken=AToken \
            StaticATokenLMHarness:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
