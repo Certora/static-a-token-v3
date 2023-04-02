@@ -20,8 +20,8 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
     --optimistic_hashing \
     --settings -t=7200,-mediumTimeout=20,-depth=20  \
     --cloud \
-    --packages aave-v3-core=lib/aave-v3-core \
-               @aave/core-v3=lib/aave-v3-core \
-               aave-v3-periphery=lib/aave-v3-periphery \
-               solidity-utils=lib/solidity-utils/src \
+    --packages aave-v3-core=certora/munged/lib/aave-v3-core \
+               @aave/core-v3=certora/munged/lib/aave-v3-core \
+               aave-v3-periphery=certora/munged/lib/aave-v3-periphery \
+               solidity-utils=certora/munged/lib/solidity-utils/src \
 	--msg "aToken balance" \

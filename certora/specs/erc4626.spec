@@ -45,7 +45,7 @@ using SymbolicLendingPoolL1 as pool
     definition RAY() returns uint256 = 10^27;
 
 ///////////////// Properties ///////////////////////
-    /*****************************
+    /****************************
     *       previewDeposit      *
     *****************************/
 
@@ -114,7 +114,7 @@ using SymbolicLendingPoolL1 as pool
             assert previewShares2 == previewShares3,"previewDeposit should not change regardless of assets < or = allowance";
         }
 
-    /*****************************
+    /****************************
     *        previewMint        *
     *****************************/
 
@@ -185,7 +185,7 @@ using SymbolicLendingPoolL1 as pool
             assert previewAssets2 == previewAssets3,"previewMint should not change regardless of C2A(shares) < or = allowance";
         }
 
-    /*********************************
+    /********************************
     *        previewWithdraw        *
     *********************************/
 
@@ -274,7 +274,7 @@ using SymbolicLendingPoolL1 as pool
             uint256 previewShares1 = previewWithdraw(assets1);
 
             _mint(e2, user, shares1);
-            
+
             uint256 shareBal2 = balanceOf(user);
             require assets1 ==  convertToAssets(e3, shareBal2); //asset amount equal to what the user is entitled to on account of his share balance
             uint256 previewShares2 = previewWithdraw(assets1);
@@ -310,7 +310,7 @@ using SymbolicLendingPoolL1 as pool
             "preview withdraw should be independent of allowance";
         }
 
-    /*******************************
+    /******************************
     *        previewRedeem        *
     *******************************/
 
