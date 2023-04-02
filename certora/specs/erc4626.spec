@@ -151,7 +151,7 @@ using SymbolicLendingPoolL1 as pool
 
         // https://vaas-stg.certora.com/output/11775/937cb9bc984947de98c9bf759b483017/?anonymousKey=db3080cc2ddcf91fe3e7dab4d4a56dad24e6bbce
         ///@title previewMint independent of Allowance
-        ///@notice This rule checks that the value returned by the previewMint function is independent of allowance that the contract might have for transferring assets from any user. The value retunred is the same regardless of the equivalent asset amount being more than, equal to or less than the allowance.
+        ///@notice This rule checks that the value returned by the previewMint function is independent of allowance that the contract might have for transferring assets from any user. The value returned is the same regardless of the equivalent asset amount being more than, equal to or less than the allowance.
         rule previewMintIndependentOfAllowance(){
         // allowance of currentContract for asset transfer from msg.sender to   
             address user;
@@ -556,6 +556,32 @@ using SymbolicLendingPoolL1 as pool
             assert convertToAssets(e, shares + 1) >= amount, "Too few converted shares";
         }
 
+        /**
+        * @title ConvertToAssets must not revert unless due to integer overflow
+        * From EIP4626:
+        * > MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
+        * We define large input as 10^45. To be precise we need that `shares * rate < 2^256 ~= 10^77`,
+        * hence we require that:
+        * - `shares < 10^45`
+        * - `rate < 10^32`
+        */
+        rule toAssetsDoesNotRevert(uint256 shares) {
+            require shares < 10^45;
+            env e;
+
+            // Prevent revert due to overflow.
+            // Roughly speaking ConvertToAssets returns shares * rate() / RAY.
+            mathint ray_math = to_mathint(RAY());
+            mathint rate_math = to_mathint(rate(e));
+            mathint shares_math = to_mathint(shares);
+            require rate_math < 10^32;
+
+            uint256 assets = convertToAssets@withrevert(e, shares);
+            bool reverted = lastReverted;
+
+            assert !reverted, "Conversion to assets reverted";
+        }
+
     /*****************************
     *      convertToShares      *
     *****************************/
@@ -603,6 +629,32 @@ using SymbolicLendingPoolL1 as pool
             * would have passed the previous assertion, but not the next one.
             */
             assert convertToShares(e, amount + 1) >= shares, "Amount converted is too low";
+        }
+
+		/**
+        * @title ConvertToShares must not revert except for overflow
+        * From EIP4626:
+        * > MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
+        * We define large input as `10^50`. To be precise, we need that `RAY * assets < 2^256`, since
+        * `2^256~=10^77` and `RAY=10^27` we get that `assets < 10^50`.
+        * 
+        * Note. *We also require that:* **`rate > 0`**.
+        */
+        rule toSharesDoesNotRevert(uint256 assets) {
+            require assets < 10^50;
+            env e;
+
+            // Prevent revert due to overflow.
+            // Roughly speaking ConvertToShares returns assets * RAY / rate().
+            mathint ray_math = to_mathint(RAY());
+            mathint rate_math = to_mathint(rate(e));
+            mathint assets_math = to_mathint(assets);
+            require rate_math > 0;
+
+            uint256 shares = convertToShares@withrevert(e, assets);
+            bool reverted = lastReverted;
+
+            assert !reverted, "Conversion to shares reverted";
         }
 
     /************************

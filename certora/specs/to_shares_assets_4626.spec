@@ -38,7 +38,8 @@ import "methods_base.spec"
             env e1;
             env e2;
             // @MM - Is this really needed here? can we get rid of it?
-            require e1.block.timestamp < 2^32;
+            // @SH - I left one since there may be code depending on block.timestamp and casting
+            // it to uint32 or similar
             require e2.block.timestamp < 2^32;
             require e1.block.timestamp <= e2.block.timestamp;
 
@@ -87,22 +88,24 @@ import "methods_base.spec"
 
         /* @MM - NOTE - move to the relevant section in ERC4626. 
                   double check that the summarizations, links, etc. are the same across both files */
-        /// @title ConvertToAssets Should be independent of the user
-        rule toAssetsCallerIndependent(uint256 shares) {
-            env e1;
-            env e2;
+        // @SH - NOTE - removed since convertToAssetsCheck covers this
+        // @title ConvertToAssets Should be independent of the user
+        //rule toAssetsCallerIndependent(uint256 shares) {
+        //    env e1;
+        //    env e2;
 
-            require e1.block.timestamp < 2^32;  // Avoid down casting issues
-            require e1.block.timestamp == e2.block.timestamp;
-            require e1.block.number == e2.block.number;
+        //    require e1.block.timestamp < 2^32;  // Avoid down casting issues
+        //    require e1.block.timestamp == e2.block.timestamp;
+        //    require e1.block.number == e2.block.number;
 
-            uint256 assets1 = convertToAssets(e1, shares);
-            uint256 assets2 = convertToAssets(e2, shares);
-            assert assets1 == assets2, "ConvertToAssets depends on sender";
-        }
+        //    uint256 assets1 = convertToAssets(e1, shares);
+        //    uint256 assets2 = convertToAssets(e2, shares);
+        //    assert assets1 == assets2, "ConvertToAssets depends on sender";
+        //}
 
         /* @MM - NOTE - move to the relevant section in ERC4626. 
                   double check that the summarizations, links, etc. are the same across both files */
+        // @SH - NOTE - moved to erc4626.spec - links and files must be changed
         /**
         * @title ConvertToAssets must not revert unless due to integer overflow
         * From EIP4626:
@@ -112,22 +115,22 @@ import "methods_base.spec"
         * - `shares < 10^45`
         * - `rate < 10^32`
         */
-        rule toAssetsDoesNotRevert(uint256 shares) {
-            require shares < 10^45;
-            env e;
+        //rule toAssetsDoesNotRevert(uint256 shares) {
+        //    require shares < 10^45;
+        //    env e;
 
-            // Prevent revert due to overflow.
-            // Roughly speaking ConvertToAssets returns shares * rate() / RAY.
-            mathint ray_math = to_mathint(RAY());
-            mathint rate_math = to_mathint(rate(e));
-            mathint shares_math = to_mathint(shares);
-            require rate_math < 10^32;
+        //    // Prevent revert due to overflow.
+        //    // Roughly speaking ConvertToAssets returns shares * rate() / RAY.
+        //    mathint ray_math = to_mathint(RAY());
+        //    mathint rate_math = to_mathint(rate(e));
+        //    mathint shares_math = to_mathint(shares);
+        //    require rate_math < 10^32;
 
-            uint256 assets = convertToAssets@withrevert(e, shares);
-            bool reverted = lastReverted;
+        //    uint256 assets = convertToAssets@withrevert(e, shares);
+        //    bool reverted = lastReverted;
 
-            assert !reverted, "Conversion to assets reverted";
-        }
+        //    assert !reverted, "Conversion to assets reverted";
+        //}
 
     /*****************************
     *       convertToShares      *
@@ -135,25 +138,27 @@ import "methods_base.spec"
 
         /* @MM - NOTE - move to the relevant section in ERC4626. 
                   double check that the summarizations, links, etc. are the same across both files */
+        // @SH - NOTE - removed since convertToSharesCheck covers this
         /// @title ConvertToShares must not be dependent on the caller
-        rule toSharesCallerIndependent(uint256 assets) {
-            env e1;
-            env e2;
-            
-            // @MM - NOTE - why are the next 3 lines needed? is this because of the index?
-            // i think the index is a storage var so it should be independent of e, but i might be wrong.
-            // Investigate a little and try to lose the requires if possible.
-            require e1.block.timestamp < 2^32;  // Avoid down casting issues
-            require e1.block.timestamp == e2.block.timestamp;
-            require e1.block.number == e2.block.number;
+        //rule toSharesCallerIndependent(uint256 assets) {
+        //    env e1;
+        //    env e2;
+        //    
+        //    // @MM - NOTE - why are the next 3 lines needed? is this because of the index?
+        //    // i think the index is a storage var so it should be independent of e, but i might be wrong.
+        //    // Investigate a little and try to lose the requires if possible.
+        //    require e1.block.timestamp < 2^32;  // Avoid down casting issues
+        //    require e1.block.timestamp == e2.block.timestamp;
+        //    require e1.block.number == e2.block.number;
 
-            uint256 shares1 = convertToShares(e1, assets);
-            uint256 shares2 = convertToShares(e2, assets);
-            assert shares1 == shares2, "ConvertToShares depend on sender";
-        }
+        //    uint256 shares1 = convertToShares(e1, assets);
+        //    uint256 shares2 = convertToShares(e2, assets);
+        //    assert shares1 == shares2, "ConvertToShares depend on sender";
+        //}
 
         /* @MM - NOTE - move to the relevant section in ERC4626. 
                   double check that the summarizations, links, etc. are the same across both files */
+        // @SH - NOTE - moved to erc4626.spec - links and files must be changed
         /**
         * @title ConvertToShares must not revert except for overflow
         * From EIP4626:
@@ -163,22 +168,22 @@ import "methods_base.spec"
         * 
         * Note. *We also require that:* **`rate > 0`**.
         */
-        rule toSharesDoesNotRevert(uint256 assets) {
-            require assets < 10^50;
-            env e;
+        //rule toSharesDoesNotRevert(uint256 assets) {
+        //    require assets < 10^50;
+        //    env e;
 
-            // Prevent revert due to overflow.
-            // Roughly speaking ConvertToShares returns assets * RAY / rate().
-            mathint ray_math = to_mathint(RAY());
-            mathint rate_math = to_mathint(rate(e));
-            mathint assets_math = to_mathint(assets);
-            require rate_math > 0;
+        //    // Prevent revert due to overflow.
+        //    // Roughly speaking ConvertToShares returns assets * RAY / rate().
+        //    mathint ray_math = to_mathint(RAY());
+        //    mathint rate_math = to_mathint(rate(e));
+        //    mathint assets_math = to_mathint(assets);
+        //    require rate_math > 0;
 
-            uint256 shares = convertToShares@withrevert(e, assets);
-            bool reverted = lastReverted;
+        //    uint256 shares = convertToShares@withrevert(e, assets);
+        //    bool reverted = lastReverted;
 
-            assert !reverted, "Conversion to shares reverted";
-        }
+        //    assert !reverted, "Conversion to shares reverted";
+        //}
 
     /*
     * Preview functions rules
