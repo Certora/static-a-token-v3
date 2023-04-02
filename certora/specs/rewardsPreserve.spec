@@ -53,7 +53,8 @@ using TransferStrategyHarness as _TransferStrategyHarness
     */
     function single_RewardToken_setup() {
         // @MM - reminder to re-examine the first check
-        require isRegisteredRewardToken(_DummyERC20_rewardToken);
+		// @SH - current version in this branch does not change anything in this regard
+        // require isRegisteredRewardToken(_DummyERC20_rewardToken);
         require getRewardTokensLength() == 1;
         require getRewardToken(0) == _DummyERC20_rewardToken;
     }
@@ -149,8 +150,8 @@ using TransferStrategyHarness as _TransferStrategyHarness
 
     /**
     * @title Only claiming rewards should reduce contract's total rewards balance
-    * Only "claim reward" methods (and `initialize`) should cause the total rewards
-    * balance of `StaticATokenLM` to decline.
+    * Only "claim reward" methods should cause the total rewards balance of `StaticATokenLM`
+    * to decline. Note that `initialize` is filtered out.
     *
     * WARNING: `metaDeposit` seems to be vacuous, i.e. **always** fails on a require statement.
     * 
@@ -163,7 +164,10 @@ using TransferStrategyHarness as _TransferStrategyHarness
     * - `redeem(uint256,address,address,bool)` used in (other methods were DISABLED):
     *   job-id=`497fa8295d62489b9b6f8515be5a06f7`
     */
-    rule rewardsTotalDeclinesOnlyByClaim(method f) {
+    rule rewardsTotalDeclinesOnlyByClaim(method f) filtered {
+        // Filter out initialize
+        f -> f.selector != initialize(address, string, string).selector
+    } {
         // Assuming single reward
         single_RewardToken_setup();
         rewardsController_reward_setup();
@@ -171,11 +175,7 @@ using TransferStrategyHarness as _TransferStrategyHarness
         require _AToken.UNDERLYING_ASSET_ADDRESS() == _DummyERC20_aTokenUnderlying;
 
         env e;
-
         require e.msg.sender != currentContract;
-        // @MM - reminder - should be changed to filter
-        require f.selector != initialize(address, string, string).selector;
-
         uint256 preTotal = getTotalClaimableRewards(e, _DummyERC20_rewardToken);
 
         calldataarg args;
