@@ -29,9 +29,7 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
                @aave/core-v3=lib/aave-v3-core \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
-    --rule_sanity basic \
-    --send_only \
-    --cloud master \
+    --cloud \
     --optimistic_hashing \
     --settings -t=10000 \
     --settings -mediumTimeout=1000 \
