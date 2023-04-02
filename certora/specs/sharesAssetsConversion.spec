@@ -41,7 +41,7 @@ import "methods_base.spec"
 
         /**
 		 * @title Ensure `previewWithdraw` tightly rounds up shares
-		 * The lower bound (i.e. `previewWithdraw <= convertToShares`) follows from ERC4626. The upper bound
+		 * The lower bound (i.e. `previewWithdraw >= convertToShares`) follows from ERC4626. The upper bound
 		 * is based on the current implementation.
 		 */
         rule previewWithdrawRoundingRange(uint256 assets) {
@@ -54,7 +54,7 @@ import "methods_base.spec"
 
         /**
 		 * @title Ensure `previewRedeem` tightly rounds down assets
-		 * The upper bound (i.e. `previewRedeem >= convertToAssets`) follows from ERC4626. The lower bound
+		 * The upper bound (i.e. `previewRedeem <= convertToAssets`) follows from ERC4626. The lower bound
 		 * is based on the current implementation.
 		 */
         rule previewRedeemRoundingRange(uint256 shares) {
