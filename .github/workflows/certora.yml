@@ -60,16 +60,8 @@ jobs:
           - verifyERC4626.sh previewMintIndependentOfAllowance
           - verifyERC4626.sh previewRedeemIndependentOfBalance
           - verifyERC4626.sh maxDepositConstant
-          - verifyERC4626.sh maxMintMustntRevert previewMintAmountCheck previewDepositIndependentOfAllowanceApprove \
-                             previewWithdrawIndependentOfMaxWithdraw previewWithdrawAmountCheck previewWithdrawIndependentOfBalance2 \
-                             previewWithdrawIndependentOfBalance1 previewRedeemIndependentOfMaxRedeem1 previewRedeemAmountCheck \
-                             previewRedeemIndependentOfMaxRedeem2 amountConversionRoundedDown withdrawCheck \
-                             redeemCheck convertToAssetsCheck convertToSharesCheck toAssetsDoesNotRevert sharesConversionRoundedDown \
-                             toSharesDoesNotRevert maxDepositMustntRevert maxRedeemMustntRevert previewDepositAmountCheck \
-                             maxWithdrawRedeemCompliance maxWithdrawConversionCompliance
-          - verifyERC4626MintDepositSummarization.sh depositCheckIndexGRayAssert2 depositCheckIndexERayAssert2 \
-                                                     mintCheckIndexGRayUpperBound mintCheckIndexGRayLowerBound \
-                                                     mintCheckIndexEqualsRay 
+          - verifyERC4626.sh maxMintMustntRevert previewMintAmountCheck previewDepositIndependentOfAllowanceApprove previewWithdrawIndependentOfMaxWithdraw previewWithdrawAmountCheck previewWithdrawIndependentOfBalance2 previewWithdrawIndependentOfBalance1 previewRedeemIndependentOfMaxRedeem1 previewRedeemAmountCheck previewRedeemIndependentOfMaxRedeem2 amountConversionRoundedDown withdrawCheck redeemCheck convertToAssetsCheck convertToSharesCheck toAssetsDoesNotRevert sharesConversionRoundedDown toSharesDoesNotRevert maxDepositMustntRevert maxRedeemMustntRevert previewDepositAmountCheck maxWithdrawRedeemCompliance maxWithdrawConversionCompliance
+          - verifyERC4626MintDepositSummarization.sh depositCheckIndexGRayAssert2 depositCheckIndexERayAssert2 mintCheckIndexGRayUpperBound mintCheckIndexGRayLowerBound mintCheckIndexEqualsRay 
           - verifyERC4626DepositSummarization.sh depositCheckIndexGRayAssert1
           - verifyERC4626DepositSummarization.sh depositCheckIndexERayAssert1
                                                       

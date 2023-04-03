@@ -30,7 +30,6 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
                aave-v3-periphery=certora/munged/lib/aave-v3-periphery \
                solidity-utils=certora/munged/lib/solidity-utils/src \
     --cloud \
-    --rule_sanity \
     --optimistic_hashing \
     --settings -t=10000 \
     $RULE \
