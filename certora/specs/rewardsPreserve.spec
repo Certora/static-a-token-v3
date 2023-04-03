@@ -77,7 +77,8 @@ using TransferStrategyHarness as _TransferStrategyHarness
     * Ensures rewards are updated correctly after claiming, when there are enough
     * reward funds.
     *
-    * - Succeeds in: job-id=`1e47d3b29d4a4fae99ca7c001e7f65ae`
+    * @dev Succeeds in: job-id=`1e47d3b29d4a4fae99ca7c001e7f65ae` with `isRegisteredRewardToken`
+	* and in job-id=`655ba8737ada43efab71eaabf8d41096` without `isRegisteredRewardToken`
     */
     rule rewardsConsistencyWhenSufficientRewardsExist() {
         // Assuming single reward
