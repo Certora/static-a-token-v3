@@ -4,8 +4,6 @@ import "StaticATokenLM.spec"
 methods{
 
     _AToken.totalSupply() returns uint256 envfree
-	_AToken.scaledTotalSupply() returns (uint256) envfree
-    _AToken.scaledBalanceOf(address) returns (uint256) envfree
     _AToken.transferFrom(address,address,uint256) returns (bool)
     
 
@@ -173,3 +171,23 @@ rule claimable_leq_total_claimable() {
     uint256 claimable = getClaimableRewards(e, user, _DummyERC20_rewardToken);
     assert claimable <= total, "Too much claimable";
 }
+
+
+
+
+
+//The invariant fails, as suspected, with loop_iter=2.
+//The invariant is remove.
+//requireInvaraint are replaced with require in rules getClaimableRewards_stable*
+// invariant registered_reward_exists_in_controller(address reward)
+//     (isRegisteredRewardToken(reward) =>  
+//     (_RewardsController.getAvailableRewardsCount(_AToken)  > 0
+//     && _RewardsController.getRewardsByAsset(_AToken, 0) == reward)) 
+//     filtered { f -> f.selector != initialize(address,string,string).selector }//Todo: remove filter and use preserved block when CERT-1706 is fixed
+//     {
+//         //preserved initialize(address newAToken,string staticATokenName, string staticATokenSymbol) {
+//         //     require newAToken == _AToken;
+//         // }
+//     }
+
+

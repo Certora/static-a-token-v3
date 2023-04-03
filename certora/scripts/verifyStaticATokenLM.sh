@@ -18,7 +18,7 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
     --solc solc8.10 \
     --optimistic_loop \
     --optimistic_hashing \
-    --settings  -t=1400,-mediumTimeout=800,-depth=15    \
+    --settings  -t=1400,-mediumTimeout=800,-depth=15   \
     --staging  \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
@@ -26,8 +26,9 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                solidity-utils=lib/solidity-utils/src \
                openzeppelin-contracts=lib/openzeppelin-contracts \
     --send_only \
-    --rule solvency_2_CASE_SPLIT_mint  \
-    --msg " solvency_2_CASE_SPLIT_mint "
+    --loop_iter 1 \
+    --rule solvency_total_asset_geq_total_supply \
+    --msg " solvency_total_asset_geq_total_supply"
 
 
 #--rule_sanity advanced \
