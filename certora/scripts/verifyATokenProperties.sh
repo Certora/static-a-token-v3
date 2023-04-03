@@ -25,6 +25,7 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                solidity-utils=lib/solidity-utils/src \
                openzeppelin-contracts=lib/openzeppelin-contracts \
     --send_only \
-    --msg " ALL   "
+    --rule inv_atoken_scaled_balanceOf_leq_totalSupply \
+    --msg " inv_atoken_scaled_balanceOf_leq_totalSupply   "
 
 

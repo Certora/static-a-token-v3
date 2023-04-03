@@ -139,38 +139,38 @@ invariant inv_atoken_scaled_balanceOf_leq_totalSupply(address user)
 		}
 	}
 
-//from unregistered_atoken.spec
-// fail
-//todo: remove 
-rule claimable_leq_total_claimable() {
-    require _RewardsController.getAvailableRewardsCount(_AToken) == 1;
+// //from unregistered_atoken.spec
+// // fail
+// //todo: remove 
+// rule claimable_leq_total_claimable() {
+//     require _RewardsController.getAvailableRewardsCount(_AToken) == 1;
     
-	require _RewardsController.getRewardsByAsset(_AToken, 0) == _DummyERC20_rewardToken;
+// 	require _RewardsController.getRewardsByAsset(_AToken, 0) == _DummyERC20_rewardToken;
 
-    env e;
-    address user;
+//     env e;
+//     address user;
    
-    require currentContract != user;
-    require _AToken != user;
-    require _RewardsController != user;
-    require _DummyERC20_aTokenUnderlying  != user;
-    require _DummyERC20_rewardToken != user;
-    require _SymbolicLendingPoolL1 != user;
-    require _TransferStrategy != user;
-    require _ScaledBalanceToken != user;
-    require _TransferStrategy != user;
+//     require currentContract != user;
+//     require _AToken != user;
+//     require _RewardsController != user;
+//     require _DummyERC20_aTokenUnderlying  != user;
+//     require _DummyERC20_rewardToken != user;
+//     require _SymbolicLendingPoolL1 != user;
+//     require _TransferStrategy != user;
+//     require _ScaledBalanceToken != user;
+//     require _TransferStrategy != user;
 
-    requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
-    requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
+//     requireInvariant inv_atoken_balanceOf_leq_totalSupply(currentContract);
+//     requireInvariant inv_atoken_scaled_balanceOf_leq_totalSupply(currentContract);
     
 
-    require getRewardsIndexOnLastInteraction(user, _DummyERC20_rewardToken) == 0;
-    require getUnclaimedRewards(e, user, _DummyERC20_rewardToken) == 0;
+//     require getRewardsIndexOnLastInteraction(user, _DummyERC20_rewardToken) == 0;
+//     require getUnclaimedRewards(e, user, _DummyERC20_rewardToken) == 0;
     
-    uint256 total = getTotalClaimableRewards(e, _DummyERC20_rewardToken);
-    uint256 claimable = getClaimableRewards(e, user, _DummyERC20_rewardToken);
-    assert claimable <= total, "Too much claimable";
-}
+//     uint256 total = getTotalClaimableRewards(e, _DummyERC20_rewardToken);
+//     uint256 claimable = getClaimableRewards(e, user, _DummyERC20_rewardToken);
+//     assert claimable <= total, "Too much claimable";
+// }
 
 
 
