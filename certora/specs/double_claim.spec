@@ -35,7 +35,7 @@ import "methods_multi_reward.spec"
      * Using an array with the same reward twice does not give more rewards,
      * assuming the contract has sufficient rewards.
      *
-     * @dev Passed with rule_sanity in: job-id=`179a4f98a304475dab4df29fcfe7ae2c`
+     * @dev Passed in job-id=`54de623f62eb4c95a343ee38834c6d16`
      */
     rule prevent_duplicate_reward_claiming_single_reward_sufficient() {
         single_RewardToken_setup();
@@ -65,7 +65,7 @@ import "methods_multi_reward.spec"
      * Using an array with the same reward twice does not give more rewards,
      * assuming the contract does not have sufficient rewards.
      *
-     * @dev Passed with rule_sanity in: job-id=`7efe69f2711149c2bf98a6218bdd3849`
+     * @dev Passed in job-id=`54de623f62eb4c95a343ee38834c6d16`
      */
     rule prevent_duplicate_reward_claiming_single_reward_insufficient() {
         single_RewardToken_setup();
