@@ -67,6 +67,7 @@ constructor(
 
   function _mintWrapper(address to, uint256 amount) external {
     _mint(to, amount);
+  }
 
   function claimDoubleRewardOnBehalf(
     address onBehalfOf,
