@@ -52,9 +52,6 @@ using TransferStrategyHarness as _TransferStrategyHarness
     * which is` _DummyERC20_rewardToken`.
     */
     function single_RewardToken_setup() {
-        // @MM - reminder to re-examine the first check
-		// @SH - current version in this branch does not change anything in this regard
-        // require isRegisteredRewardToken(_DummyERC20_rewardToken);
         require getRewardTokensLength() == 1;
         require getRewardToken(0) == _DummyERC20_rewardToken;
     }
