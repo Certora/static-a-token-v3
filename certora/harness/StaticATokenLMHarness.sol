@@ -69,4 +69,34 @@ constructor(
     _mint(to, amount);
   }
 
+  function claimDoubleRewardOnBehalf(
+    address onBehalfOf,
+    address receiver,
+    address reward0,
+    address reward1
+  ) external 
+  {
+
+    address[] memory rewards = new address[](2);
+    rewards[0] = address(reward0);
+    rewards[1] = address(reward1);
+
+      require(
+        msg.sender == onBehalfOf ||
+        msg.sender == INCENTIVES_CONTROLLER.getClaimer(onBehalfOf),
+      StaticATokenErrors.INVALID_CLAIMER
+    );
+    _claimRewardsOnBehalf(onBehalfOf, receiver, rewards);
+
+  }
+
+  function getUserRewardsData(address user, address reward)
+  external view
+  returns (uint128) {
+    UserRewardsData memory currentUserRewardsData = _userRewardsData[user][
+      reward
+    ];
+    return currentUserRewardsData.rewardsIndexOnLastInteraction;
+  }
+
 }
