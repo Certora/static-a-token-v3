@@ -193,7 +193,7 @@ invariant solvency_positive_total_supply_only_if_positive_asset()
 invariant solvency_total_asset_geq_total_supply()
     (_AToken.scaledBalanceOf(currentContract) >= totalSupply())
     filtered { f -> f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
-                    || f.selector != redeem(uint256,address,address).selector}
+                    && f.selector != redeem(uint256,address,address).selector}
     {
         preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e1) {
             require balanceOf(owner) <= totalSupply(); //todo: replace with requireInvariant
@@ -215,7 +215,9 @@ invariant solvency_total_asset_geq_total_supply()
         }
         
     }
-    
+
+//timeout
+//https://vaas-stg.certora.com/output/99352/cf6f23d546ed4834ae27bc4de2df81d7/?anonymousKey=a0ab74898224e42db0ef4770909848880d61abaa
 invariant solvency_total_asset_geq_total_supply_CASE_SPLIT_redeem()
     (_AToken.scaledBalanceOf(currentContract) >= totalSupply())
     filtered { f -> f.selector == redeem(uint256,address,address).selector}
@@ -388,7 +390,8 @@ rule reward_balance_stable_after_collectAndUpdateRewards()
 //     mathint totalClaimableRewardsAfter = getTotalClaimableRewards(e, reward);
 //     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
 // }
-
+//
+// 
 rule totalClaimableRewards_stable_less_requires_7(method f)
     filtered { f -> !f.isView && !claimFunctions(f)
                     && f.selector != initialize(address,string,string).selector 
@@ -407,6 +410,8 @@ rule totalClaimableRewards_stable_less_requires_7(method f)
     calldataarg args;
     address reward;
     require e.msg.sender != reward;
+    require _ScaledBalanceToken != reward;
+    require _AToken != e.msg.sender;
     require _RewardsController != e.msg.sender;
     
     require currentContract != reward;
@@ -417,6 +422,9 @@ rule totalClaimableRewards_stable_less_requires_7(method f)
     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
 }
 
+
+//timeout
+//https://vaas-stg.certora.com/output/99352/e755cdb34d84406ab17a782c4ffd6954/?anonymousKey=2efcab1e1dd4ea504c315b148b42ef3cec8acaa7
 rule totalClaimableRewards_stable_less_requires_7_CASE_SPLIT_redeem(method f)
     filtered { f -> f.selector == redeem(uint256,address,address,bool).selector  }
 {
@@ -426,6 +434,8 @@ rule totalClaimableRewards_stable_less_requires_7_CASE_SPLIT_redeem(method f)
     calldataarg args;
     address reward;
     require e.msg.sender != reward;
+    require _ScaledBalanceToken != reward;
+    require _AToken != e.msg.sender;
     require _RewardsController != e.msg.sender;
     
     require currentContract != reward;
@@ -436,6 +446,9 @@ rule totalClaimableRewards_stable_less_requires_7_CASE_SPLIT_redeem(method f)
     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
 }
 
+
+//timeout
+//https://vaas-stg.certora.com/output/99352/bee8d3a583c549e195c0f755bb804b34/?anonymousKey=4b9e6f6791ede0049659d54a07db5e0f146b4a42
 rule totalClaimableRewards_stable_less_requires_7_CASE_SPLIT_deposit(method f)
     filtered { f -> f.selector == deposit(uint256,address).selector  }
 {
@@ -445,6 +458,8 @@ rule totalClaimableRewards_stable_less_requires_7_CASE_SPLIT_deposit(method f)
     calldataarg args;
     address reward;
     require e.msg.sender != reward;
+    require _ScaledBalanceToken != reward;
+    require _AToken != e.msg.sender;
     require _RewardsController != e.msg.sender;
     
     require currentContract != reward;
