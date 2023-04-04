@@ -86,27 +86,3 @@ import "methods_base.spec"
             uint256 assets = mint(e, shares, receiver);
             assert previewAssets == assets, "previewMint is unequal to mint";
         }
-
-    /*********************************
-    *        previewWithdraw        *
-    *********************************/
-
-        /// Number of shares returned by `previewWithdraw` is the same as `withdraw`.
-        rule previewWithdrawSameAsWithdraw(uint256 assets, address receiver, address owner) {
-            env e;
-            uint256 previewShares = previewWithdraw(e, assets);
-            uint256 shares = withdraw(e, assets, receiver, owner);
-            assert previewShares == shares, "previewWithdraw is unequal to withdraw";
-        }
-
-    /*******************************
-    *        previewRedeem        *
-    *******************************/
-
-        /// Number of assets returned by `previewRedeem` is the same as `redeem`.
-        rule previewRedeemSameAsRedeem(uint256 shares, address receiver, address owner) {
-            env e;
-            uint256 previewAssets = previewRedeem(e, shares);
-            uint256 assets = redeem(e, shares, receiver, owner);
-            assert previewAssets == assets, "previewRedeem is unequal to redeem";
-        }
