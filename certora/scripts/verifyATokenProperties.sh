@@ -25,7 +25,8 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                solidity-utils=lib/solidity-utils/src \
                openzeppelin-contracts=lib/openzeppelin-contracts \
     --send_only \
-    --rule inv_atoken_scaled_balanceOf_leq_totalSupply \
-    --msg " inv_atoken_scaled_balanceOf_leq_totalSupply   "
+    --rule_sanity basic \
+    --rule inv_atoken_balanceOf_2users_leq_totalSupply \
+    --msg " inv_atoken_balanceOf_2users_leq_totalSupply   "
 
 

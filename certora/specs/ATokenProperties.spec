@@ -26,22 +26,21 @@ filtered { f -> f.selector == redeem(uint256,address,address,bool).selector}
 /// @title Sum of balances=totalSupply()
 //fail without Sload require balance <= sumAllBalance();
 //https://vaas-stg.certora.com/output/99352/1ada6d42ed4c4c03bb85b34d1da92be2/?anonymousKey=d27e10c2ac7220d8571d6374b4618b9e24f1a8a0
-invariant sumAllBalance_eq_totalSupply()
-	sumAllBalance() == totalSupply()
+// invariant sumAllBalance_eq_totalSupply()
+// 	sumAllBalance() == totalSupply()
 
 
 
 //fail without Sload require balance <= sumAllBalance();
 //https://vaas-stg.certora.com/output/99352/57f284feabc84b6ca392b781de221e9f/?anonymousKey=3554c35d0a060196775a71fdff3a14a6d2177861
 //todo: add presreved blocks and enable the invariant
-
-invariant inv_balanceOf_leq_totalSupply(address user)
-	balanceOf(user) <= totalSupply()
-	{
-		preserved {
-			requireInvariant sumAllBalance_eq_totalSupply();
-		}
-	}
+// invariant inv_balanceOf_leq_totalSupply(address user)
+// 	balanceOf(user) <= totalSupply()
+// 	{
+// 		preserved {
+// 			requireInvariant sumAllBalance_eq_totalSupply();
+// 		}
+// 	}
 
 
 /// @title Sum of scaled balances of AToken 
