@@ -233,7 +233,11 @@ using TransferStrategyHarness as _TransferStrategyHarness
             (f.selector == claimSingleRewardOnBehalf(address,address,address).selector)
         ), "Total rewards decline not due to claim";
     }
-    
+
+	/**
+	 * @dev Passed in job-id=`06a3d30b577b4a8a8d26182e7486b065`
+	 * using `--settings -t=7200,-mediumTimeout=40,-depth=7`
+	 */
     rule rewardsTotalDeclinesOnlyByClaim_redeem_methods(method f) filtered {
         // Include only the redeem timed out methods
         f -> (f.selector == redeem(uint256,address,address).selector) ||
