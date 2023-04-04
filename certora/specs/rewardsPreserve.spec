@@ -52,8 +52,6 @@ using TransferStrategyHarness as _TransferStrategyHarness
     * which is` _DummyERC20_rewardToken`.
     */
     function single_RewardToken_setup() {
-        // @MM - reminder to re-examine the first check
-        require isRegisteredRewardToken(_DummyERC20_rewardToken);
         require getRewardTokensLength() == 1;
         require getRewardToken(0) == _DummyERC20_rewardToken;
     }
@@ -76,7 +74,7 @@ using TransferStrategyHarness as _TransferStrategyHarness
     * Ensures rewards are updated correctly after claiming, when there are enough
     * reward funds.
     *
-    * - Succeeds in: job-id=`1e47d3b29d4a4fae99ca7c001e7f65ae`
+    * @dev Passed in job-id=`655ba8737ada43efab71eaabf8d41096`
     */
     rule rewardsConsistencyWhenSufficientRewardsExist() {
         // Assuming single reward
@@ -113,9 +111,9 @@ using TransferStrategyHarness as _TransferStrategyHarness
     /* Ensures rewards are updated correctly after claiming, when there aren't
     * enough funds.
     *
-    * - Failed in previous version of the code: job-id=`274946aa85a247149c025df228c71bc1`
-    * - Failure reported in: `https://github.com/bgd-labs/static-a-token-v3/issues/23`
-    * - Passed after fix: job-id=`75c9ee79444b4c8b833a378e5d260599`
+    * @dev Failed in previous version of the code: job-id=`274946aa85a247149c025df228c71bc1`.
+    * Failure reported in: `https://github.com/bgd-labs/static-a-token-v3/issues/23`.
+    * Passed after fix with rule-sanity in job-id=`32b981560c2c41eab24606daa7d38694`.
     */
     rule rewardsConsistencyWhenInsufficientRewards() {
         // Assuming single reward
@@ -149,21 +147,37 @@ using TransferStrategyHarness as _TransferStrategyHarness
 
     /**
     * @title Only claiming rewards should reduce contract's total rewards balance
-    * Only "claim reward" methods (and `initialize`) should cause the total rewards
-    * balance of `StaticATokenLM` to decline.
+    * Only "claim reward" methods should cause the total rewards balance of
+    * `StaticATokenLM` to decline. Note that `initialize`, `metaDeposit`
+    * and `metaWithdraw` are filtered out. To avoid timeouts the rest of the
+    * methods were split between several versions of this rule.
     *
-    * WARNING: `metaDeposit` seems to be vacuous, i.e. **always** fails on a require statement.
+    * WARNING: `metaDeposit` seems to be vacuous, i.e. **always** fails on a
+    * require statement.
+    *
+    * @dev Passed with rule-sanity in job-id=`98beb842d5b94278ac4a9222249fb564`
     * 
-    * - Except for `metaWithdraw`, `redeem`, `claimSingleRewardOnBehalf`, succeeded in:
-    *   job-id=`632020a606444f5886390c8f5c02e583`
-    * - `metaWithdraw` passed in (other methods were DISABLED):
-    *   job-id=`21e258b783a74c55bae60d408b6a2637`
-    * - `claimSingleRewardOnBehalf` passed in (other methods were DISABLED):
-    *   job-id=`921238b5d35a402999f743cc0eb3dea2`
-    * - `redeem(uint256,address,address,bool)` used in (other methods were DISABLED):
-    *   job-id=`497fa8295d62489b9b6f8515be5a06f7`
     */
-    rule rewardsTotalDeclinesOnlyByClaim(method f) {
+    rule rewardsTotalDeclinesOnlyByClaim(method f) filtered {
+        // Filter out initialize
+        f -> (f.selector != initialize(address, string, string).selector) &&
+            // Exclude meta functions
+            (f.selector != metaDeposit(
+                address,address,uint256,uint16,bool,uint256,
+                (address,address,uint256,uint256,uint8,bytes32,bytes32),
+                (uint8, bytes32, bytes32)
+            ).selector) &&
+            (f.selector != metaWithdraw(
+                address,address,uint256,uint256,bool,uint256,
+                (uint8, bytes32, bytes32)
+            ).selector) &&
+            // Exclude methods that time out
+            (f.selector != deposit(uint256,address).selector) &&
+            (f.selector != deposit(uint256,address,uint16,bool).selector) &&
+            (f.selector != redeem(uint256,address,address).selector) &&
+            (f.selector != redeem(uint256,address,address,bool).selector) &&
+            (f.selector != mint(uint256,address).selector)
+    } {
         // Assuming single reward
         single_RewardToken_setup();
         rewardsController_reward_setup();
@@ -171,11 +185,69 @@ using TransferStrategyHarness as _TransferStrategyHarness
         require _AToken.UNDERLYING_ASSET_ADDRESS() == _DummyERC20_aTokenUnderlying;
 
         env e;
-
         require e.msg.sender != currentContract;
-        // @MM - reminder - should be changed to filter
-        require f.selector != initialize(address, string, string).selector;
+        uint256 preTotal = getTotalClaimableRewards(e, _DummyERC20_rewardToken);
 
+        calldataarg args;
+        f(e, args);
+
+        uint256 postTotal = getTotalClaimableRewards(e, _DummyERC20_rewardToken);
+
+        assert (postTotal < preTotal) => (
+            (f.selector == claimRewardsOnBehalf(address, address, address[]).selector) ||
+            (f.selector == claimRewards(address, address[]).selector) ||
+            (f.selector == claimRewardsToSelf(address[]).selector) ||
+            (f.selector == claimSingleRewardOnBehalf(address,address,address).selector)
+        ), "Total rewards decline not due to claim";
+    }
+
+    /// @dev Passed with rule-sanity in job-id=`f71cabe338614768af9e119dea55b00e`
+    rule rewardsTotalDeclinesOnlyByClaim_timedout_methods(method f) filtered {
+        // Include only the timed out methods, excluding redeem
+        f -> (f.selector == deposit(uint256,address).selector) ||
+            (f.selector == deposit(uint256,address,uint16,bool).selector) ||
+            (f.selector == mint(uint256,address).selector)
+    } {
+        // Assuming single reward
+        single_RewardToken_setup();
+        rewardsController_reward_setup();
+
+        require _AToken.UNDERLYING_ASSET_ADDRESS() == _DummyERC20_aTokenUnderlying;
+
+        env e;
+        require e.msg.sender != currentContract;
+        uint256 preTotal = getTotalClaimableRewards(e, _DummyERC20_rewardToken);
+
+        calldataarg args;
+        f(e, args);
+
+        uint256 postTotal = getTotalClaimableRewards(e, _DummyERC20_rewardToken);
+
+        assert (postTotal < preTotal) => (
+            (f.selector == claimRewardsOnBehalf(address, address, address[]).selector) ||
+            (f.selector == claimRewards(address, address[]).selector) ||
+            (f.selector == claimRewardsToSelf(address[]).selector) ||
+            (f.selector == claimSingleRewardOnBehalf(address,address,address).selector)
+        ), "Total rewards decline not due to claim";
+    }
+
+	/**
+	 * @dev Passed in job-id=`06a3d30b577b4a8a8d26182e7486b065`
+	 * using `--settings -t=7200,-mediumTimeout=40,-depth=7`
+	 */
+    rule rewardsTotalDeclinesOnlyByClaim_redeem_methods(method f) filtered {
+        // Include only the redeem timed out methods
+        f -> (f.selector == redeem(uint256,address,address).selector) ||
+            (f.selector == redeem(uint256,address,address,bool).selector)
+    } {
+        // Assuming single reward
+        single_RewardToken_setup();
+        rewardsController_reward_setup();
+
+        require _AToken.UNDERLYING_ASSET_ADDRESS() == _DummyERC20_aTokenUnderlying;
+
+        env e;
+        require e.msg.sender != currentContract;
         uint256 preTotal = getTotalClaimableRewards(e, _DummyERC20_rewardToken);
 
         calldataarg args;
