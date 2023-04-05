@@ -394,7 +394,8 @@ rule totalClaimableRewards_stable_CASE_SPLIT(method f)
 }
 
 
-//timeout
+//timeout  -t=1400,-mediumTimeout=800,-depth=10 
+//pass with -t=1200,-mediumTimeout=1200,-depth=10 
 rule totalClaimableRewards_stable_CASE_SPLIT_redeem()
 {
     env e;
