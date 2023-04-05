@@ -24,4 +24,5 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                @aave/core-v3=certora/munged/lib/aave-v3-core \
                aave-v3-periphery=certora/munged/lib/aave-v3-periphery \
                solidity-utils=certora/munged/lib/solidity-utils/src \
+               openzeppelin-contracts=lib/openzeppelin-contracts \
 	--msg "aToken balance" \

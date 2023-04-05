@@ -25,4 +25,5 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                @aave/core-v3=lib/aave-v3-core \
                aave-v3-periphery=lib/aave-v3-periphery \
                solidity-utils=lib/solidity-utils/src \
+               openzeppelin-contracts=lib/openzeppelin-contracts \
     --msg "Avoid duplicate reward claims"
