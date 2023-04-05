@@ -20,7 +20,7 @@ using SymbolicLendingPoolL1 as pool
         previewWithdraw(address) returns (uint256) envfree
         maxWithdraw(address) returns (uint256) envfree
         maxMint(address) returns (uint256) envfree
-        totalAssets() returns (uint256) envfree
+        //totalAssets() returns (uint256) envfree
         
         // harness methods
         getStaticATokenUnderlying() returns (address) envfree

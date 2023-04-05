@@ -16,6 +16,7 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     certora/harness/TransferStrategyHarness.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
     certora/harness/DummyERC20_rewardToken.sol \
+    certora/harness/ScaledBalanceTokenHarness.sol \
     --verify StaticATokenLMHarness:certora/specs/erc4626.spec \
     --link StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
            StaticATokenLMHarness:POOL=SymbolicLendingPoolL1 \

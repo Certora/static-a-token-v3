@@ -42,7 +42,7 @@ constructor(
     return _rewardTokens[i];
   }
 
-  function getrewardsIndexOnLastInteraction(address user, address reward)
+  function getRewardsIndexOnLastInteraction(address user, address reward)
   external view returns (uint128) {
     UserRewardsData memory currentUserRewardsData = _userRewardsData[user][reward];
     return currentUserRewardsData.rewardsIndexOnLastInteraction;

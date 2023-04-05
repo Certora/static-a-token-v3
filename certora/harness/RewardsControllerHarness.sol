@@ -33,4 +33,8 @@ function getUserAccruedReward(
     return _assets[asset].rewards[reward].usersData[user].accrued;
   }
 
+
+function getRewardsIndex(address asset, address reward) external view returns (uint256){
+    return _assets[asset].rewards[reward].index;
+  }
 }
