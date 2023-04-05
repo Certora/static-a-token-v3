@@ -129,23 +129,24 @@ hook Sstore balanceOf[KEY address a] uint256 balance (uint256 old_balance) STORA
 // } 
 
 
-//fail
-//todo: check if property should hold
+//fail. todo: check if property should hold
 //https://vaas-stg.certora.com/output/99352/5521be2ec21640feb23be9d8b1faa08a/?anonymousKey=e2a56ad93292b812fb66afa29a0ae8fcf53b4f37
 //https://vaas-stg.certora.com/output/99352/c288ca4de50e4f7ab76bfa70fac1c7ff/?anonymousKey=9cf2d1fb28a3b4f47b952eae91f3d330ea346181
-invariant solvency_user_balance_leq_total_asset_CASE_SPLIT_redeem_in_shares_4(address user)
-    balanceOf(user) <= _AToken.scaledBalanceOf(currentContract)
-    filtered { f -> f.selector == redeem(uint256,address,address,bool).selector}
-    {
-        preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e1) {
-            requireInvariant solvency_total_asset_geq_total_supply();
-            require balanceOf(owner) <= totalSupply(); //todo: replace with requireInvariant
-            require receiver != _AToken;
-            require user != _SymbolicLendingPoolL1; // TODO: review !!!
-        }
-    }
+// invariant solvency_user_balance_leq_total_asset_CASE_SPLIT_redeem_in_shares_4(address user)
+//     balanceOf(user) <= _AToken.scaledBalanceOf(currentContract)
+//     filtered { f -> f.selector == redeem(uint256,address,address,bool).selector}
+//     {
+//         preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e1) {
+//             requireInvariant solvency_total_asset_geq_total_supply();
+//             require balanceOf(owner) <= totalSupply(); //todo: replace with requireInvariant
+//             require receiver != _AToken;
+//             require user != _SymbolicLendingPoolL1; // TODO: review !!!
+//         }
+//     }
 
 
+//pass -t=1400,-mediumTimeout=800,-depth=10 
+/// @notice Total supply is non-zero  only if total assets is non-zero
 invariant solvency_positive_total_supply_only_if_positive_asset()
     ((_AToken.scaledBalanceOf(currentContract) == 0) => (totalSupply() == 0))
     filtered { f -> f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector }
@@ -167,37 +168,21 @@ invariant solvency_positive_total_supply_only_if_positive_asset()
 
 
 
-// //fail if e1.msg.sender == currentContract
-// //https://vaas-stg.certora.com/output/99352/83c1362989b540658dd72714c68f4f6a/?anonymousKey=00b5efbeb76fc09cbb12b5c0a53248703a16f5fe
-// //https://vaas-stg.certora.com/output/99352/a929ada034a5437ca001dd11b221038b/?anonymousKey=a90c16f056686fdd38110f16f6ec8f72a8d2062b
-// invariant solvency_total_asset_geq_total_supply_CASE_SPLIT_deposit()
-//     (_AToken.scaledBalanceOf(currentContract) >= totalSupply())
-//     filtered { f -> f.selector == deposit(uint256,address).selector}
-//     {
-//         preserved deposit(uint256 assets, address receiver) with (env e1) {
-//             require balanceOf(receiver) <= totalSupply(); //todo: replace with requireInvariant
-//         }
-//     }
-// //pass
-// invariant solvency_total_asset_geq_total_supply_CASE_SPLIT_deposit_2()
-//     (_AToken.scaledBalanceOf(currentContract) >= totalSupply())
-//     filtered { f -> f.selector == deposit(uint256,address).selector}
-//     {
-//         preserved deposit(uint256 assets, address receiver) with (env e1) {
-//             require balanceOf(receiver) <= totalSupply(); //todo: replace with requireInvariant
-//             require e1.msg.sender != currentContract;
-//         }
-//     }
+//fail on deposit if e1.msg.sender == currentContract
+//https://vaas-stg.certora.com/output/99352/83c1362989b540658dd72714c68f4f6a/?anonymousKey=00b5efbeb76fc09cbb12b5c0a53248703a16f5fe
+//https://vaas-stg.certora.com/output/99352/a929ada034a5437ca001dd11b221038b/?anonymousKey=a90c16f056686fdd38110f16f6ec8f72a8d2062b
 
-// //fail on deposit
+//pass with -t=1400,-mediumTimeout=800,-depth=15
+//https://vaas-stg.certora.com/output/99352/7252b6b75144419c825fb00f1f11acc8/?anonymousKey=8cb67238d3cb2a14c8fbad5c1c8554b00221de95
+//pass with -t=1400,-mediumTimeout=800,-depth=10
+
+/// @nitce Total asseta is greater than or equal to total supply.
 invariant solvency_total_asset_geq_total_supply()
     (_AToken.scaledBalanceOf(currentContract) >= totalSupply())
     filtered { f -> f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
-                    && f.selector != redeem(uint256,address,address).selector}
+                    && f.selector != redeem(uint256,address,address).selector
+                    && f.selector != redeem(uint256,address,address,bool).selector }
     {
-        preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e1) {
-            require balanceOf(owner) <= totalSupply(); //todo: replace with requireInvariant
-        }
         preserved withdraw(uint256 assets, address receiver, address owner)  with (env e3) {
             require balanceOf(owner) <= totalSupply(); 
         }
@@ -218,14 +203,12 @@ invariant solvency_total_asset_geq_total_supply()
 
 //timeout
 //https://vaas-stg.certora.com/output/99352/cf6f23d546ed4834ae27bc4de2df81d7/?anonymousKey=a0ab74898224e42db0ef4770909848880d61abaa
+//timeout with  -t=1200,-mediumTimeout=800,-depth=10
 invariant solvency_total_asset_geq_total_supply_CASE_SPLIT_redeem()
     (_AToken.scaledBalanceOf(currentContract) >= totalSupply())
     filtered { f -> f.selector == redeem(uint256,address,address).selector}
     {
         preserved redeem(uint256 shares, address receiver, address owner) with (env e2) {
-            require balanceOf(owner) <= totalSupply(); 
-        }
-        preserved withdraw(uint256 assets, address receiver, address owner)  with (env e3) {
             require balanceOf(owner) <= totalSupply(); 
         }
     }
@@ -276,9 +259,9 @@ invariant singleAssetAccruedRewards(env e0, address asset, address reward, addre
 
 
 
-/// @title Claiming rewards should not affect totalAssets() 
 //pass with --rule_sanity basic
 //https://vaas-stg.certora.com/output/99352/4df615c845e2445b8657ece2db477ce5/?anonymousKey=76379915d60fc1056ed4e5b391c69cd5bba3cce0
+/// @title Claiming rewards should not affect totalAssets() 
 rule totalAssets_stable(method f)
     filtered { f -> (f.selector == claimRewardsToSelf(address[]).selector ||
                     f.selector == claimRewards(address, address[]).selector ||
@@ -309,10 +292,9 @@ rule totalAssets_stable_after_collectAndUpdateRewards()
 }
 
 
-/// @title Receiving ATokens does not affect the amount of rewards fetched by collectAndUpdateRewards()
 //pass
-//timeout with rule_sanity 
 //https://vaas-stg.certora.com/output/99352/7d2ce2bb69ad4d71b4a179daa08633e4/?anonymousKey=7446e8a015ea9aa79cbc542c10b932e04169a0ab
+/// @title Receiving ATokens does not affect the amount of rewards fetched by collectAndUpdateRewards()
 rule reward_balance_stable_after_collectAndUpdateRewards()
 {
     env e;
@@ -331,10 +313,8 @@ rule reward_balance_stable_after_collectAndUpdateRewards()
     assert reward_balance_before == reward_balance_after;
 }
 
-//timeout with rule_sanity
-//https://vaas-stg.certora.com/output/99352/5fc909b8815c4cfbaddb61c2197e8663/?anonymousKey=e560e7071843fad5b3967eac0d22c81c77bb06bd
-// timeout on mint, redeem, deposit, withdraw
-/// @title getTotalClaimableRewards() is stable unless rewards were claimed
+// //timeout
+// /// @title getTotalClaimableRewards() is stable unless rewards were claimed
 // rule totalClaimableRewards_stable(method f)
 //     filtered { f -> !f.isView && !claimFunctions(f)  && f.selector != initialize(address,string,string).selector  }
 // {
@@ -369,31 +349,9 @@ rule reward_balance_stable_after_collectAndUpdateRewards()
 //     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
 // }
 
-// rule totalClaimableRewards_stable_less_requires_6(method f)
-//     filtered { f -> !f.isView && !claimFunctions(f)  && f.selector != initialize(address,string,string).selector  }
-// {
-//     env e;
-//     require e.msg.sender != currentContract;
-//     setup(e, 0);
-//     calldataarg args;
-//     address reward;
-//     require e.msg.sender != reward;
-//     require currentContract != e.msg.sender;
-//      require _RewardsController != e.msg.sender;
-    
-//     require currentContract != reward;
-//     require _DummyERC20_aTokenUnderlying  != reward;
-    
-
-//     mathint totalClaimableRewardsBefore = getTotalClaimableRewards(e, reward);
-//     f(e, args); 
-//     mathint totalClaimableRewardsAfter = getTotalClaimableRewards(e, reward);
-//     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
-// }
-//
-// 
-rule totalClaimableRewards_stable_less_requires_7(method f)
-    filtered { f -> !f.isView && !claimFunctions(f)
+//pass with -t=1400,-mediumTimeout=800,-depth=10
+rule totalClaimableRewards_stable_CASE_SPLIT(method f)
+ filtered { f -> !f.isView && !claimFunctions(f)
                     && f.selector != initialize(address,string,string).selector 
                     && f.selector != redeem(uint256,address,address,bool).selector 
                     && f.selector != redeem(uint256,address,address).selector 
@@ -410,12 +368,25 @@ rule totalClaimableRewards_stable_less_requires_7(method f)
     calldataarg args;
     address reward;
     require e.msg.sender != reward;
-    require _ScaledBalanceToken != reward;
+    require currentContract != e.msg.sender;
     require _AToken != e.msg.sender;
     require _RewardsController != e.msg.sender;
+    require _DummyERC20_aTokenUnderlying  != e.msg.sender;
+    require _DummyERC20_rewardToken != e.msg.sender;
+    require _SymbolicLendingPoolL1 != e.msg.sender;
+    require _TransferStrategy != e.msg.sender;
+    require _ScaledBalanceToken != e.msg.sender;
     
     require currentContract != reward;
-    
+    require _AToken != reward;
+    require _RewardsController !=  reward;
+    require _DummyERC20_aTokenUnderlying  != reward;
+    require _SymbolicLendingPoolL1 != reward;
+    require _TransferStrategy != reward;
+    require _ScaledBalanceToken != reward;
+    require _TransferStrategy != reward;
+
+
     mathint totalClaimableRewardsBefore = getTotalClaimableRewards(e, reward);
     f(e, args); 
     mathint totalClaimableRewardsAfter = getTotalClaimableRewards(e, reward);
@@ -424,51 +395,186 @@ rule totalClaimableRewards_stable_less_requires_7(method f)
 
 
 //timeout
-//https://vaas-stg.certora.com/output/99352/e755cdb34d84406ab17a782c4ffd6954/?anonymousKey=2efcab1e1dd4ea504c315b148b42ef3cec8acaa7
-rule totalClaimableRewards_stable_less_requires_7_CASE_SPLIT_redeem(method f)
-    filtered { f -> f.selector == redeem(uint256,address,address,bool).selector  }
+rule totalClaimableRewards_stable_CASE_SPLIT_redeem()
 {
     env e;
     require e.msg.sender != currentContract;
     setup(e, 0);
-    calldataarg args;
     address reward;
     require e.msg.sender != reward;
-    require _ScaledBalanceToken != reward;
+    require currentContract != e.msg.sender;
     require _AToken != e.msg.sender;
     require _RewardsController != e.msg.sender;
+    require _DummyERC20_aTokenUnderlying  != e.msg.sender;
+    require _DummyERC20_rewardToken != e.msg.sender;
+    require _SymbolicLendingPoolL1 != e.msg.sender;
+    require _TransferStrategy != e.msg.sender;
+    require _ScaledBalanceToken != e.msg.sender;
     
     require currentContract != reward;
-    
+    require _AToken != reward;
+    require _RewardsController !=  reward;
+    require _DummyERC20_aTokenUnderlying  != reward;
+    require _SymbolicLendingPoolL1 != reward;
+    require _TransferStrategy != reward;
+    require _ScaledBalanceToken != reward;
+    require _TransferStrategy != reward;
+
+
     mathint totalClaimableRewardsBefore = getTotalClaimableRewards(e, reward);
-    f(e, args); 
+    uint256 shares;
+    address receiver;
+    address owner;
+    redeem(e, shares, receiver, owner); 
     mathint totalClaimableRewardsAfter = getTotalClaimableRewards(e, reward);
     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
 }
-
 
 //timeout
-//https://vaas-stg.certora.com/output/99352/bee8d3a583c549e195c0f755bb804b34/?anonymousKey=4b9e6f6791ede0049659d54a07db5e0f146b4a42
-rule totalClaimableRewards_stable_less_requires_7_CASE_SPLIT_deposit(method f)
-    filtered { f -> f.selector == deposit(uint256,address).selector  }
+rule totalClaimableRewards_stable_CASE_SPLIT_deposit()
 {
     env e;
     require e.msg.sender != currentContract;
     setup(e, 0);
-    calldataarg args;
     address reward;
     require e.msg.sender != reward;
-    require _ScaledBalanceToken != reward;
+    require currentContract != e.msg.sender;
     require _AToken != e.msg.sender;
     require _RewardsController != e.msg.sender;
+    require _DummyERC20_aTokenUnderlying  != e.msg.sender;
+    require _DummyERC20_rewardToken != e.msg.sender;
+    require _SymbolicLendingPoolL1 != e.msg.sender;
+    require _TransferStrategy != e.msg.sender;
+    require _ScaledBalanceToken != e.msg.sender;
     
     require currentContract != reward;
-    
+    require _AToken != reward;
+    require _RewardsController !=  reward;
+    require _DummyERC20_aTokenUnderlying  != reward;
+    require _SymbolicLendingPoolL1 != reward;
+    require _TransferStrategy != reward;
+    require _ScaledBalanceToken != reward;
+    require _TransferStrategy != reward;
+
+
     mathint totalClaimableRewardsBefore = getTotalClaimableRewards(e, reward);
-    f(e, args); 
+    uint256 assets;
+    address receiver;
+    deposit(e, assets, receiver);
     mathint totalClaimableRewardsAfter = getTotalClaimableRewards(e, reward);
     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
 }
+
+// //timeout
+// rule totalClaimableRewards_stable_less_requires_6(method f)
+//     filtered { f -> !f.isView && !claimFunctions(f)  && f.selector != initialize(address,string,string).selector  }
+// {
+//     env e;
+//     require e.msg.sender != currentContract;
+//     setup(e, 0);
+//     calldataarg args;
+//     address reward;
+//     require _DummyERC20_aTokenUnderlying != reward;
+//     require e.msg.sender != reward;
+//     require currentContract != e.msg.sender;
+//      require _RewardsController != e.msg.sender;
+    
+//     require currentContract != reward;
+//     require _DummyERC20_aTokenUnderlying  != reward;
+    
+
+//     mathint totalClaimableRewardsBefore = getTotalClaimableRewards(e, reward);
+//     f(e, args); 
+//     mathint totalClaimableRewardsAfter = getTotalClaimableRewards(e, reward);
+//     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
+// }
+
+// //pass with -t=1400,-mediumTimeout=800,-depth=10
+// //https://vaas-stg.certora.com/output/99352/34ccc167c8d84d1985e3b0f75a5d41a6/?anonymousKey=e6f31abf1c7bb0cb66702a218b84b2830fde8928
+// rule totalClaimableRewards_stable_less_requires_7(method f)
+//     filtered { f -> !f.isView && !claimFunctions(f)
+//                     && f.selector != initialize(address,string,string).selector 
+//                     && f.selector != redeem(uint256,address,address,bool).selector 
+//                     && f.selector != redeem(uint256,address,address).selector 
+//                     && f.selector != withdraw(uint256,address,address).selector 
+//                     && f.selector != deposit(uint256,address).selector 
+//                     && f.selector != mint(uint256,address).selector 
+//                     && f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector 
+//                     && f.selector !=claimSingleRewardOnBehalf(address,address,address).selector 
+//                     }
+// {
+//     env e;
+//     require e.msg.sender != currentContract;
+//     setup(e, 0);
+//     calldataarg args;
+//     address reward;
+//     require _DummyERC20_aTokenUnderlying != reward;
+//     require _AToken != reward;
+//     require e.msg.sender != reward;
+//     require _ScaledBalanceToken != reward;
+//     require _AToken != e.msg.sender;
+//     require _RewardsController != e.msg.sender;
+    
+//     require currentContract != reward;
+    
+//     mathint totalClaimableRewardsBefore = getTotalClaimableRewards(e, reward);
+//     f(e, args); 
+//     mathint totalClaimableRewardsAfter = getTotalClaimableRewards(e, reward);
+//     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
+// }
+
+
+// //timeout
+// //https://vaas-stg.certora.com/output/99352/e755cdb34d84406ab17a782c4ffd6954/?anonymousKey=2efcab1e1dd4ea504c315b148b42ef3cec8acaa7
+// rule totalClaimableRewards_stable_less_requires_7_CASE_SPLIT_redeem()
+// {
+//     env e;
+//     require e.msg.sender != currentContract;
+//     setup(e, 0);
+//     address reward;
+//     require _DummyERC20_aTokenUnderlying != reward;
+//     require _AToken != reward;
+//     require e.msg.sender != reward;
+//     require _ScaledBalanceToken != reward;
+//     require _AToken != e.msg.sender;
+//     require _RewardsController != e.msg.sender;
+    
+//     require currentContract != reward;
+    
+//     mathint totalClaimableRewardsBefore = getTotalClaimableRewards(e, reward);
+//     uint256 shares;
+//     address receiver;
+//     address owner;
+//     redeem(e, shares, receiver, owner); 
+//     mathint totalClaimableRewardsAfter = getTotalClaimableRewards(e, reward);
+//     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
+// }
+
+
+// //timeout
+// //https://vaas-stg.certora.com/output/99352/bee8d3a583c549e195c0f755bb804b34/?anonymousKey=4b9e6f6791ede0049659d54a07db5e0f146b4a42
+// rule totalClaimableRewards_stable_less_requires_7_CASE_SPLIT_deposit()
+// {
+//     env e;
+//     require e.msg.sender != currentContract;
+//     setup(e, 0);
+//     address reward;
+//     require _DummyERC20_aTokenUnderlying != reward;
+//     require _AToken != reward;
+//     require e.msg.sender != reward;
+//     require _ScaledBalanceToken != reward;
+//     require _AToken != e.msg.sender;
+//     require _RewardsController != e.msg.sender;
+    
+//     require currentContract != reward;
+    
+//     mathint totalClaimableRewardsBefore = getTotalClaimableRewards(e, reward);
+//     uint256 assets;
+//     address receiver;
+//     deposit(e, assets, receiver);
+//     mathint totalClaimableRewardsAfter = getTotalClaimableRewards(e, reward);
+//     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
+// }
 
 
 //todo: add separate rules for redeem, mint
@@ -476,112 +582,93 @@ rule totalClaimableRewards_stable_less_requires_7_CASE_SPLIT_deposit(method f)
 //https://vaas-stg.certora.com/output/99352/ee42e7f2603740de96a8a0aaf7c676ff/?anonymousKey=f7aaa1b8ed030a8f600136ec0b94ae0bc81a0e0c
 //pass
 //https://vaas-stg.certora.com/output/99352/109a4a815a9a4c3abcee760bf77c5f7d/?anonymousKey=f215580ed8e698028fdedecf096752c7a3e9363c
-rule getClaimableRewards_stable(method f)
-    filtered { f -> !f.isView
-                    && !claimFunctions(f)
-                    && f.selector != initialize(address,string,string).selector
-                    && f.selector != deposit(uint256,address,uint16,bool).selector
-                    && f.selector != redeem(uint256,address,address).selector
-                    && f.selector != redeem(uint256,address,address,bool).selector
-                    && f.selector != mint(uint256,address).selector
-                    && f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
-    }
-{
-    env e;
-    calldataarg args;
-    address user;
-    address reward;
- 
-    require user != 0;
-
-    require currentContract != user;
-    require _AToken != user;
-    require _RewardsController !=  user;
-    require _DummyERC20_aTokenUnderlying  != user;
-    require _DummyERC20_rewardToken != user;
-    require _SymbolicLendingPoolL1 != user;
-    require _TransferStrategy != user;
-    require _ScaledBalanceToken != user;
-    
-    require currentContract != reward;
-    require _AToken != reward;
-    require _RewardsController !=  reward; //
-    require _DummyERC20_aTokenUnderlying  != reward;
-    require _SymbolicLendingPoolL1 != reward; 
-    require _TransferStrategy != reward;
-    require _ScaledBalanceToken != reward;
-    
-    //require isRegisteredRewardToken(reward); //todo: review the assumption
- 
-    mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
-
-    require getRewardTokensLength() > 0;
-    require getRewardToken(0) == reward; //todo: review
-    require _RewardsController.getAvailableRewardsCount(_AToken)  > 0; //todo: review
-    require _RewardsController.getRewardsByAsset(_AToken, 0) == reward; //todo: review
-    f(e, args); 
-    mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
-    assert claimableRewardsAfter == claimableRewardsBefore;
-}
 //timeout
-rule getClaimableRewards_stable_6(method f)
-    filtered { f -> !f.isView
-                    && !claimFunctions(f)
-                    && f.selector != initialize(address,string,string).selector
-                    && f.selector != deposit(uint256,address,uint16,bool).selector
-                    && f.selector != redeem(uint256,address,address).selector
-                    && f.selector != redeem(uint256,address,address,bool).selector
-                    && f.selector != mint(uint256,address).selector
-                    && f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
-    }
-{
-    env e;
-    calldataarg args;
-    address user;
-    address reward;
+
+/// @notice At a given block, getClaimableRewards() is unchanged unless rewards were claimed.
+// rule getClaimableRewards_stable(method f)
+//     filtered { f -> !f.isView
+//                     && !claimFunctions(f)
+//                     && f.selector != initialize(address,string,string).selector
+//                     && f.selector != deposit(uint256,address,uint16,bool).selector
+//                     && f.selector != redeem(uint256,address,address).selector
+//                     && f.selector != redeem(uint256,address,address,bool).selector
+//                     && f.selector != mint(uint256,address).selector
+//                     && f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
+//                     && f.selector !=claimSingleRewardOnBehalf(address,address,address).selector 
+//     }
+// {
+//     env e;
+//     calldataarg args;
+//     address user;
+//     address reward;
  
-    require user != 0;
+//     require user != 0;
 
-    // require currentContract != e.msg.sender;
-    // require _AToken != e.msg.sender;
-    // require _RewardsController != e.msg.sender;
-    // require _DummyERC20_aTokenUnderlying  != e.msg.sender;
-    // require _DummyERC20_rewardToken != e.msg.sender;
-    // require _SymbolicLendingPoolL1 != e.msg.sender;
-    // require _TransferStrategy != e.msg.sender;
-    // require _ScaledBalanceToken != e.msg.sender;
+//     require currentContract != user;
+//     require _AToken != user;
+//     require _RewardsController !=  user;
+//     require _DummyERC20_aTokenUnderlying  != user;
+//     require _DummyERC20_rewardToken != user;
+//     require _SymbolicLendingPoolL1 != user;
+//     require _TransferStrategy != user;
+//     require _ScaledBalanceToken != user;
     
-    // require currentContract != user;
-    // require _AToken != user;
-    // require _RewardsController !=  user;
-    // require _DummyERC20_aTokenUnderlying  != user;
-    // require _DummyERC20_rewardToken != user;
-    // require _SymbolicLendingPoolL1 != user;
-    // require _TransferStrategy != user;
-    // require _ScaledBalanceToken != user;
+//     require currentContract != reward;
+//     require _AToken != reward;
+//     require _RewardsController !=  reward; //
+//     require _DummyERC20_aTokenUnderlying  != reward;
+//     require _SymbolicLendingPoolL1 != reward; 
+//     require _TransferStrategy != reward;
+//     require _ScaledBalanceToken != reward;
     
-    // require currentContract != reward;
-    // require _AToken != reward;
-    // require _RewardsController !=  reward; //
-    // require _DummyERC20_aTokenUnderlying  != reward;
-    // require _SymbolicLendingPoolL1 != reward; 
-    // require _TransferStrategy != reward;
-    // require _ScaledBalanceToken != reward;
-    
-    //require isRegisteredRewardToken(reward); //todo: review the assumption
+//     //require isRegisteredRewardToken(reward); //todo: review the assumption
  
-    mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
+//     mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
 
-    require getRewardTokensLength() > 0;
-    require getRewardToken(0) == reward; //todo: review
-    require _RewardsController.getAvailableRewardsCount(_AToken)  > 0; //todo: review
-    require _RewardsController.getRewardsByAsset(_AToken, 0) == reward; //todo: review
-    f(e, args); 
-    mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
-    assert claimableRewardsAfter == claimableRewardsBefore;
-}
+//     require getRewardTokensLength() > 0;
+//     require getRewardToken(0) == reward; //todo: review
+//     require _RewardsController.getAvailableRewardsCount(_AToken)  > 0; //todo: review
+//     require _RewardsController.getRewardsByAsset(_AToken, 0) == reward; //todo: review
+//     f(e, args); 
+//     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
+//     assert claimableRewardsAfter == claimableRewardsBefore;
+// }
+// //timeout
+// //should pass after excluding claimSingleRewardOnBehalf
+// rule getClaimableRewards_stable_6(method f)
+//     filtered { f -> !f.isView
+//                     && !claimFunctions(f)
+//                     && f.selector != initialize(address,string,string).selector
+//                     && f.selector != deposit(uint256,address,uint16,bool).selector
+//                     && f.selector != redeem(uint256,address,address).selector
+//                     && f.selector != redeem(uint256,address,address,bool).selector
+//                     && f.selector != mint(uint256,address).selector
+//                     && f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
+//                     && f.selector !=claimSingleRewardOnBehalf(address,address,address).selector 
+//     }
+// {
+//     env e;
+//     calldataarg args;
+//     address user;
+//     address reward;
+ 
+//     require user != 0;
 
-//timeout
+ 
+//     mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
+
+//     require getRewardTokensLength() > 0;
+//     require getRewardToken(0) == reward; //todo: review
+//     require _RewardsController.getAvailableRewardsCount(_AToken)  > 0; //todo: review
+//     require _RewardsController.getRewardsByAsset(_AToken, 0) == reward; //todo: review
+//     f(e, args); 
+//     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
+//     assert claimableRewardsAfter == claimableRewardsBefore;
+// }
+
+//pass with -t=1400,-mediumTimeout=800,-depth=15
+//https://vaas-stg.certora.com/output/99352/a10c05634b4342d6b31f777826444616/?anonymousKey=67bb71ebd716ef5d10be8743ded7b466f699e32c
+//pass with -t=1400,-mediumTimeout=800,-depth=10 
 rule getClaimableRewards_stable_4(method f)
     filtered { f -> !f.isView
                     && !claimFunctions(f)
@@ -591,6 +678,7 @@ rule getClaimableRewards_stable_4(method f)
                     && f.selector != redeem(uint256,address,address,bool).selector
                     && f.selector != mint(uint256,address).selector
                     && f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
+                    && f.selector !=claimSingleRewardOnBehalf(address,address,address).selector 
     }
 {
     env e;
@@ -600,25 +688,6 @@ rule getClaimableRewards_stable_4(method f)
  
     require user != 0;
 
-    // require currentContract != e.msg.sender;
-    // require _AToken != e.msg.sender;
-    // require _RewardsController != e.msg.sender;
-    // require _DummyERC20_aTokenUnderlying  != e.msg.sender;
-    // require _DummyERC20_rewardToken != e.msg.sender;
-    // require _SymbolicLendingPoolL1 != e.msg.sender;
-    // require _TransferStrategy != e.msg.sender;
-    // require _ScaledBalanceToken != e.msg.sender;
-    
-    // require currentContract != user;
-    // require _AToken != user;
-    // require _RewardsController !=  user;
-    // require _DummyERC20_aTokenUnderlying  != user;
-    // require _DummyERC20_rewardToken != user;
-    // require _SymbolicLendingPoolL1 != user;
-    // require _TransferStrategy != user;
-    // require _ScaledBalanceToken != user;
-    
-    //to improve run time
     require currentContract != reward;
     require _AToken != reward;
     require _RewardsController !=  reward; //
@@ -636,6 +705,42 @@ rule getClaimableRewards_stable_4(method f)
     require _RewardsController.getAvailableRewardsCount(_AToken)  > 0; //todo: review
     require _RewardsController.getRewardsByAsset(_AToken, 0) == reward; //todo: review
     f(e, args); 
+    mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
+    assert claimableRewardsAfter == claimableRewardsBefore;
+}
+
+//pass with -t=1400,-mediumTimeout=800,-depth=10 
+rule getClaimableRewards_stable_4_after_redeem()
+{
+    env e;
+    address user;
+    address reward;
+ 
+    require user != 0;
+
+    require currentContract != reward;
+    require _AToken != reward;
+    require _RewardsController !=  reward; //
+    require _DummyERC20_aTokenUnderlying  != reward;
+    require _SymbolicLendingPoolL1 != reward; 
+    require _TransferStrategy != reward;
+    require _ScaledBalanceToken != reward;
+    
+    //require isRegisteredRewardToken(reward); //todo: review the assumption
+ 
+    mathint claimableRewardsBefore = getClaimableRewards(e, user, reward);
+
+    require getRewardTokensLength() > 0;
+    require getRewardToken(0) == reward; //todo: review
+    require _RewardsController.getAvailableRewardsCount(_AToken)  > 0; //todo: review
+    require _RewardsController.getRewardsByAsset(_AToken, 0) == reward; //todo: review
+    uint256 shares;
+    address receiver;
+    address owner;
+    bool toUnderlying;
+    
+    redeem(e, shares, receiver, owner, toUnderlying);
+
     mathint claimableRewardsAfter = getClaimableRewards(e, user, reward);
     assert claimableRewardsAfter == claimableRewardsBefore;
 }

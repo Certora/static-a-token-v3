@@ -18,7 +18,7 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
     --solc solc8.10 \
     --optimistic_loop \
     --optimistic_hashing \
-    --settings  -t=1400,-mediumTimeout=800,-depth=15 \
+    --settings -t=1400,-mediumTimeout=800,-depth=10  \
     --staging  \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \
@@ -27,8 +27,8 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                openzeppelin-contracts=lib/openzeppelin-contracts \
     --send_only \
     --loop_iter 1 \
-    --rule totalClaimableRewards_stable_less_requires_7_CASE_SPLIT_redeem \
-    --msg " totalClaimableRewards_stable_less_requires_7_CASE_SPLIT_redeem"
+    --rule totalClaimableRewards_stable_CASE_SPLIT_redeem  \
+    --msg "totalClaimableRewards_stable_CASE_SPLIT_redeem"
 
 
 #--rule_sanity advanced \
