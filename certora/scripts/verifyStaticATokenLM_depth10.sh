@@ -27,8 +27,8 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
                openzeppelin-contracts=lib/openzeppelin-contracts \
     --send_only \
     --loop_iter 1 \
-    --rule totalClaimableRewards_stable_CASE_SPLIT_redeem totalClaimableRewards_stable_CASE_SPLIT_deposit  \
-    --msg "totalClaimableRewards_stable_CASE_SPLIT_redeem totalClaimableRewards_stable_CASE_SPLIT_deposit"
+    --rule  totalClaimableRewards_stable_CASE_SPLIT_deposit  \
+    --msg " totalClaimableRewards_stable_CASE_SPLIT_deposit"
 
 
     
