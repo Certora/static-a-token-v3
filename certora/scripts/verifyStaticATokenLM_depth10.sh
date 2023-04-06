@@ -18,7 +18,7 @@ certoraRun  certora/harness/StaticATokenLMHarness.sol \
     --solc solc8.10 \
     --optimistic_loop \
     --optimistic_hashing \
-    --settings -t=1200,-mediumTimeout=1200,-depth=10 \
+    --settings   -t=500,-mediumTimeout=500,-depth=10 \
     --staging \
     --packages aave-v3-core=lib/aave-v3-core \
                @aave/core-v3=lib/aave-v3-core \

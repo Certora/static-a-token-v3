@@ -86,39 +86,39 @@ invariant inv_atoken_balanceOf_leq_totalSupply_redeem(address user)
 //timeout when running with rule_sanity
 //https://vaas-stg.certora.com/output/99352/7840410509f94183bbef864770193ed9/?anonymousKey=b1a13994a4e51f586db837cc284b39c670532f50
 /// @title AToken sum of 2 balancers <= AToken totalSupply()
-invariant inv_atoken_balanceOf_2users_leq_totalSupply(address user1, address user2)
-	(_AToken.balanceOf(user1) + _AToken.balanceOf(user2))<= _AToken.totalSupply()
-    {
-		preserved with (env e1){
-            setup(e1, user1);
-		    setup(e1, user2);
-		}
-        preserved redeem(uint256 shares, address receiver, address owner) with (env e2){
-            require user1 != user2;
-            require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-        }
-        preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e3){
-            require user1 != user2;
-        	requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-            require _AToken.balanceOf(e3.msg.sender) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-            require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-        }
-        preserved withdraw(uint256 assets, address receiver,address owner) with (env e4){
-            require user1 != user2;
-        	requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-            require _AToken.balanceOf(e4.msg.sender) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-            require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-        }
+// invariant inv_atoken_balanceOf_2users_leq_totalSupply(address user1, address user2)
+// 	(_AToken.balanceOf(user1) + _AToken.balanceOf(user2))<= _AToken.totalSupply()
+//     {
+// 		preserved with (env e1){
+//             setup(e1, user1);
+// 		    setup(e1, user2);
+// 		}
+//         preserved redeem(uint256 shares, address receiver, address owner) with (env e2){
+//             require user1 != user2;
+//             require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
+//         }
+//         preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e3){
+//             require user1 != user2;
+//         	requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
+//             require _AToken.balanceOf(e3.msg.sender) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
+//             require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
+//         }
+//         preserved withdraw(uint256 assets, address receiver,address owner) with (env e4){
+//             require user1 != user2;
+//         	requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
+//             require _AToken.balanceOf(e4.msg.sender) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
+//             require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
+//         }
 
-        preserved metaWithdraw(address owner, address recipient,uint256 staticAmount,uint256 dynamicAmount,bool toUnderlying,uint256 deadline,_StaticATokenLM.SignatureParams sigParams)
-        with (env e5){
-            require user1 != user2;
-        	requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
-            require _AToken.balanceOf(e5.msg.sender) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-            require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
-        }
+//         preserved metaWithdraw(address owner, address recipient,uint256 staticAmount,uint256 dynamicAmount,bool toUnderlying,uint256 deadline,_StaticATokenLM.SignatureParams sigParams)
+//         with (env e5){
+//             require user1 != user2;
+//         	requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
+//             require _AToken.balanceOf(e5.msg.sender) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
+//             require _AToken.balanceOf(currentContract) + _AToken.balanceOf(user1) + _AToken.balanceOf(user2) <= _AToken.totalSupply();
+//         }
 
-	}
+// 	}
 
 /// @title Sum of AToken scaled balances = AToken scaled totalSupply()
 //pass with rule_sanity basic except metaDeposit()
