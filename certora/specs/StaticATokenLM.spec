@@ -377,8 +377,12 @@ rule totalClaimableRewards_stable_CASE_SPLIT(method f)
 }
 
 
-//timeout  -t=1400,-mediumTimeout=800,-depth=10 
+//timeout  -t=1400,-mediumTimeout=800,-depth=10 =10
 //pass with -t=1200,-mediumTimeout=1200,-depth=10 
+// 16 minutes
+//https://vaas-stg.certora.com/output/99352/12829795cff241098f304ce49f73051e/?anonymousKey=739f53463e398ed7d5b2eec101f254b6095e0841
+// 40 minutes
+//https://vaas-stg.certora.com/output/99352/5a29622bc18c438ba016a27162a82c84/?anonymousKey=130051cfba518c2cdf7f0e86ecc71ea05d98367b
 rule totalClaimableRewards_stable_CASE_SPLIT_redeem()
 {
     env e;
@@ -404,7 +408,7 @@ rule totalClaimableRewards_stable_CASE_SPLIT_redeem()
     require _ScaledBalanceToken != reward;
     require _TransferStrategy != reward;
 
-
+//todo: run with different settings
     mathint totalClaimableRewardsBefore = getTotalClaimableRewards(e, reward);
     uint256 shares;
     address receiver;
@@ -414,7 +418,8 @@ rule totalClaimableRewards_stable_CASE_SPLIT_redeem()
     assert totalClaimableRewardsAfter == totalClaimableRewardsBefore;
 }
 
-//timeout
+//timeout with -t=1000,-mediumTimeout=100,-depth=10 
+//timeout no SMT run:  -t=1200,-mediumTimeout=1000,-depth=6   -t=1200,-mediumTimeout=1200,-depth=10 
 rule totalClaimableRewards_stable_CASE_SPLIT_deposit()
 {
     env e;
