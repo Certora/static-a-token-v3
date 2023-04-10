@@ -1,22 +1,5 @@
 import "methods_base.spec"
 
-//// @dev Latest run succeeded (without rule_sanity): job-id=`f2935fc2c0234b6e9710f40e20d5dc07`
-
-/////////////////// Methods ////////////////////////
-
-    methods
-    {
-        // envfree
-        // -------
-        rate() returns (uint256) envfree
-        convertToShares(uint256 amount) returns (uint256) envfree
-        convertToAssets(uint256 amount) returns (uint256) envfree
-    }
-
-///////////////// Definition ///////////////////////
-
-    definition RAY() returns uint256 = (10 ^ 27);
-
 ///////////////// Properties ///////////////////////
 
     /*** 
@@ -46,10 +29,10 @@ import "methods_base.spec"
 		 */
         rule previewWithdrawRoundingRange(uint256 assets) {
             env e;
-            uint256 shares = convertToShares(assets);
+            uint256 shares = convertToShares(e, assets);
 
-            assert previewWithdraw(e, assets) >= shares, "Preview withdraw takes less shares than converted";
-            assert previewWithdraw(e, assets) <= shares + 1, "Preview withdraw costs too many shares";
+            assert previewWithdraw(assets) >= shares, "Preview withdraw takes less shares than converted";
+            assert previewWithdraw(assets) <= shares + 1, "Preview withdraw costs too many shares";
         }
 
         /**
@@ -59,10 +42,10 @@ import "methods_base.spec"
 		 */
         rule previewRedeemRoundingRange(uint256 shares) {
             env e;
-            uint256 assets = convertToAssets(shares);
+            uint256 assets = convertToAssets(e,shares);
 
-            assert previewRedeem(e, shares) <= assets, "Preview redeem yields more assets than converted";
-            assert previewRedeem(e, shares) + 1 + rate() / RAY() >= assets, "Preview redeem yields too few assets";
+            assert previewRedeem(shares) <= assets, "Preview redeem yields more assets than converted";
+            assert previewRedeem(shares) + 1 + rate() / RAY() >= assets, "Preview redeem yields too few assets";
         }
 
         /**
@@ -70,8 +53,9 @@ import "methods_base.spec"
         * Note the precision depends on the ratio **`rate / RAY`**.
         */
         rule amountConversionPreserved(uint256 amount) {
+            env e;
             mathint mathamount = to_mathint(amount);
-            mathint converted = to_mathint(convertToAssets(convertToShares(amount)));
+            mathint converted = to_mathint(convertToAssets(e, convertToShares(e, amount)));
 
             // That `converted <= mathamount` was proved in `amountConversionRoundedDown`
             assert mathamount - converted <= 1 + rate() / RAY(), "Too few converted assets";
@@ -82,9 +66,10 @@ import "methods_base.spec"
         * Note the precision depends on the ratio **`RAY / rate`**.
         */
         rule sharesConversionPreserved(uint256 shares) {
+            env e;
             mathint mathshares = to_mathint(shares);
-            uint256 amount = convertToAssets(shares);
-            mathint converted = to_mathint(convertToShares(amount));
+            uint256 amount = convertToAssets(e, shares);
+            mathint converted = to_mathint(convertToShares(e, amount));
 
             // That `converted <= mathshare` was proved in `sharesConversionRoundedDown`
             assert mathshares - converted <= 1 + RAY() / rate(), "Too few converted shares";
@@ -97,11 +82,12 @@ import "methods_base.spec"
         * asset amounts.
         */
         rule accountsJoiningSplittingIsLimited(uint256 shares1, uint256 shares2) {
-            uint256 amount1 = convertToAssets(shares1);
-            uint256 amount2 = convertToAssets(shares2);
+            env e;
+            uint256 amount1 = convertToAssets(e, shares1);
+            uint256 amount2 = convertToAssets(e, shares2);
             uint256 jointShares = shares1 + shares2;
             require jointShares >= shares1 + shares2;  // Prevent overflow
-            uint256 jointAmount = convertToAssets(jointShares);
+            uint256 jointAmount = convertToAssets(e, jointShares);
 
             assert jointAmount >= amount1 + amount2, "Found advantage in combining accounts";
 
@@ -121,11 +107,12 @@ import "methods_base.spec"
         * Similar to `accountsJoiningSplittingIsLimited` rule.
         */
         rule convertSumOfAssetsPreserved(uint256 assets1, uint256 assets2) {
-            uint256 shares1 = convertToShares(assets1);
-            uint256 shares2 = convertToShares(assets2);
+            env e;
+            uint256 shares1 = convertToShares(e, assets1);
+            uint256 shares2 = convertToShares(e, assets2);
             uint256 sumAssets = assets1 + assets2;
             require sumAssets >= assets1 + assets2; // Prevent overflow
-            uint256 jointShares = convertToShares(sumAssets);
+            uint256 jointShares = convertToShares(e, sumAssets);
 
             assert jointShares >= shares1 + shares2, "Convert sum of assets bigger than parts";
             assert jointShares < shares1 + shares2 + 2, "Convert sum of assets far smaller than parts";
@@ -183,3 +170,61 @@ import "methods_base.spec"
         //	assert sharesSum <= shares1 + shares2, "Withdraw sum larger than its parts";
         //	assert sharesSum + 2 > shares1 + shares2, "Withdraw sum far smaller than it sparts";
         //}
+
+    /*
+    * Preview functions rules
+    * -----------------------
+    * The rules below prove that preview functions (e.g. `previewDeposit`) return the same
+    * values as their non-preview counterparts (e.g. `deposit`).
+    * The rules below passed with rule sanity: job-id=`2b196ea03b8c408dae6c79ae128fc516`
+    */
+    
+    /*****************************
+    *       previewDeposit      *
+    *****************************/
+
+        /// Number of shares returned by `previewDeposit` is the same as `deposit`.
+        rule previewDepositSameAsDeposit(uint256 assets, address receiver) {
+            env e;
+            uint256 previewShares = previewDeposit(e, assets);
+            uint256 shares = deposit(e, assets, receiver);
+            assert previewShares == shares, "previewDeposit is unequal to deposit";
+        }
+
+    /*****************************
+    *        previewMint        *
+    *****************************/
+
+        /// Number of assets returned by `previewMint` is the same as `mint`.
+        rule previewMintSameAsMint(uint256 shares, address receiver) {
+            env e;
+            uint256 previewAssets = previewMint(shares);
+            uint256 assets = mint(e, shares, receiver);
+            assert previewAssets == assets, "previewMint is unequal to mint";
+        }
+
+    /***************************
+    *        maxDeposit        *
+    ***************************/
+        // The EIP4626 spec requires that the previewDeposit function must not account for maxDeposit limit or the allowance of asset tokens.
+        // Since maxDeposit is a constant, it cannot have any impact on the previewDeposit value.
+        // STATUS: Verified for all f except metaDeposit which has a reachability issue
+        // https://vaas-stg.certora.com/output/11775/044c54bdf1c0414898e88d9b03dda5a5/?anonymousKey=aaa9c0c1c413cd1fd3cbb9fdfdcaa20a098274c5
+
+        ///@title maxDeposit is constant
+        ///@notice This rule verifies that maxDeposit returns a constant value and therefore it cannot have any impact on the previewDeposit value.
+        rule maxDepositConstant(method f)
+        filtered {
+            f -> f.selector != metaDeposit(address,address,uint256,uint16,bool,uint256,(address,address,uint256,uint256,uint8,bytes32,bytes32),(uint8,bytes32,bytes32)).selector
+        }
+        {
+            address receiver;
+            uint256 maxDep1 = maxDeposit(receiver);
+            calldataarg args;
+            env e;
+            f(e, args);
+            uint256 maxDep2 = maxDeposit(receiver);
+
+            assert maxDep1 == maxDep2,"maxDeposit should not change";
+        }
+    

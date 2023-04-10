@@ -1,11 +1,16 @@
-import "erc4626.spec"
+import "methods_base.spec"
 
 /////////////////// Methods ////////////////////////
     
     methods{
-        previewDeposit(uint256) returns(uint256) envfree => NONDET
-        _mint(address, uint256)  => NONDET
-        handleAction(address, uint256, uint128) => NONDET
+        // static aToken
+	    // -------------
+            previewDeposit(uint256) returns(uint256) envfree => NONDET
+            _mint(address, uint256)  => NONDET
+
+        // rewards controller
+	    // ------------------
+            handleAction(address, uint256, uint128) => NONDET
     }
 
 ///////////////// Properties ///////////////////////
@@ -28,16 +33,16 @@ import "erc4626.spec"
         rule depositCheckIndexGRayAssert1(env e){
             uint256 assets;
             address receiver;
-            uint256 contractAssetBalBefore = ATok.balanceOf(currentContract);
-            uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
+            uint256 contractAssetBalBefore = _AToken.balanceOf(currentContract);
+            uint256 index = _SymbolicLendingPool.getReserveNormalizedIncome(getStaticATokenUnderlying());
             
-            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();//Without this a different index will be used for conversions in the Atoken contract compared to the one used in StaticAToken
+            require getStaticATokenUnderlying() == _AToken.UNDERLYING_ASSET_ADDRESS();//Without this a different index will be used for conversions in the Atoken contract compared to the one used in StaticAToken
             require e.msg.sender != currentContract;
             require index > RAY();//since the index is initiated as RAY and only increases after that. index < RAY gives strange behaviors causing wildly inaccurate amounts being deposited and minted
 
             uint256 shares = deposit(e, assets, receiver);
 
-            uint256 contractAssetBalAfter = ATok.balanceOf(currentContract);
+            uint256 contractAssetBalAfter = _AToken.balanceOf(currentContract);
 
             // upper bound for deposited assets
             assert contractAssetBalAfter - contractAssetBalBefore <= assets + index/RAY();
@@ -50,16 +55,16 @@ import "erc4626.spec"
         rule depositCheckIndexERayAssert1(env e){
             uint256 assets;
             address receiver;
-            uint256 contractAssetBalBefore = ATok.balanceOf(currentContract);
-            uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
+            uint256 contractAssetBalBefore = _AToken.balanceOf(currentContract);
+            uint256 index = _SymbolicLendingPool.getReserveNormalizedIncome(getStaticATokenUnderlying());
             
-            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();//Without this a different index will be used for conversions in the Atoken contract compared to the one used in StaticAToken
+            require getStaticATokenUnderlying() == _AToken.UNDERLYING_ASSET_ADDRESS();//Without this a different index will be used for conversions in the Atoken contract compared to the one used in StaticAToken
             require e.msg.sender != currentContract;
             require index == RAY();//since the index is initiated as RAY and only increases after that. index < RAY gives strange behaviors causing wildly inaccurate amounts being deposited and minted
 
             uint256 shares = deposit(e, assets, receiver);
 
-            uint256 contractAssetBalAfter = ATok.balanceOf(currentContract);
+            uint256 contractAssetBalAfter = _AToken.balanceOf(currentContract);
 
             // upper bound for deposited assets
             assert contractAssetBalAfter <= contractAssetBalBefore + assets + index/(2 * RAY());

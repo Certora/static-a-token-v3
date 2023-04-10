@@ -6,7 +6,8 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     certora/harness/rewards/TransferStrategyHarness.sol \
     certora/harness/tokens/DummyERC20_aTokenUnderlying.sol \
     certora/harness/tokens/DummyERC20_rewardToken.sol \
---verify StaticATokenLMHarness:certora/specs/erc4626DepositSummarization.spec \
+    certora/harness/tokens/DummyERC20_rewardTokenB.sol \
+--verify StaticATokenLMHarness:certora/specs/double_claim.spec \
 --link StaticATokenLMHarness:POOL=SymbolicLendingPool \
            StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
            StaticATokenLMHarness:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
@@ -24,8 +25,8 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
                openzeppelin-contracts=certora/munged/lib/openzeppelin-contracts \
 --solc solc8.10 \
 --optimistic_loop \
-    --loop_iter 1 \
+    --loop_iter 2 \
 --optimistic_hashing \
 --cloud \
---settings -mediumTimeout=1000,-depth=15,-t=10000 \
---msg "ERC4626 summarized properties"
+--settings -t=7200,-mediumTimeout=10,-depth=10  \
+--msg "Multi rewards - double claim properties"

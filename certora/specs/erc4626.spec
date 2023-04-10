@@ -1,48 +1,4 @@
-import "StaticATokenLM.spec"
-
-using StaticATokenLMHarness as SAT
-using AToken as ATok
-using SymbolicLendingPoolL1 as pool
-
-/////////////////// Methods ////////////////////////
-
-    methods{
-        // static aToken methods
-        asset() returns (address) envfree
-        convertToAssets(uint256) returns (uint256)
-        convertToShares(uint256) returns (uint256)
-        deposit(uint256, address) returns (uint256)
-        previewWithdraw(uint256) returns (uint256) envfree
-        previewRedeem(uint256) returns (uint256) envfree
-        maxRedeem(address) returns (uint256) envfree
-        maxDeposit(address) returns (uint256) envfree
-        previewMint(uint256) returns (uint256) envfree
-        previewWithdraw(address) returns (uint256) envfree
-        maxWithdraw(address) returns (uint256) envfree
-        maxMint(address) returns (uint256) envfree
-        //totalAssets() returns (uint256) envfree
-        
-        // harness methods
-        getStaticATokenUnderlying() returns (address) envfree
-        getATokenBalanceOf(address) returns (uint256) envfree
-        getULBalanceOf(address) returns(uint256) envfree
-        assetsTotal(address) returns (uint256) envfree
-        
-        // underlying token methods
-        _DummyERC20_aTokenUnderlying.balanceOf(address) returns(uint256) envfree
-        
-        // pool methods
-        pool.getReserveNormalizedIncome(address) returns (uint256)
-
-        // aToken methods
-        ATok.approve(address, uint256) returns (bool)
-        ATok.allowance(address, address) returns (uint256) envfree
-        ATok.UNDERLYING_ASSET_ADDRESS() returns (address) envfree
-    }
-
-///////////////// Definition ///////////////////////
-
-    definition RAY() returns uint256 = 10^27;
+import "methods_base.spec"
 
 ///////////////// Properties ///////////////////////
     /****************************
@@ -91,22 +47,22 @@ using SymbolicLendingPoolL1 as pool
             env e4;
             env e5;
             address user;
-            uint256 ATokAllowance1 = ATok.allowance(currentContract, user);
+            uint256 ATokAllowance1 = _AToken.allowance(currentContract, user);
             uint256 assets1;
             require assets1 < ATokAllowance1;
             uint256 previewShares1 = previewDeposit(e1, assets1);
 
             uint256 amount1;
-            ATok.approve(e2, currentContract, amount1);
+            _AToken.approve(e2, currentContract, amount1);
             
-            uint256 ATokAllowance2 = ATok.allowance(currentContract, user);
+            uint256 ATokAllowance2 = _AToken.allowance(currentContract, user);
             require assets1 == ATokAllowance2;
             uint256 previewShares2 = previewDeposit(e3, assets1);
             
             uint256 amount2;
-            ATok.approve(e4, currentContract, amount2);
+            _AToken.approve(e4, currentContract, amount2);
             
-            uint256 ATokAllowance3 = ATok.allowance(currentContract, user);
+            uint256 ATokAllowance3 = _AToken.allowance(currentContract, user);
             require assets1 > ATokAllowance3;
             uint256 previewShares3 = previewDeposit(e5, assets1);
 
@@ -155,7 +111,7 @@ using SymbolicLendingPoolL1 as pool
         rule previewMintIndependentOfAllowance(){
         // allowance of currentContract for asset transfer from msg.sender to   
             address user;
-            uint256 ATokAllowance1 = ATok.allowance(currentContract, user);
+            uint256 ATokAllowance1 = _AToken.allowance(currentContract, user);
             uint256 shares1;
             uint256 assets1;
             uint256 assets2;
@@ -167,7 +123,7 @@ using SymbolicLendingPoolL1 as pool
             address receiver1;
             deposit(e2, assets1, receiver1);
             
-            uint256 ATokAllowance2 = ATok.allowance(currentContract, user);
+            uint256 ATokAllowance2 = _AToken.allowance(currentContract, user);
             env e3;
             require convertToAssets(e3, shares1) == ATokAllowance2;
             uint256 previewAssets2 = previewMint(shares1);
@@ -177,7 +133,7 @@ using SymbolicLendingPoolL1 as pool
             deposit(e2, assets2, receiver2); 
             
             env e5;
-            uint256 ATokAllowance3 = ATok.allowance(currentContract, user);
+            uint256 ATokAllowance3 = _AToken.allowance(currentContract, user);
             require convertToAssets(e4, shares1) > ATokAllowance3;
             uint256 previewAssets3 = previewMint(shares1);
 
@@ -445,10 +401,10 @@ using SymbolicLendingPoolL1 as pool
             uint256 assets;
             
             uint256 allowed = allowance(e, owner, e.msg.sender);
-            uint256 balBefore = ATok.balanceOf(receiver);
+            uint256 balBefore = _AToken.balanceOf(receiver);
             uint256 shareBalBefore = balanceOf(owner);
-            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();
-            uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
+            require getStaticATokenUnderlying() == _AToken.UNDERLYING_ASSET_ADDRESS();
+            uint256 index = _SymbolicLendingPool.getReserveNormalizedIncome(getStaticATokenUnderlying());
             require e.msg.sender != currentContract;
             require receiver != currentContract;
             require owner != currentContract;
@@ -457,7 +413,7 @@ using SymbolicLendingPoolL1 as pool
             
             uint256 sharesBurnt = withdraw(e, assets, receiver, owner);
 
-            uint256 balAfter = ATok.balanceOf(receiver);
+            uint256 balAfter = _AToken.balanceOf(receiver);
             uint256 shareBalAfter = balanceOf(owner);
 
             // checking for allowance in case msg.sender is not the owner
@@ -493,8 +449,8 @@ using SymbolicLendingPoolL1 as pool
             uint256 allowed = allowance(e, owner, e.msg.sender);
             uint256 balBefore = balanceOf(owner);
 
-            require getStaticATokenUnderlying() == ATok.UNDERLYING_ASSET_ADDRESS();
-            uint256 index = pool.getReserveNormalizedIncome(e, getStaticATokenUnderlying());
+            require getStaticATokenUnderlying() == _AToken.UNDERLYING_ASSET_ADDRESS();
+            uint256 index = _SymbolicLendingPool.getReserveNormalizedIncome(getStaticATokenUnderlying());
             require index > RAY();
             require e.msg.sender != currentContract;
             require receiver != currentContract;
@@ -721,64 +677,3 @@ using SymbolicLendingPoolL1 as pool
             totalAssets@withrevert();
             assert !lastReverted;
         }
-
-
-
-
-    /// TO BE MOVED ///
-
-
-
-    // The EIP4626 spec requires that the previewDeposit function must not account for maxDeposit limit or the allowance of asset tokens.
-    // Since maxDeposit is a constant, it cannot have any impact on the previewDeposit value.
-    // STATUS: Verified for all f except metaDeposit which has a reachability issue
-    // https://vaas-stg.certora.com/output/11775/044c54bdf1c0414898e88d9b03dda5a5/?anonymousKey=aaa9c0c1c413cd1fd3cbb9fdfdcaa20a098274c5
-
-    ///@title maxDepost is constant
-    ///@notice This rule verifies that maxDeposit returns a constant value and therefore it cannot have any impact on the previewDeposit value.
-    rule maxDepositConstant(method f)
-    filtered {
-        f -> f.selector != metaDeposit(address,address,uint256,uint16,bool,uint256,(address,address,uint256,uint256,uint8,bytes32,bytes32),(uint8,bytes32,bytes32)).selector
-    }
-    {
-        address receiver;
-        uint256 maxDep1 = maxDeposit(receiver);
-        calldataarg args;
-        env e;
-        f(e, args);
-        uint256 maxDep2 = maxDeposit(receiver);
-
-        assert maxDep1 == maxDep2,"maxDeposit should not change";
-    }
-
-
-
-
-    /****************************
-    *** Michael's properties ***
-    ****************************/
-
-    // A larger asset deposit will either give the same amount or more shares compared to a smaller deposit
-    rule moreAssetToDepositResultMoreShares(uint256 assets1, uint256 assets2){
-        address recipient; uint16 referralCode; bool fromUnderlying; 
-        env e;
-        require assets2 > assets1;
-        uint256 _userShares = balanceOf(recipient);
-        
-        storage init = lastStorage;
-        
-        uint256 shares1 = deposit(e, assets1, recipient, referralCode, fromUnderlying);
-        uint256 userShares1_ = balanceOf(recipient);
-        
-        uint256 shares2 = deposit(e, assets2, recipient, referralCode, fromUnderlying) at init;
-        uint256 userShares2_ = balanceOf(recipient);
-
-        assert shares2 >= shares1;
-        assert userShares2_ - _userShares >= userShares1_ - _userShares;
-    }
-
-    // invariant nonZeroSharesImplyNonZeroAssets()
-    //     totalSupply() != 0 => ATok.balanceOf(currentContract) != 0
-
-    // invariant zeroAssetsImplyZeroShares()
-    //     ATok.balanceOf(currentContract) == 0 => totalSupply() == 0

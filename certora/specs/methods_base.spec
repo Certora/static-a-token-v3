@@ -1,36 +1,143 @@
 import "erc20.spec"
 
+using StaticATokenLMHarness as _StaticATokenLM
+using SymbolicLendingPool as _SymbolicLendingPool
+using RewardsControllerHarness as _RewardsController
+using TransferStrategyHarness as _TransferStrategy
+using DummyERC20_aTokenUnderlying as _DummyERC20_aTokenUnderlying 
+using AToken as _AToken
+using DummyERC20_rewardToken as _DummyERC20_rewardToken 
+
+/////////////////// Methods ////////////////////////
 
 methods
 {
-	// envfree
-	// -------
-	asset() returns (address) envfree
-    // balanceOf(address owner) returns (uint256) envfree
-    maxWithdraw(address owner) returns (uint256) envfree
-    maxRedeem(address owner) returns (uint256) envfree
+    // static aToken
+	// -------------
+        asset() returns (address) envfree
+        totalAssets() returns (uint256) envfree
+        maxWithdraw(address owner) returns (uint256) envfree
+        maxRedeem(address owner) returns (uint256) envfree
+        previewWithdraw(uint256) returns (uint256) envfree
+        previewRedeem(uint256) returns (uint256) envfree
+        maxDeposit(address) returns (uint256) envfree
+        previewMint(uint256) returns (uint256) envfree
+        previewWithdraw(address) returns (uint256) envfree
+        maxMint(address) returns (uint256) envfree
+        rate() returns (uint256) envfree
+        getUnclaimedRewards(address, address) returns (uint256) envfree
+        rewardTokens() returns (address[]) envfree
+        isRegisteredRewardToken(address) returns (bool) envfree
+        
+    // static aToken harness
+    // ---------------------
+        getStaticATokenUnderlying() returns (address) envfree
+        getATokenBalanceOf(address) returns (uint256) envfree
+        getULBalanceOf(address) returns(uint256) envfree
+        assetsTotal(address) returns (uint256) envfree
+        getRewardsIndexOnLastInteraction(address, address) returns (uint128) envfree
+        getRewardTokensLength() returns (uint256) envfree 
+        getRewardToken(uint256) returns (address) envfree
 
-    // Pool.sol
-	// --------
-    // In RewardsDistributor.sol called by RewardsController.sol
-    getAssetIndex(address, address) returns (uint256, uint256) =>  DISPATCHER(true)
+    // erc20
+    // -----
+        transferFrom(address,address,uint256) returns (bool) => DISPATCHER(true)
 
-    // In RewardsDistributor.sol called by RewardsController.sol
-    finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET  
+    // pool
+    // ----
+        _SymbolicLendingPool.getReserveNormalizedIncome(address) returns (uint256) envfree
+	
+    // rewards controller
+	// ------------------
+        // In RewardsDistributor.sol called by RewardsController.sol
+        getAssetIndex(address, address) returns (uint256, uint256) => DISPATCHER(true)
+        // In ScaledBalanceTokenBase.sol called by getAssetIndex
+        scaledTotalSupply() returns (uint256)  => DISPATCHER(true) 
+        // Called by RewardsController._transferRewards()
+        // Defined in TransferStrategyHarness as simple transfer() 
+        performTransfer(address,address,uint256) returns (bool) =>  DISPATCHER(true)
 
-    // In ScaledBalanceTokenBase.sol called by getAssetIndex
-    scaledTotalSupply() returns (uint256)  => DISPATCHER(true) 
-    
-    // RewardsController.sol
-	// ---------------------
-    // Called by IncentivizedERC20.sol and by StaticATokenLM.sol
-    handleAction(address,uint256,uint256) => DISPATCHER(true)
+        // harness methods of the rewards controller
+        _RewardsController.getRewardsIndex(address,address)returns (uint256) envfree
+        _RewardsController.getAvailableRewardsCount(address) returns (uint128) envfree
+        _RewardsController.getRewardsByAsset(address, uint128) returns (address) envfree
+        _RewardsController.getAssetListLength() returns (uint256) envfree
+        _RewardsController.getAssetByIndex(uint256) returns (address) envfree
+        _RewardsController.getDistributionEnd(address, address)  returns (uint256) envfree
+        _RewardsController.getUserAccruedRewards(address, address) returns (uint256) envfree
+        _RewardsController.getUserAccruedReward(address, address, address) returns (uint256) envfree
+        _RewardsController.getAssetDecimals(address) returns (uint8) envfree
+        _RewardsController.getRewardsData(address,address) returns (uint256,uint256,uint256,uint256) envfree
+        _RewardsController.getUserAssetIndex(address,address, address) returns (uint256) envfree
 
-    // Called by rewardscontroller.sol
-    // Defined in scaledbalancetokenbase.sol
-    getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => DISPATCHER(true)
+    // underlying token
+    // ----------------
+        _DummyERC20_aTokenUnderlying.balanceOf(address) returns(uint256) envfree
 
-    // Called by RewardsController._transferRewards()
-    // Defined in TransferStrategyHarness as simple transfer() 
-    performTransfer(address,address,uint256) returns (bool) =>  DISPATCHER(true)
+    // aToken
+	// ------
+        _AToken.balanceOf(address) returns (uint256) envfree
+        _AToken.totalSupply() returns (uint256) envfree
+        _AToken.allowance(address, address) returns (uint256) envfree
+        _AToken.UNDERLYING_ASSET_ADDRESS() returns (address) envfree
+        _AToken.scaledBalanceOf(address) returns (uint256) envfree
+        _AToken.scaledTotalSupply() returns (uint256) envfree
+        
+        // called in aToken
+        finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET  
+        // Called by rewardscontroller.sol
+        // Defined in scaledbalancetokenbase.sol
+        getScaledUserBalanceAndSupply(address) returns (uint256, uint256) => DISPATCHER(true)
+
+    // reward token
+    // ------------
+        _DummyERC20_rewardToken.balanceOf(address) returns (uint256) envfree
+        _DummyERC20_rewardToken.totalSupply() returns (uint256) envfree
+
+        UNDERLYING_ASSET_ADDRESS() returns (address) envfree => CONSTANT UNRESOLVED
  }
+
+///////////////// DEFINITIONS //////////////////////
+
+    definition RAY() returns uint256 = 10^27;
+
+////////////////// FUNCTIONS //////////////////////
+
+    /**
+    * @title Single reward setup
+    * Setup the `StaticATokenLM`'s rewards so they contain a single reward token
+    * which is` _DummyERC20_rewardToken`.
+    */
+    function single_RewardToken_setup() {
+        require getRewardTokensLength() == 1;
+        require getRewardToken(0) == _DummyERC20_rewardToken;
+    }
+
+    /**
+    * @title Single reward setup in RewardsController
+    * Sets (in `_RewardsController`) the first reward for `_AToken` as
+    * `_DummyERC20_rewardToken`.
+    */
+    function rewardsController_reward_setup() {
+        require _RewardsController.getAvailableRewardsCount(_AToken) > 0;
+        require _RewardsController.getRewardsByAsset(_AToken, 0) == _DummyERC20_rewardToken;
+    }
+
+    /// @title Assumptions that should hold in any run
+    /// @dev Assume that RewardsController.configureAssets(RewardsDataTypes.RewardsConfigInput[] memory rewardsInput) was called
+    function setup(env e, address user)
+    {
+        require getRewardTokensLength() > 0;
+        require _RewardsController.getAvailableRewardsCount(_AToken)  > 0;
+        require _RewardsController.getRewardsByAsset(_AToken, 0) == _DummyERC20_rewardToken;
+        require currentContract != e.msg.sender;
+        require currentContract != user;
+    
+        require _AToken != user;
+        require _RewardsController !=  user;
+        require _DummyERC20_aTokenUnderlying  != user;
+        require _DummyERC20_rewardToken != user;
+        require _SymbolicLendingPool != user;
+        require _TransferStrategy != user;
+        require _TransferStrategy != user;
+    }

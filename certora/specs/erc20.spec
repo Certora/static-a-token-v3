@@ -8,5 +8,5 @@ methods {
     allowance(address,address)            returns (uint)    => DISPATCHER(true)
     approve(address,uint256)              returns (bool)    => DISPATCHER(true)
     transfer(address,uint256)             returns (bool)    => DISPATCHER(true)
-    transferFrom(address,address,uint256) returns (bool)    => DISPATCHER(true)
+    // transferFrom(address,address,uint256) returns (bool)    => DISPATCHER(true)
 }

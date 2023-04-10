@@ -1,31 +1,5 @@
 import "methods_multi_reward.spec"
 
-
-/////////////////// Methods ////////////////////////
-
-/**
- * @dev Summarizing getCurrentRewardsIndex as constant, to speed up verification.
- */
-
-    methods{
-	    getCurrentRewardsIndex(address reward) returns (uint256) => CONSTANT
-    }
-
-///////////////// Definition ///////////////////////
-
-    /// @title Set up a single reward token
-    function single_RewardToken_setup() {
-        require isRegisteredRewardToken(_rewardTokenA);
-        require getRewardTokensLength() == 1;
-    }
-
-
-    /// @title Set up a single reward token for `_AToken` in the `INCENTIVES_CONTROLLER`
-    function rewardsController_arbitrary_single_reward_setup() {
-        require _RewardsController.getAvailableRewardsCount(_AToken) == 1;
-        require _RewardsController.getRewardsByAsset(_AToken, 0) == _rewardTokenA;
-    }
-
 ///////////////// Properties ///////////////////////
 
 /// @dev Broke the rule into two cases to speed up verification
@@ -44,18 +18,18 @@ import "methods_multi_reward.spec"
         env e;
         require e.msg.sender != currentContract;  // Cannot claim to contract
 
-        uint256 initialBalance = _rewardTokenA.balanceOf(e.msg.sender);
-        uint256 claimable = getClaimableRewards(e, e.msg.sender,_rewardTokenA);
+        uint256 initialBalance = _DummyERC20_rewardToken.balanceOf(e.msg.sender);
+        uint256 claimable = getClaimableRewards(e, e.msg.sender,_DummyERC20_rewardToken);
 
         // Ensure contract has sufficient rewards
-        require _rewardTokenA.balanceOf(currentContract) >= claimable;
+        require _DummyERC20_rewardToken.balanceOf(currentContract) >= claimable;
 
         // Duplicate claim
-        claimDoubleRewardOnBehalf(e, e.msg.sender, e.msg.sender, _rewardTokenA, _rewardTokenA);
+        claimDoubleRewardOnBehalf(e, e.msg.sender, e.msg.sender, _DummyERC20_rewardToken, _DummyERC20_rewardToken);
         
-        uint256 duplicateClaimBalance = _rewardTokenA.balanceOf(e.msg.sender);
+        uint256 duplicateClaimBalance = _DummyERC20_rewardToken.balanceOf(e.msg.sender);
         uint256 diff = duplicateClaimBalance - initialBalance;
-        uint256 unclaimed = getUnclaimedRewards(e.msg.sender, _rewardTokenA);
+        uint256 unclaimed = getUnclaimedRewards(e.msg.sender, _DummyERC20_rewardToken);
 
         assert diff + unclaimed <= claimable, "Duplicate claim changes rewards";
     }
@@ -74,18 +48,18 @@ import "methods_multi_reward.spec"
         env e;
         require e.msg.sender != currentContract;  // Cannot claim to contract
 
-        uint256 initialBalance = _rewardTokenA.balanceOf(e.msg.sender);
-        uint256 claimable = getClaimableRewards(e, e.msg.sender,_rewardTokenA);
+        uint256 initialBalance = _DummyERC20_rewardToken.balanceOf(e.msg.sender);
+        uint256 claimable = getClaimableRewards(e, e.msg.sender,_DummyERC20_rewardToken);
 
         // Ensure contract does not have sufficient rewards
-        require _rewardTokenA.balanceOf(currentContract) < claimable;
+        require _DummyERC20_rewardToken.balanceOf(currentContract) < claimable;
 
         // Duplicate claim
-        claimDoubleRewardOnBehalf(e, e.msg.sender, e.msg.sender, _rewardTokenA, _rewardTokenA);
+        claimDoubleRewardOnBehalf(e, e.msg.sender, e.msg.sender, _DummyERC20_rewardToken, _DummyERC20_rewardToken);
         
-        uint256 duplicateClaimBalance = _rewardTokenA.balanceOf(e.msg.sender);
+        uint256 duplicateClaimBalance = _DummyERC20_rewardToken.balanceOf(e.msg.sender);
         uint256 diff = duplicateClaimBalance - initialBalance;
-        uint256 unclaimed = getUnclaimedRewards(e.msg.sender, _rewardTokenA);
+        uint256 unclaimed = getUnclaimedRewards(e.msg.sender, _DummyERC20_rewardToken);
 
         assert diff + unclaimed <= claimable, "Duplicate claim changes rewards";
     }

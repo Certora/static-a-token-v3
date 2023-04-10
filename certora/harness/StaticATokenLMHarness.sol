@@ -2,7 +2,7 @@
 pragma solidity ^0.8.10;
 
 import {StaticATokenLM, StaticATokenErrors,  IPool, IRewardsController, IERC20} from '../munged/src/StaticATokenLM.sol';
-import {SymbolicLendingPoolL1} from './SymbolicLendingPoolL1.sol';
+import {SymbolicLendingPool} from './pool/SymbolicLendingPool.sol';
 
 
 
