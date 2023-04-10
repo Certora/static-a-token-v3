@@ -24,7 +24,6 @@ methods
         previewMint(uint256) returns (uint256) envfree
         previewWithdraw(address) returns (uint256) envfree
         maxMint(address) returns (uint256) envfree
-        rate() returns (uint256) envfree
         getUnclaimedRewards(address, address) returns (uint256) envfree
         rewardTokens() returns (address[]) envfree
         isRegisteredRewardToken(address) returns (bool) envfree
