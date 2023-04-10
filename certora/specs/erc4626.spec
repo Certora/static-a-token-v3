@@ -528,7 +528,7 @@ import "methods_base.spec"
             // Prevent revert due to overflow.
             // Roughly speaking ConvertToAssets returns shares * rate() / RAY.
             mathint ray_math = to_mathint(RAY());
-            mathint rate_math = to_mathint(rate(e));
+            mathint rate_math = to_mathint(rate());
             mathint shares_math = to_mathint(shares);
             require rate_math < 10^32;
 
@@ -603,7 +603,7 @@ import "methods_base.spec"
             // Prevent revert due to overflow.
             // Roughly speaking ConvertToShares returns assets * RAY / rate().
             mathint ray_math = to_mathint(RAY());
-            mathint rate_math = to_mathint(rate(e));
+            mathint rate_math = to_mathint(rate());
             mathint assets_math = to_mathint(assets);
             require rate_math > 0;
 
