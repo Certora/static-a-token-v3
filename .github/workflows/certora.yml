@@ -24,10 +24,6 @@ jobs:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
         run: echo "key length" ${#CERTORAKEY}
 
-      - run: 
-        name: before python
-        command: echo "before"
-
       - name: Install python
         uses: actions/setup-python@v2
         with: { python-version: 3.9 }
