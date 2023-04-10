@@ -100,4 +100,3 @@ jobs:
           - verifyStaticATokenLM.sh validIndexOnLastInteraction_CASE_SPLIT_redeem
           - verifyDoubleClaim.sh prevent_duplicate_reward_claiming_single_reward_sufficient
           - verifyDoubleClaim.sh prevent_duplicate_reward_claiming_single_reward_insufficient
-
