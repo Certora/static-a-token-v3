@@ -67,5 +67,5 @@ import "methods_base.spec"
             uint256 contractAssetBalAfter = _AToken.balanceOf(currentContract);
 
             // upper bound for deposited assets
-            assert i <= contractAssetBalBefore + assets + index/(2 * RAY());
+            assert contractAssetBalAfter <= contractAssetBalBefore + assets + index/(2 * RAY());
         }
