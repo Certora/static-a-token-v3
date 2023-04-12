@@ -1,4 +1,3 @@
-#!/bin/sh
 certoraRun  certora/harness/StaticATokenLMHarness.sol \
     certora/harness/RewardsControllerHarness.sol \
     certora/harness/SymbolicLendingPoolL1.sol \

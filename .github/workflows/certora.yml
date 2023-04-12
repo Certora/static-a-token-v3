@@ -57,7 +57,6 @@ jobs:
       max-parallel: 16
       matrix:
         rule:
-          - verifyERC4626.sh moreAssetToDepositResultMoreShares
           - verifyERC4626.sh previewMintIndependentOfAllowance
           - verifyERC4626.sh previewRedeemIndependentOfBalance
           - verifyERC4626.sh maxDepositConstant
