@@ -11,15 +11,6 @@ import "methods_base.spec"
         handleAction(address,uint256,uint256) => DISPATCHER(true)
     }
 
-///////////////// DEFINITIONS //////////////////////
-
-    /// @notice Claim rewards methods
-    definition claimFunctions(method f) returns bool = 
-                f.selector == claimRewardsToSelf(address[]).selector ||
-                f.selector == claimRewards(address, address[]).selector ||
-                f.selector ==claimRewardsOnBehalf(address, address,address[]).selector ||
-                f.selector == collectAndUpdateRewards(address).selector;
-
 ////////////////// FUNCTIONS //////////////////////
 
     /// @title Reward hook
@@ -131,7 +122,8 @@ import "methods_base.spec"
     */
     rule rewardsTotalDeclinesOnlyByClaim(method f) filtered {
         // Filter out initialize
-        f -> (f.selector != initialize(address, string, string).selector) &&
+        f -> (harnessOnlyMethods() &&
+            f.selector != initialize(address, string, string).selector) &&
             // Exclude meta functions
             (f.selector != metaDeposit(
                 address,address,uint256,uint16,bool,uint256,
@@ -344,7 +336,7 @@ import "methods_base.spec"
     //https://vaas-stg.certora.com/output/99352/4df615c845e2445b8657ece2db477ce5/?anonymousKey=76379915d60fc1056ed4e5b391c69cd5bba3cce0
     /// @title Claiming rewards should not affect totalAssets() 
     rule totalAssets_stable(method f)
-        filtered { f -> !f.isView && claimFunctions(f)  }
+        filtered { f -> claimFunctions(f) }
     {
         env e;
         calldataarg args;
@@ -735,6 +727,7 @@ import "methods_base.spec"
                         && f.selector != mint(uint256,address).selector
                         && f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
                         && f.selector !=claimSingleRewardOnBehalf(address,address,address).selector 
+                        && harnessOnlyMethods()
         }
     {
         env e;
@@ -834,7 +827,6 @@ import "methods_base.spec"
     /// @title getClaimableRewards() is stable unless rewards were claimed
     rule getClaimableRewards_stable_after_refreshRewardTokens()
     {
-
         env e;
         address user;
         address reward;
@@ -853,13 +845,11 @@ import "methods_base.spec"
         env e;
         address onBehalfOf;
         address receiver; 
-        address my_reward;
-        address[] rewards;
         
-        mathint balanceBefore = _DummyERC20_rewardToken.balanceOf(onBehalfOf);
-        mathint claimableRewardsBefore = getClaimableRewards(e, onBehalfOf, my_reward);
-        claimRewardsOnBehalf(e, onBehalfOf, receiver, rewards);
-        mathint balanceAfter = _DummyERC20_rewardToken.balanceOf(onBehalfOf);
+        mathint balanceBefore = _DummyERC20_rewardToken.balanceOf(receiver);
+        mathint claimableRewardsBefore = getClaimableRewards(e, onBehalfOf, _DummyERC20_rewardToken);
+        claimSingleRewardOnBehalf(e, onBehalfOf, receiver, _DummyERC20_rewardToken);
+        mathint balanceAfter = _DummyERC20_rewardToken.balanceOf(receiver);
         mathint deltaBalance = balanceAfter - balanceBefore;
     
         assert deltaBalance <= claimableRewardsBefore;

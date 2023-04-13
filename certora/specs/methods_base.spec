@@ -101,6 +101,27 @@ methods
 
     definition RAY() returns uint256 = 10^27;
 
+    /// @notice Claim rewards methods
+    definition claimFunctions(method f) returns bool = 
+                f.selector == claimRewardsToSelf(address[]).selector ||
+                f.selector == claimRewards(address, address[]).selector ||
+                f.selector == claimRewardsOnBehalf(address, address,address[]).selector ||
+                f.selector == collectAndUpdateRewards(address).selector;
+
+    definition harnessOnlyMethods() returns bool =
+        (f.selector == getULBalanceOf(address).selector ||
+        f.selector == getATokenBalanceOf(address).selector ||
+        f.selector == assetsTotal(address).selector ||
+        f.selector == getStaticATokenUnderlying().selector ||
+        f.selector == getRewardTokensLength().selector ||
+        f.selector == getRewardToken(uint256).selector ||
+        f.selector == getRewardsIndexOnLastInteraction(address, address).selector ||
+        f.selector == claimSingleRewardOnBehalf(address, address, address).selector ||
+        f.selector == _mintWrapper(address, uint256).selector ||
+        f.selector == claimDoubleRewardOnBehalf(address, address, address, address).selector ||
+        f.selector == getUserRewardsData(address, address).selector);
+        
+
 ////////////////// FUNCTIONS //////////////////////
 
     /**

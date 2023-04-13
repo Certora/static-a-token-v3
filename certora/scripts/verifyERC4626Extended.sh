@@ -13,6 +13,7 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
             SymbolicLendingPool:underlyingToken=DummyERC20_aTokenUnderlying \
             SymbolicLendingPool:aToken=AToken \
             TransferStrategyHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
+            TransferStrategyHarness:REWARD=DummyERC20_rewardToken \
             AToken:POOL=SymbolicLendingPool \
             AToken:_incentivesController=RewardsControllerHarness \
             AToken:_underlyingAsset=DummyERC20_aTokenUnderlying \

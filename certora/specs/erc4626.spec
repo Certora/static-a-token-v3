@@ -524,6 +524,7 @@ import "methods_base.spec"
         rule toAssetsDoesNotRevert(uint256 shares) {
             require shares < 10^45;
             env e;
+            require e.msg.value == 0;
 
             // Prevent revert due to overflow.
             // Roughly speaking ConvertToAssets returns shares * rate() / RAY.
@@ -599,6 +600,7 @@ import "methods_base.spec"
         rule toSharesDoesNotRevert(uint256 assets) {
             require assets < 10^50;
             env e;
+            require e.msg.value == 0;
 
             // Prevent revert due to overflow.
             // Roughly speaking ConvertToShares returns assets * RAY / rate().

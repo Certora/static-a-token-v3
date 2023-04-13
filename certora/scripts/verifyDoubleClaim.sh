@@ -2,7 +2,7 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
         certora/harness/pool/SymbolicLendingPool.sol \
         certora/munged/lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
         certora/harness/rewards/RewardsControllerHarness.sol \
-        certora/harness/rewards/TransferStrategyHarness.sol \
+        certora/harness/rewards/TransferStrategyMultiRewardHarness.sol \
         certora/harness/tokens/DummyERC20_aTokenUnderlying.sol \
         certora/harness/tokens/DummyERC20_rewardToken.sol \
         certora/harness/tokens/DummyERC20_rewardTokenB.sol \
@@ -13,7 +13,9 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
             StaticATokenLMHarness:_aToken=AToken \
             SymbolicLendingPool:underlyingToken=DummyERC20_aTokenUnderlying \
             SymbolicLendingPool:aToken=AToken \
-            TransferStrategyHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
+            TransferStrategyMultiRewardHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
+            TransferStrategyMultiRewardHarness:REWARD=DummyERC20_rewardToken \
+            TransferStrategyMultiRewardHarness:REWARD_B=DummyERC20_rewardTokenB \
             AToken:POOL=SymbolicLendingPool \
             AToken:_incentivesController=RewardsControllerHarness \
             AToken:_underlyingAsset=DummyERC20_aTokenUnderlying \

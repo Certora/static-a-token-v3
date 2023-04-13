@@ -57,41 +57,44 @@ jobs:
       max-parallel: 16
       matrix:
         rule:
-          - verifyERC4626.sh previewMintIndependentOfAllowance
-          - verifyERC4626.sh previewRedeemIndependentOfBalance
-          - verifyERC4626.sh maxDepositConstant
-          - verifyERC4626.sh maxMintMustntRevert previewMintAmountCheck previewDepositIndependentOfAllowanceApprove previewWithdrawIndependentOfMaxWithdraw previewWithdrawAmountCheck previewWithdrawIndependentOfBalance2 previewWithdrawIndependentOfBalance1 previewRedeemIndependentOfMaxRedeem1 previewRedeemAmountCheck previewRedeemIndependentOfMaxRedeem2 amountConversionRoundedDown withdrawCheck redeemCheck convertToAssetsCheck convertToSharesCheck toAssetsDoesNotRevert sharesConversionRoundedDown toSharesDoesNotRevert maxDepositMustntRevert maxRedeemMustntRevert previewDepositAmountCheck maxWithdrawRedeemCompliance maxWithdrawConversionCompliance
+          - verifyERC4626.sh previewMintIndependentOfAllowance previewRedeemIndependentOfBalance maxMintMustntRevert previewMintAmountCheck previewDepositIndependentOfAllowanceApprove previewWithdrawIndependentOfMaxWithdraw previewWithdrawAmountCheck previewWithdrawIndependentOfBalance2 previewWithdrawIndependentOfBalance1 previewRedeemIndependentOfMaxRedeem1 previewRedeemAmountCheck previewRedeemIndependentOfMaxRedeem2 amountConversionRoundedDown withdrawCheck redeemCheck convertToAssetsCheck convertToSharesCheck toAssetsDoesNotRevert sharesConversionRoundedDown toSharesDoesNotRevert maxDepositMustntRevert maxRedeemMustntRevert previewDepositAmountCheck maxWithdrawRedeemCompliance maxWithdrawConversionCompliance
           - verifyERC4626MintDepositSummarization.sh depositCheckIndexGRayAssert2 depositCheckIndexERayAssert2 mintCheckIndexGRayUpperBound mintCheckIndexGRayLowerBound mintCheckIndexEqualsRay 
           - verifyERC4626DepositSummarization.sh depositCheckIndexGRayAssert1
+            # Timeout
           - verifyERC4626DepositSummarization.sh depositCheckIndexERayAssert1
           - verifyERC4626Extended.sh previewWithdrawRoundingRange previewRedeemRoundingRange amountConversionPreserved sharesConversionPreserved accountsJoiningSplittingIsLimited convertSumOfAssetsPreserved previewDepositSameAsDeposit previewMintSameAsMint maxDepositConstant
           - verifyERC4626Extended.sh redeemSum
-          - verifyAToken.sh aTokenBalanceIsFixed_for_collectAndUpdateRewards
-          - verifyAToken.sh aTokenBalanceIsFixed_for_claimRewardsOnBehalf
-          - verifyAToken.sh aTokenBalanceIsFixed_for_claimSingleRewardOnBehalf
-          - verifyAToken.sh aTokenBalanceIsFixed_for_claimRewardsToSelf
-          - verifyAToken.sh aTokenBalanceIsFixed_for_claimRewards
+          - verifyAToken.sh aTokenBalanceIsFixed_for_collectAndUpdateRewards aTokenBalanceIsFixed_for_claimRewards aTokenBalanceIsFixed_for_claimRewardsOnBehalf
+          - verifyAToken.sh aTokenBalanceIsFixed_for_claimSingleRewardOnBehalf aTokenBalanceIsFixed_for_claimRewardsToSelf
           - verifyStaticATokenLM.sh rewardsConsistencyWhenSufficientRewardsExist
           - verifyStaticATokenLM.sh rewardsConsistencyWhenInsufficientRewards
           - verifyStaticATokenLM.sh rewardsTotalDeclinesOnlyByClaim
           - verifyStaticATokenLM.sh rewardsTotalDeclinesOnlyByClaim_timedout_methods
           - verifyStaticATokenLM.sh rewardsTotalDeclinesOnlyByClaim_redeem_methods
           - verifyStaticATokenLM.sh solvency_positive_total_supply_only_if_positive_asset
+            # fail + timeout
           - verifyStaticATokenLM.sh solvency_total_asset_geq_total_supply
+            # fail + timeout
           - verifyStaticATokenLM.sh solvency_total_asset_geq_total_supply_CASE_SPLIT_redeem
+            # Timeout
           - verifyStaticATokenLM.sh singleAssetAccruedRewards
           - verifyStaticATokenLM.sh totalAssets_stable
+            # Timeout
           - verifyStaticATokenLM.sh totalAssets_stable_after_collectAndUpdateRewards
           - verifyStaticATokenLM.sh reward_balance_stable_after_collectAndUpdateRewards
           - verifyStaticATokenLM.sh totalClaimableRewards_stable_CASE_SPLIT
           - verifyStaticATokenLM.sh totalClaimableRewards_stable_CASE_SPLIT_redeem
-          - verifyStaticATokenLM.sh totalClaimableRewards_stable_CASE_SPLIT_deposit
+            # Timeout
           - verifyStaticATokenLM.sh getClaimableRewards_stable
-          - verifyStaticATokenLM.sh getClaimableRewards_stable_after_redeem
-          - verifyStaticATokenLM.sh getClaimableRewards_stable_after_deposit
+            # fail + timeout
+          - verifyStaticATokenLM.sh getClaimableRewards_stable_after_redeem getClaimableRewards_stable_after_deposit totalClaimableRewards_stable_CASE_SPLIT_deposit
           - verifyStaticATokenLM.sh getClaimableRewards_stable_after_refreshRewardTokens
+            # fail
           - verifyStaticATokenLM.sh getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf
+            # fail
           - verifyStaticATokenLM.sh validIndexOnLastInteraction
+            # fail + timeout
           - verifyStaticATokenLM.sh validIndexOnLastInteraction_CASE_SPLIT_redeem
+            # fail
           - verifyDoubleClaim.sh prevent_duplicate_reward_claiming_single_reward_sufficient
           - verifyDoubleClaim.sh prevent_duplicate_reward_claiming_single_reward_insufficient
