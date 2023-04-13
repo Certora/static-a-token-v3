@@ -122,7 +122,7 @@ import "methods_base.spec"
     */
     rule rewardsTotalDeclinesOnlyByClaim(method f) filtered {
         // Filter out initialize
-        f -> (harnessOnlyMethods() &&
+        f -> (harnessOnlyMethods(f) &&
             f.selector != initialize(address, string, string).selector) &&
             // Exclude meta functions
             (f.selector != metaDeposit(
@@ -727,7 +727,7 @@ import "methods_base.spec"
                         && f.selector != mint(uint256,address).selector
                         && f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
                         && f.selector !=claimSingleRewardOnBehalf(address,address,address).selector 
-                        && harnessOnlyMethods()
+                        && harnessOnlyMethods(f)
         }
     {
         env e;

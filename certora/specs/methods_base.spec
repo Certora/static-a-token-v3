@@ -108,7 +108,7 @@ methods
                 f.selector == claimRewardsOnBehalf(address, address,address[]).selector ||
                 f.selector == collectAndUpdateRewards(address).selector;
 
-    definition harnessOnlyMethods() returns bool =
+    definition harnessOnlyMethods(method f) returns bool =
         (f.selector == getULBalanceOf(address).selector ||
         f.selector == getATokenBalanceOf(address).selector ||
         f.selector == assetsTotal(address).selector ||
