@@ -246,7 +246,8 @@ import "methods_base.spec"
     /// @notice Total supply is non-zero  only if total assets is non-zero
     invariant solvency_positive_total_supply_only_if_positive_asset()
         ((_AToken.scaledBalanceOf(currentContract) == 0) => (totalSupply() == 0))
-        filtered { f -> f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector }
+        filtered { f -> f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector 
+                        && !harnessOnlyMethods(f) }
         {
             preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e1) {
                 requireInvariant solvency_total_asset_geq_total_supply();
@@ -278,7 +279,8 @@ import "methods_base.spec"
         (_AToken.scaledBalanceOf(currentContract) >= totalSupply())
         filtered { f -> f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
                         && f.selector != redeem(uint256,address,address).selector
-                        && f.selector != redeem(uint256,address,address,bool).selector }
+                        && f.selector != redeem(uint256,address,address,bool).selector
+                        && !harnessOnlyMethods(f) }
         {
             preserved withdraw(uint256 assets, address receiver, address owner)  with (env e3) {
                 require balanceOf(owner) <= totalSupply(); 
@@ -319,6 +321,7 @@ import "methods_base.spec"
     invariant singleAssetAccruedRewards(env e0, address asset, address reward, address user)
         ((_RewardsController.getAssetListLength() == 1 && _RewardsController.getAssetByIndex(0) == asset)
             => (_RewardsController.getUserAccruedReward(asset, reward, user) == _RewardsController.getUserAccruedRewards(reward, user)))
+        filtered { f -> !harnessOnlyMethods(f) }
             {
                 preserved with (env e1){
                     setup(e1, user);

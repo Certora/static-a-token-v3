@@ -86,7 +86,9 @@ jobs:
             # Timeout
           - verifyStaticATokenLM.sh getClaimableRewards_stable
             # check sanity
-          - verifyStaticATokenLM.sh getClaimableRewards_stable_after_redeem getClaimableRewards_stable_after_deposit totalClaimableRewards_stable_CASE_SPLIT_deposit
+          - verifyStaticATokenLM.sh getClaimableRewards_stable_after_deposit
+          - verifyStaticATokenLM.sh getClaimableRewards_stable_after_redeem 
+          - verifyStaticATokenLM.sh totalClaimableRewards_stable_CASE_SPLIT_deposit
           - verifyStaticATokenLM.sh getClaimableRewards_stable_after_refreshRewardTokens
           - verifyStaticATokenLM.sh getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf
             # fail
