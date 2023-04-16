@@ -122,7 +122,7 @@ import "methods_base.spec"
     */
     rule rewardsTotalDeclinesOnlyByClaim(method f) filtered {
         // Filter out initialize
-        f -> (harnessOnlyMethods(f) &&
+        f -> (!harnessOnlyMethods(f) &&
             f.selector != initialize(address, string, string).selector) &&
             // Exclude meta functions
             (f.selector != metaDeposit(
@@ -727,7 +727,7 @@ import "methods_base.spec"
                         && f.selector != mint(uint256,address).selector
                         && f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
                         && f.selector !=claimSingleRewardOnBehalf(address,address,address).selector 
-                        && harnessOnlyMethods(f)
+                        && !harnessOnlyMethods(f)
         }
     {
         env e;
@@ -861,6 +861,7 @@ import "methods_base.spec"
     invariant validIndexOnLastInteraction(address user)
         getRewardsIndexOnLastInteraction(user, _DummyERC20_rewardToken) <=
         _RewardsController.getRewardsIndex(_AToken, _DummyERC20_rewardToken) 
+    filtered { f -> !harnessOnlyMethods(f) }
 
     invariant validIndexOnLastInteraction_CASE_SPLIT_redeem(address user)
         getRewardsIndexOnLastInteraction(user, _DummyERC20_rewardToken) <=

@@ -30,5 +30,6 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     --optimistic_hashing \
     --cloud \
     --settings -t=7200,-mediumTimeout=10,-depth=10  \
+    --disable_auto_cache_key_gen \
     --rules "${@}" \
     --msg "Multi rewards - double claim properties"

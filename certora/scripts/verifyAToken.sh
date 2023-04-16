@@ -28,5 +28,6 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     --optimistic_hashing \
     --cloud \
     --settings -t=1400,-mediumTimeout=800,-depth=15 \
+    --disable_auto_cache_key_gen \
     --rules "${@}" \
     --msg "aToken properties"

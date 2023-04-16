@@ -246,7 +246,7 @@ import "methods_base.spec"
     //https://vaas-stg.certora.com/output/99352/509a56a1d46348eea0872b3a57c4d15a/?anonymousKey=3e15ac5a5b01e689eb3f71580e3532d8098e71b5
     invariant inv_atoken_balanceOf_leq_totalSupply(address user)
         _AToken.balanceOf(user) <= _AToken.totalSupply()
-        filtered { f -> !f.isView && f.selector != redeem(uint256,address,address,bool).selector}
+        filtered { f -> !f.isView && f.selector != redeem(uint256,address,address,bool).selector && !harnessOnlyMethods(f)}
         {
             preserved with (env e){
                 requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
@@ -307,6 +307,7 @@ import "methods_base.spec"
     //https://vaas-stg.certora.com/output/99352/4f91637a96d647baab9accb1093f1690/?anonymousKey=53ccda4a9dd8988205d4b614d9989d1e4148533f
     invariant sumAllATokenScaledBalance_eq_totalSupply()
         sumAllATokenScaledBalance() == _AToken.scaledTotalSupply()
+    filtered { f -> !harnessOnlyMethods(f) }
 
 
     /// @title AToken scaledBalancerOf(user) <= AToken scaledTotalSupply()
@@ -319,6 +320,7 @@ import "methods_base.spec"
                 requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
             }
         }
+    filtered { f -> !harnessOnlyMethods(f) }
 
     // //from unregistered_atoken.spec
     // // fail

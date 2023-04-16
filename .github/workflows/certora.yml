@@ -76,7 +76,6 @@ jobs:
           - verifyStaticATokenLM.sh solvency_total_asset_geq_total_supply
             # fail + timeout
           - verifyStaticATokenLM.sh solvency_total_asset_geq_total_supply_CASE_SPLIT_redeem
-            # Timeout
           - verifyStaticATokenLM.sh singleAssetAccruedRewards
           - verifyStaticATokenLM.sh totalAssets_stable
             # Timeout
@@ -86,14 +85,13 @@ jobs:
           - verifyStaticATokenLM.sh totalClaimableRewards_stable_CASE_SPLIT_redeem
             # Timeout
           - verifyStaticATokenLM.sh getClaimableRewards_stable
-            # fail + timeout
+            # check sanity
           - verifyStaticATokenLM.sh getClaimableRewards_stable_after_redeem getClaimableRewards_stable_after_deposit totalClaimableRewards_stable_CASE_SPLIT_deposit
           - verifyStaticATokenLM.sh getClaimableRewards_stable_after_refreshRewardTokens
-            # fail
           - verifyStaticATokenLM.sh getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf
             # fail
           - verifyStaticATokenLM.sh validIndexOnLastInteraction
-            # fail + timeout
+            # fail
           - verifyStaticATokenLM.sh validIndexOnLastInteraction_CASE_SPLIT_redeem
             # fail
           - verifyDoubleClaim.sh prevent_duplicate_reward_claiming_single_reward_sufficient

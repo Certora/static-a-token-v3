@@ -28,5 +28,6 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     --optimistic_hashing \
     --cloud \
     --settings -mediumTimeout=1000,-depth=15,-t=10000 \
+    --disable_auto_cache_key_gen \
     --rules "${@}" \
     --msg "ERC4626 summarized properties"
