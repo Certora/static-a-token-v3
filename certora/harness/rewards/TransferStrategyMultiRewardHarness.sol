@@ -25,5 +25,6 @@ function performTransfer(
     else if (reward == address(REWARD_B)){
         return REWARD_B.transfer(to, amount);
     }
+    return false;
   }
 }

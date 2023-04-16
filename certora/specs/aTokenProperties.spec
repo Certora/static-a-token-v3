@@ -315,12 +315,12 @@ import "methods_base.spec"
     //https://vaas-stg.certora.com/output/99352/6798b502f97a4cd2b05fce30947911c0/?anonymousKey=c5808a8997a75480edbc45153165c8763488cd1e
     invariant inv_atoken_scaled_balanceOf_leq_totalSupply(address user)
         _AToken.scaledBalanceOf(user) <= _AToken.scaledTotalSupply()
+    filtered { f -> !harnessOnlyMethods(f) }
         {
             preserved {
                 requireInvariant sumAllATokenScaledBalance_eq_totalSupply();
             }
         }
-    filtered { f -> !harnessOnlyMethods(f) }
 
     // //from unregistered_atoken.spec
     // // fail
