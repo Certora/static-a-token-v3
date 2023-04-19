@@ -247,7 +247,9 @@ import "methods_base.spec"
     invariant solvency_positive_total_supply_only_if_positive_asset()
         ((_AToken.scaledBalanceOf(currentContract) == 0) => (totalSupply() == 0))
         filtered { f -> f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector 
-                        && !harnessOnlyMethods(f) }
+                        && !harnessMethodsMinusHarnessClaimMethods(f) 
+                        && !claimFunctions(f)
+                        && f.selector != claimDoubleRewardOnBehalf(address, address, address, address).selector }
         {
             preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e1) {
                 requireInvariant solvency_total_asset_geq_total_supply();
@@ -280,7 +282,9 @@ import "methods_base.spec"
         filtered { f -> f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
                         && f.selector != redeem(uint256,address,address).selector
                         && f.selector != redeem(uint256,address,address,bool).selector
-                        && !harnessOnlyMethods(f) }
+                        && !harnessMethodsMinusHarnessClaimMethods(f)
+                        && !claimFunctions(f)
+                        && f.selector != claimDoubleRewardOnBehalf(address, address, address, address).selector }
         {
             preserved withdraw(uint256 assets, address receiver, address owner)  with (env e3) {
                 require balanceOf(owner) <= totalSupply(); 
@@ -339,7 +343,8 @@ import "methods_base.spec"
     //https://vaas-stg.certora.com/output/99352/4df615c845e2445b8657ece2db477ce5/?anonymousKey=76379915d60fc1056ed4e5b391c69cd5bba3cce0
     /// @title Claiming rewards should not affect totalAssets() 
     rule totalAssets_stable(method f)
-        filtered { f -> claimFunctions(f) }
+        filtered { f -> f.selector == claimSingleRewardOnBehalf(address, address, address).selector 
+                     || f.selector == collectAndUpdateRewards(address).selector }
     {
         env e;
         calldataarg args;
@@ -418,6 +423,7 @@ import "methods_base.spec"
     //pass with -t=1400,-mediumTimeout=800,-depth=10
     rule totalClaimableRewards_stable_CASE_SPLIT(method f)
     filtered { f -> !f.isView && !claimFunctions(f)
+                        && !collectAndUpdateFunction(f)
                         && f.selector != initialize(address,string,string).selector 
                         && f.selector != redeem(uint256,address,address,bool).selector 
                         && f.selector != redeem(uint256,address,address).selector 
@@ -425,7 +431,7 @@ import "methods_base.spec"
                         && f.selector != deposit(uint256,address).selector 
                         && f.selector != mint(uint256,address).selector 
                         && f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector 
-                        && f.selector !=claimSingleRewardOnBehalf(address,address,address).selector 
+                        && f.selector != claimSingleRewardOnBehalf(address,address,address).selector 
                         }
     {
         require _RewardsController.getAssetByIndex(0) != _RewardsController;
@@ -723,13 +729,13 @@ import "methods_base.spec"
     rule getClaimableRewards_stable(method f)
         filtered { f -> !f.isView
                         && !claimFunctions(f)
+                        && !collectAndUpdateFunction(f)
                         && f.selector != initialize(address,string,string).selector
                         && f.selector != deposit(uint256,address,uint16,bool).selector
                         && f.selector != redeem(uint256,address,address).selector
                         && f.selector != redeem(uint256,address,address,bool).selector
                         && f.selector != mint(uint256,address).selector
                         && f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector
-                        && f.selector !=claimSingleRewardOnBehalf(address,address,address).selector 
                         && !harnessOnlyMethods(f)
         }
     {
@@ -844,17 +850,17 @@ import "methods_base.spec"
 
     /// @title The amount of rewards that was actually received by claimRewards() cannot exceed the initial amount of rewards
     rule getClaimableRewardsBefore_leq_claimed_claimRewardsOnBehalf(method f)
-    {   
+    {
         env e;
         address onBehalfOf;
-        address receiver; 
+        address receiver;
         
         mathint balanceBefore = _DummyERC20_rewardToken.balanceOf(receiver);
         mathint claimableRewardsBefore = getClaimableRewards(e, onBehalfOf, _DummyERC20_rewardToken);
         claimSingleRewardOnBehalf(e, onBehalfOf, receiver, _DummyERC20_rewardToken);
         mathint balanceAfter = _DummyERC20_rewardToken.balanceOf(receiver);
         mathint deltaBalance = balanceAfter - balanceBefore;
-    
+
         assert deltaBalance <= claimableRewardsBefore;
     }
 
@@ -864,9 +870,12 @@ import "methods_base.spec"
     invariant validIndexOnLastInteraction(address user)
         getRewardsIndexOnLastInteraction(user, _DummyERC20_rewardToken) <=
         _RewardsController.getRewardsIndex(_AToken, _DummyERC20_rewardToken) 
-    filtered { f -> !harnessOnlyMethods(f) }
+    filtered { f -> !harnessMethodsMinusHarnessClaimMethods(f)
+                 && !claimFunctions(f)
+                 && f.selector != claimDoubleRewardOnBehalf(address, address, address, address).selector }
 
     invariant validIndexOnLastInteraction_CASE_SPLIT_redeem(address user)
         getRewardsIndexOnLastInteraction(user, _DummyERC20_rewardToken) <=
         _RewardsController.getRewardsIndex(_AToken, _DummyERC20_rewardToken) 
     filtered { f -> f.selector == redeem(uint256,address,address,bool).selector}
+    

@@ -103,12 +103,19 @@ methods
 
     /// @notice Claim rewards methods
     definition claimFunctions(method f) returns bool = 
-                f.selector == claimRewardsToSelf(address[]).selector ||
-                f.selector == claimRewards(address, address[]).selector ||
-                f.selector == claimRewardsOnBehalf(address, address,address[]).selector ||
-                f.selector == collectAndUpdateRewards(address).selector;
+        (f.selector == claimRewardsToSelf(address[]).selector ||
+        f.selector == claimRewards(address, address[]).selector ||
+        f.selector == claimRewardsOnBehalf(address, address,address[]).selector);
+                
+    definition collectAndUpdateFunction(method f) returns bool =
+        f.selector == collectAndUpdateRewards(address).selector;
 
     definition harnessOnlyMethods(method f) returns bool =
+        (harnessMethodsMinusHarnessClaimMethods(f) ||
+        f.selector == claimSingleRewardOnBehalf(address, address, address).selector ||
+        f.selector == claimDoubleRewardOnBehalf(address, address, address, address).selector);
+        
+    definition harnessMethodsMinusHarnessClaimMethods(method f) returns bool =
         (f.selector == getULBalanceOf(address).selector ||
         f.selector == getATokenBalanceOf(address).selector ||
         f.selector == assetsTotal(address).selector ||
@@ -116,11 +123,8 @@ methods
         f.selector == getRewardTokensLength().selector ||
         f.selector == getRewardToken(uint256).selector ||
         f.selector == getRewardsIndexOnLastInteraction(address, address).selector ||
-        f.selector == claimSingleRewardOnBehalf(address, address, address).selector ||
         f.selector == _mintWrapper(address, uint256).selector ||
-        f.selector == claimDoubleRewardOnBehalf(address, address, address, address).selector ||
         f.selector == getUserRewardsData(address, address).selector);
-        
 
 ////////////////// FUNCTIONS //////////////////////
 

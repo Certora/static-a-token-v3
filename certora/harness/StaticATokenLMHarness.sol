@@ -7,7 +7,8 @@ import {SymbolicLendingPool} from './pool/SymbolicLendingPool.sol';
 
 
 contract StaticATokenLMHarness is StaticATokenLM{
-    
+
+address internal _reward_A;
 
 constructor(
     IPool pool,
@@ -54,8 +55,9 @@ constructor(
     address reward
   ) external 
   {
+    require (reward == _reward_A);
     address[] memory rewards = new address[](1);
-    rewards[0] = address(reward);
+    rewards[0] = _reward_A;
 
       require(
         msg.sender == onBehalfOf ||
@@ -76,10 +78,10 @@ constructor(
     address reward1
   ) external 
   {
-
+    require (reward0 == _reward_A);
     address[] memory rewards = new address[](2);
-    rewards[0] = address(reward0);
-    rewards[1] = address(reward1);
+    rewards[0] = _reward_A;
+    rewards[1] = reward1;
 
       require(
         msg.sender == onBehalfOf ||
