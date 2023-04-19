@@ -71,17 +71,16 @@ constructor(
     _mint(to, amount);
   }
 
-  function claimDoubleRewardOnBehalf(
+  function claimDoubleRewardOnBehalfSame(
     address onBehalfOf,
     address receiver,
-    address reward0,
-    address reward1
+    address reward
   ) external 
   {
-    require (reward0 == _reward_A);
+    require (reward == _reward_A);
     address[] memory rewards = new address[](2);
     rewards[0] = _reward_A;
-    rewards[1] = reward1;
+    rewards[1] = _reward_A;
 
       require(
         msg.sender == onBehalfOf ||

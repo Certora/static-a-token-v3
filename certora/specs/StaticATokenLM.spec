@@ -249,7 +249,7 @@ import "methods_base.spec"
         filtered { f -> f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector 
                         && !harnessMethodsMinusHarnessClaimMethods(f) 
                         && !claimFunctions(f)
-                        && f.selector != claimDoubleRewardOnBehalf(address, address, address, address).selector }
+                        && f.selector != claimDoubleRewardOnBehalfSame(address, address, address).selector }
         {
             preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e1) {
                 requireInvariant solvency_total_asset_geq_total_supply();
@@ -284,7 +284,7 @@ import "methods_base.spec"
                         && f.selector != redeem(uint256,address,address,bool).selector
                         && !harnessMethodsMinusHarnessClaimMethods(f)
                         && !claimFunctions(f)
-                        && f.selector != claimDoubleRewardOnBehalf(address, address, address, address).selector }
+                        && f.selector != claimDoubleRewardOnBehalfSame(address, address, address).selector }
         {
             preserved withdraw(uint256 assets, address receiver, address owner)  with (env e3) {
                 require balanceOf(owner) <= totalSupply(); 

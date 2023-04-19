@@ -113,7 +113,7 @@ methods
     definition harnessOnlyMethods(method f) returns bool =
         (harnessMethodsMinusHarnessClaimMethods(f) ||
         f.selector == claimSingleRewardOnBehalf(address, address, address).selector ||
-        f.selector == claimDoubleRewardOnBehalf(address, address, address, address).selector);
+        f.selector == claimDoubleRewardOnBehalfSame(address, address, address).selector);
         
     definition harnessMethodsMinusHarnessClaimMethods(method f) returns bool =
         (f.selector == getULBalanceOf(address).selector ||

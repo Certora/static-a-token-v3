@@ -25,7 +25,7 @@ import "methods_multi_reward.spec"
         require _DummyERC20_rewardToken.balanceOf(currentContract) >= claimable;
 
         // Duplicate claim
-        claimDoubleRewardOnBehalf(e, e.msg.sender, e.msg.sender, _DummyERC20_rewardToken, _DummyERC20_rewardToken);
+        claimDoubleRewardOnBehalfSame(e, e.msg.sender, e.msg.sender, _DummyERC20_rewardToken);
         
         uint256 duplicateClaimBalance = _DummyERC20_rewardToken.balanceOf(e.msg.sender);
         uint256 diff = duplicateClaimBalance - initialBalance;
@@ -55,7 +55,7 @@ import "methods_multi_reward.spec"
         require _DummyERC20_rewardToken.balanceOf(currentContract) < claimable;
 
         // Duplicate claim
-        claimDoubleRewardOnBehalf(e, e.msg.sender, e.msg.sender, _DummyERC20_rewardToken, _DummyERC20_rewardToken);
+        claimDoubleRewardOnBehalfSame(e, e.msg.sender, e.msg.sender, _DummyERC20_rewardToken);
         
         uint256 duplicateClaimBalance = _DummyERC20_rewardToken.balanceOf(e.msg.sender);
         uint256 diff = duplicateClaimBalance - initialBalance;

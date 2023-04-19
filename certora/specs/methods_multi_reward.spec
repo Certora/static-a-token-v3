@@ -5,7 +5,6 @@ using RewardsControllerHarness as _RewardsController
 using DummyERC20_aTokenUnderlying as _DummyERC20_aTokenUnderlying 
 using AToken as _AToken
 using DummyERC20_rewardToken as _DummyERC20_rewardToken
-using DummyERC20_rewardTokenB as _DummyERC20_rewardTokenB
 
 /////////////////// Methods ////////////////////////
 
