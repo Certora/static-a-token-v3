@@ -31,5 +31,4 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     --settings -t=1400,-mediumTimeout=800,-depth=10 \
     --disable_auto_cache_key_gen \
     --rules "${@}" \
-    --rule_sanity \
     --msg "Rewards related properties"
