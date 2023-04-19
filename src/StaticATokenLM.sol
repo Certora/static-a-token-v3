@@ -95,10 +95,10 @@ contract StaticATokenLM is
     }
   }
 
-  ///@inheritdoc IStaticATokenLMisRegisteredRewardToken(address reward) public view override returns (bool) {
+  ///@inheritdoc IStaticATokenLM
+  function isRegisteredRewardToken(address reward) public view override returns (bool) {
     return _startIndex[reward].isRegistered;
   }
-  function 
 
   ///@inheritdoc IStaticATokenLM
   function deposit(
