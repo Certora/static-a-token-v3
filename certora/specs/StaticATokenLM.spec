@@ -864,19 +864,3 @@ import "methods_base.spec"
 
         assert deltaBalance <= claimableRewardsBefore;
     }
-
-    //todo: check property, debug fail, extend rule to general asset
-    //https://vaas-stg.certora.com/output/99352/f9182b0d025346ebb41d87fcf538ace8/?anonymousKey=ba0ce76e377e6ae22b638d8811ff51390654cfe8
-    //
-    // invariant validIndexOnLastInteraction(address user)
-    //     getRewardsIndexOnLastInteraction(user, _DummyERC20_rewardToken) <=
-    //     _RewardsController.getRewardsIndex(_AToken, _DummyERC20_rewardToken) 
-    // filtered { f -> !harnessMethodsMinusHarnessClaimMethods(f)
-    //              && !claimFunctions(f)
-    //              && f.selector != claimDoubleRewardOnBehalf(address, address, address, address).selector }
-
-    // invariant validIndexOnLastInteraction_CASE_SPLIT_redeem(address user)
-    //     getRewardsIndexOnLastInteraction(user, _DummyERC20_rewardToken) <=
-    //     _RewardsController.getRewardsIndex(_AToken, _DummyERC20_rewardToken) 
-    // filtered { f -> f.selector == redeem(uint256,address,address,bool).selector}
-    
