@@ -117,7 +117,6 @@ methods
         f.selector == getRewardTokensLength().selector ||
         f.selector == getRewardToken(uint256).selector ||
         f.selector == getRewardsIndexOnLastInteraction(address, address).selector ||
-        f.selector == _mintWrapper(address, uint256).selector ||
         f.selector == getUserRewardsData(address, address).selector);
 
 ////////////////// FUNCTIONS //////////////////////

@@ -71,12 +71,12 @@ import "methods_base.spec"
             assert convertToShares(e, amount + 1) >= shares, "Amount converted is too low";
         }
 
-    /************************
-    *      maxWithdraw      *
-    *************************/
+    /**********************
+    *      maxRedeem      *
+    ***********************/
 
-        // maxWithdraw must not revert
-        rule maxWithdrawMustntRevert(address user){
-            maxWithdraw@withrevert(user);
+        // maxRedeem must not revert
+        rule maxRedeemMustntRevert(address user){
+            maxRedeem@withrevert(user);
             assert !lastReverted;
         }

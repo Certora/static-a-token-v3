@@ -31,30 +31,6 @@ import "methods_base.spec"
 
 ///////////////// Properties ///////////////////////
 
-
-    /// @notice Total supply is non-zero  only if total assets is non-zero
-    invariant solvency_positive_total_supply_only_if_positive_asset()
-        ((_AToken.scaledBalanceOf(currentContract) == 0) => (totalSupply() == 0))
-        filtered { f -> f.selector != metaWithdraw(address,address,uint256,uint256,bool,uint256,(uint8,bytes32,bytes32)).selector 
-                        && !harnessMethodsMinusHarnessClaimMethods(f) 
-                        && !claimFunctions(f)
-                        && f.selector != claimDoubleRewardOnBehalfSame(address, address, address).selector }
-        {
-            preserved redeem(uint256 shares, address receiver, address owner, bool toUnderlying) with (env e1) {
-                requireInvariant solvency_total_asset_geq_total_supply();
-                require balanceOf(owner) <= totalSupply(); //todo: replace with requireInvariant
-            }
-            preserved redeem(uint256 shares, address receiver, address owner) with (env e2) {
-                requireInvariant solvency_total_asset_geq_total_supply();
-                require balanceOf(owner) <= totalSupply(); 
-            }
-            preserved withdraw(uint256 assets, address receiver, address owner)  with (env e3) {
-                requireInvariant solvency_total_asset_geq_total_supply();
-                require balanceOf(owner) <= totalSupply(); 
-            }
-
-        }
-
     /**
     * @title Rewards claiming when sufficient rewards exist
     * Ensures rewards are updated correctly after claiming, when there are enough

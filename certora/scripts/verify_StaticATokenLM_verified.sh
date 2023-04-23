@@ -5,7 +5,7 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
         certora/harness/tokens/DummyERC20_aTokenUnderlying.sol \
         certora/munged/lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
         certora/harness/tokens/DummyERC20_rewardToken.sol \
-    --verify StaticATokenLMHarness:certora/specs/StaticATokenLM.spec \
+    --verify StaticATokenLMHarness:certora/specs/StaticATokenLM_verified.spec \
     --link StaticATokenLMHarness:POOL=SymbolicLendingPool \
             StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
             StaticATokenLMHarness:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
@@ -27,6 +27,6 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     --optimistic_loop \
         --loop_iter 1 \
     --optimistic_hashing \
-    --cloud \
-    --rules "${@}" \
+    --staging \
     --msg "Rewards related properties"
+    # --rules "${@}" \

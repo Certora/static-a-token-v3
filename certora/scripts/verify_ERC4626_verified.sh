@@ -5,7 +5,7 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
         certora/harness/rewards/TransferStrategyHarness.sol \
         certora/harness/tokens/DummyERC20_aTokenUnderlying.sol \
         certora/harness/tokens/DummyERC20_rewardToken.sol \
-    --verify StaticATokenLMHarness:certora/specs/erc4626.spec \
+    --verify StaticATokenLMHarness:certora/specs/erc4626_verified.spec \
     --link StaticATokenLMHarness:POOL=SymbolicLendingPool \
             StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness \
             StaticATokenLMHarness:_aTokenUnderlying=DummyERC20_aTokenUnderlying \
@@ -27,7 +27,7 @@ certoraRun certora/harness/StaticATokenLMHarness.sol \
     --optimistic_loop \
         --loop_iter 1 \
     --optimistic_hashing \
-    --cloud \
+    --staging \
     --disable_auto_cache_key_gen \
-    --rules "${@}" \
     --msg "ERC4626 properties"
+    # --rules "${@}" \
