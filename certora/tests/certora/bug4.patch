@@ -1,0 +1,13 @@
+--- certora/munged/src/StaticATokenLM.sol	2023-04-23 15:35:33
++++ certora/tests/certora/StaticATokenLM.sol4.sol	2023-04-23 17:49:13
+@@ -648,8 +648,9 @@
+       }
+ 
+       if (userReward > totalRewardTokenBalance) {
+-        unclaimedReward = userReward - totalRewardTokenBalance;
++        /// SwapLinesMutation of: unclaimedReward = userReward - totalRewardTokenBalance;
+         userReward = totalRewardTokenBalance;
++        unclaimedReward = userReward - totalRewardTokenBalance;
+       }
+       if (userReward > 0) {
+         _userRewardsData[onBehalfOf][rewards[i]].unclaimedRewards = unclaimedReward.toUint128();

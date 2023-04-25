@@ -1,0 +1,15 @@
+--- certora/munged/src/StaticATokenLM.sol	2023-04-23 15:35:33
++++ certora/tests/certora/StaticATokenLM.sol9.sol	2023-04-24 14:04:15
+@@ -373,10 +373,8 @@
+     }
+ 
+     // otherwise users can withdraw up to the available amount
+-    uint256 underlyingTokenBalanceInShares = _convertToShares(
+-      IERC20(cachedATokenUnderlying).balanceOf(reserveData.aTokenAddress),
+-      Rounding.DOWN
+-    );
++    /// FunctionCallMutation of: uint256 underlyingTokenBalanceInShares = _convertToShares(
++    uint256 underlyingTokenBalanceInShares = IERC20(cachedATokenUnderlying).balanceOf(reserveData.aTokenAddress);
+     uint256 cachedUserBalance = balanceOf[owner];
+     return
+       underlyingTokenBalanceInShares >= cachedUserBalance

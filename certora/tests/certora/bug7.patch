@@ -1,0 +1,12 @@
+--- certora/munged/src/StaticATokenLM.sol	2023-04-23 15:35:33
++++ certora/tests/certora/StaticATokenLM.sol7.sol	2023-04-23 17:49:17
+@@ -278,7 +278,8 @@
+     if (address(reward) == address(0)) {
+       return 0;
+     }
+-    (, uint256 nextIndex) = INCENTIVES_CONTROLLER.getAssetIndex(address(_aToken), reward);
++    /// SwapArgumentsFunctionMutation of: (, uint256 nextIndex) = INCENTIVES_CONTROLLER.getAssetIndex(address(_aToken), reward);
++    (, uint256 nextIndex) = INCENTIVES_CONTROLLER.getAssetIndex(reward, address(_aToken));
+     return nextIndex;
+   }
+ 

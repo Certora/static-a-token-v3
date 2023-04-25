@@ -1,0 +1,11 @@
+--- certora/munged/src/StaticATokenLM.sol	2023-04-23 15:35:33
++++ certora/tests/certora/StaticATokenLM.sol0.sol	2023-04-23 19:21:35
+@@ -661,7 +661,7 @@
+   }
+ 
+   function _convertToShares(uint256 amount, Rounding rounding) internal view returns (uint256) {
+-    if (rounding == Rounding.UP) return amount.rayDivRoundUp(rate());
++    /// FunctionCallMutation: if (rounding == Rounding.UP) return amount.rayDivRoundUp(rate());
+     return amount.rayDivRoundDown(rate());
+   }
+ 

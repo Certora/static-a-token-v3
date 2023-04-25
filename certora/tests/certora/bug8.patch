@@ -1,0 +1,12 @@
+--- certora/munged/src/StaticATokenLM.sol	2023-04-23 15:35:33
++++ certora/tests/certora/StaticATokenLM.sol8.sol	2023-04-23 19:25:13
+@@ -652,7 +652,8 @@
+         userReward = totalRewardTokenBalance;
+       }
+       if (userReward > 0) {
+-        _userRewardsData[onBehalfOf][rewards[i]].unclaimedRewards = unclaimedReward.toUint128();
++        /// AssignmentMutation of: _userRewardsData[onBehalfOf][rewards[i]].unclaimedRewards = unclaimedReward.toUint128();
++        _userRewardsData[onBehalfOf][rewards[i]].unclaimedRewards = 0;
+         _userRewardsData[onBehalfOf][rewards[i]].rewardsIndexOnLastInteraction = currentRewardsIndex
+           .toUint128();
+         IERC20(rewards[i]).safeTransfer(receiver, userReward);

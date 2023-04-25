@@ -1,0 +1,12 @@
+--- certora/munged/src/StaticATokenLM.sol	2023-04-23 15:35:33
++++ certora/tests/certora/StaticATokenLM.sol2.sol	2023-04-23 17:49:12
+@@ -556,7 +556,8 @@
+    */
+   function _updateUser(address user, uint256 currentRewardsIndex, address rewardToken) internal {
+     uint256 balance = balanceOf[user];
+-    if (balance > 0) {
++    /// IfStatementMutation of: if (balance > 0) {
++    if (!(balance > 0)) {
+       _userRewardsData[user][rewardToken].unclaimedRewards = _getClaimableRewards(
+         user,
+         rewardToken,

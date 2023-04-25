@@ -1,0 +1,16 @@
+--- certora/munged/src/StaticATokenLM.sol	2023-04-23 15:35:33
++++ certora/tests/certora/StaticATokenLM.sol11.sol	2023-04-24 14:04:17
+@@ -256,11 +256,12 @@
+     address receiver,
+     address[] memory rewards
+   ) external {
++    /// SwapLinesMutation of: require(
++    _claimRewardsOnBehalf(onBehalfOf, receiver, rewards);
+     require(
+       msg.sender == onBehalfOf || msg.sender == INCENTIVES_CONTROLLER.getClaimer(onBehalfOf),
+       StaticATokenErrors.INVALID_CLAIMER
+     );
+-    _claimRewardsOnBehalf(onBehalfOf, receiver, rewards);
+   }
+ 
+   ///@inheritdoc IStaticATokenLM

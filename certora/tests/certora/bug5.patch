@@ -1,0 +1,13 @@
+--- certora/munged/src/StaticATokenLM.sol	2023-04-23 15:35:33
++++ certora/tests/certora/StaticATokenLM.sol5.sol	2023-04-23 17:49:13
+@@ -606,8 +606,8 @@
+     UserRewardsData memory currentUserRewardsData = _userRewardsData[user][reward];
+     uint256 assetUnit = 10 ** decimals;
+     return
+-      currentUserRewardsData.unclaimedRewards +
+-      _getPendingRewards(
++      /// BinaryOpMutation of: currentUserRewardsData.unclaimedRewards +
++      currentUserRewardsData.unclaimedRewards * _getPendingRewards(
+         balance,
+         currentUserRewardsData.rewardsIndexOnLastInteraction == 0
+           ? rewardsIndexCache.lastUpdatedIndex

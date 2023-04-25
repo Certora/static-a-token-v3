@@ -1,0 +1,12 @@
+--- certora/munged/src/StaticATokenLM.sol	2023-04-23 15:35:33
++++ certora/tests/certora/StaticATokenLM.sol10.sol	2023-04-24 14:25:50
+@@ -585,7 +585,8 @@
+     if (balance == 0) {
+       return 0;
+     }
+-    return (balance * (currentRewardsIndex - rewardsIndexOnLastInteraction)) / assetUnit;
++    /// SwapArgumentsOperatorMutation of: return (balance * (currentRewardsIndex - rewardsIndexOnLastInteraction)) / assetUnit;
++    return (balance * (rewardsIndexOnLastInteraction - currentRewardsIndex)) / assetUnit;
+   }
+ 
+   /**

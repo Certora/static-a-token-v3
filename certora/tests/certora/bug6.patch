@@ -1,0 +1,12 @@
+--- certora/munged/src/StaticATokenLM.sol	2023-04-23 15:35:33
++++ certora/tests/certora/StaticATokenLM.sol6.sol	2023-04-23 17:49:13
+@@ -417,7 +417,8 @@
+     require(shares != 0, StaticATokenErrors.INVALID_ZERO_AMOUNT);
+     require(shares <= maxMint(receiver), 'ERC4626: mint more than max');
+ 
+-    uint256 assets = previewMint(shares);
++    /// FunctionCallMutation of: uint256 assets = previewMint(shares);
++    uint256 assets = shares;
+     _deposit(msg.sender, receiver, assets, 0, false);
+ 
+     return assets;
