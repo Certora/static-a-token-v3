@@ -1,0 +1,3 @@
+Inject bugs by adding it in the munged folder and do `make bug` from certora directory. Make sure the only difference between your contracts and the ones in `certora` branch are the bug you injected otherwise the .patch file will be inaccurate. You can either ctrl+z to remove the injected bugs or `make clean` and `make munged`.
+
+The bugs you inject are stored in `certora/tests/participants/`. We have included some public injected bugs in `certora/tests/certora/`. Catching these bugs will make you eligible for the participation prize. To run against all injected bugs do `sh certora/tests/verifyAllInjected.sh $1` with $1 being either certora or participants.

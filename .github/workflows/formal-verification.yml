@@ -1,0 +1,74 @@
+name: certora-bug-injection
+
+on:
+  pull_request:
+    branches:
+      - certora
+
+  workflow_dispatch:
+
+jobs:
+  list-confs:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v2
+      - id: set-matrix
+        run: echo ::set-output name=matrix::$(ls certora/conf/*_verified.conf | jq -Rsc 'split("\n")[:-1]')
+
+  list-patches:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v2
+      - id: set-matrix
+        run: echo ::set-output name=matrix::$(ls certora/tests/certora/*.patch | jq -Rsc 'split("\n")[:-1]')
+
+  verify:
+    runs-on: ubuntu-latest
+    needs: 
+        - list-confs
+        - list-patches
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Check key
+        env:
+          CERTORAKEY: ${{ secrets.CERTORAKEY }}
+        run: echo "key length" ${#CERTORAKEY}
+
+      - name: Install python
+        uses: actions/setup-python@v2
+        with: { python-version: 3.9 }
+
+      - name: Install java
+        uses: actions/setup-java@v1
+        with: { java-version: "11", java-package: jre }
+
+      - name: Install certora cli
+        run: pip install certora-cli
+      
+      - name: Install solc
+        run: |
+          wget https://github.com/ethereum/solidity/releases/download/v0.8.10/solc-static-linux
+          chmod +x solc-static-linux
+          sudo mv solc-static-linux /usr/local/bin/solc8.10
+
+      - name: Verify rule ${{ matrix.rule }}
+        run: |	          
+          git apply --allow-empty ${{ matrix.patch }}
+          certoraRun ${{ matrix.rule }}
+          
+        env:
+          CERTORAKEY: ${{ secrets.CERTORAKEY }}
+          
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        patch: ${{ fromJson(needs.list-patches.outputs.matrix) }} 
+        rule: ${{ fromJson(needs.list-confs.outputs.matrix) }} 

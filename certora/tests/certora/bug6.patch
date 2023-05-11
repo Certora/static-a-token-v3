@@ -1,0 +1,14 @@
+diff --git a/src/StaticATokenLM.sol b/src/StaticATokenLM.sol
+index 1416b85..2d12b30 100644
+--- a/src/StaticATokenLM.sol
++++ b/src/StaticATokenLM.sol
+@@ -417,7 +417,8 @@ contract StaticATokenLM is
+     require(shares != 0, StaticATokenErrors.INVALID_ZERO_AMOUNT);
+     require(shares <= maxMint(receiver), 'ERC4626: mint more than max');
+ 
+-    uint256 assets = previewMint(shares);
++    /// FunctionCallMutation of: uint256 assets = previewMint(shares);
++    uint256 assets = shares;
+     _deposit(msg.sender, receiver, assets, 0, false);
+ 
+     return assets;
