@@ -172,6 +172,36 @@ rule MintShouldIncreaseTotalSupplyByCorrectAmount(
        "totalSupply was not increased by the correct amount";
 }
 
+
+rule DepositWithdrawCorrectness(uint256 assets, address receiver, address owner) {
+    env e;
+
+    setup(e, e.msg.sender);
+
+    require owner == e.msg.sender; //? are these necessary?
+    require receiver != e.msg.sender; // ???
+    requireInvariant TotalSupplyIsSumOfBalances();
+    
+
+    uint256 _totalSupply = totalSupply();
+    require _totalSupply == SumOfBalances;
+
+    // FIXME: receiver shouldn't be equal, I also want to check user amt
+    uint256 sharesDeposited = deposit(e, assets, receiver);
+    uint256 sharesWithdrawn = withdraw(e, assets, receiver, owner);
+
+    uint256 totalSupply_ = totalSupply();
+
+    
+    // FIXME: One Direction might be problematic
+    // it could be arise from the error in the pre-assumption.
+    assert (_totalSupply == totalSupply_)
+        || ((_totalSupply > totalSupply_) => (_totalSupply - totalSupply_ <= 1))
+        || ((_totalSupply < totalSupply_) => (totalSupply_ - totalSupply_ <= 1));
+    //assert false;
+}
+
+
 rule NoVariationInConvertToShares(
     env e0,
     env e1,
@@ -189,3 +219,57 @@ rule NoVariationInConvertToAssets(
     require e0.block.timestamp == e1.block.timestamp;
     assert convertToAssets(e0, shares) == convertToAssets(e1, shares), "Variation in convertToShares";
 }
+
+rule RedeemMaxAmount(
+    env e,
+    uint256 shares,
+    address recipient,
+    address owner,
+    bool toUnderlying
+) {
+    //FIXME remove this
+    require owner == e.msg.sender;
+    require owner == recipient;
+    setup(e, recipient);
+    single_RewardToken_setup();
+    requireInvariant TotalSupplyIsSumOfBalances();
+
+    address pool_atoken = _SymbolicLendingPool.getATokenAddress();
+    require _AToken == pool_atoken;
+
+    bool paused = _SymbolicLendingPool.isPaused();
+    require paused == false;
+
+    storage init_state = lastStorage;
+
+    uint256 max_shares = maxRedeem(owner);
+
+    uint256 amt_assets = redeem(e, shares, recipient, owner) at init_state;
+
+    assert shares <= max_shares;
+}
+
+// TODO: Use Rate() here
+invariant TotalAssetsToTotalShares1(env e0)
+    convertToShares(e0, totalAssets(e0)) == totalSupply()
+    || ((totalSupply() > convertToShares(e0, totalAssets(e0))) => (totalSupply() - convertToShares(e0, totalAssets(e0)) <= 1))
+    || ((convertToShares(e0, totalAssets(e0)) > totalSupply()) => (convertToShares(e0, totalAssets(e0)) - totalSupply() <= 1))
+        filtered { f -> !harnessOnlyMethods(f) }
+            {
+                preserved {
+                    setup(e0, e0.msg.sender);
+                    single_RewardToken_setup();
+                    requireInvariant totalSupplyIsSumOfBalances();
+                }
+            }
+
+invariant TotalAssetsToTotalShares(env e0)
+    convertToShares(e0, totalAssets(e0)) == totalSupply()
+        filtered { f -> !harnessOnlyMethods(f) }
+            {
+                preserved {
+                    setup(e0, e0.msg.sender);
+                    single_RewardToken_setup();
+                    requireInvariant totalSupplyIsSumOfBalances();
+                }
+            }

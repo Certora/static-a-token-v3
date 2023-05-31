@@ -9,6 +9,10 @@ out/
 .idea
 .vscode
 
+# certora
+.certora_internal
+.certora_recent_jobs.json
+
 # well, looks strange to ignore package-lock, but we have only pretter and it's temproray
 package-lock.json
 node_modules

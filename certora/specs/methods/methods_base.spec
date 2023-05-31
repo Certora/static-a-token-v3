@@ -44,6 +44,10 @@ methods
     // ----
         _SymbolicLendingPool.getReserveNormalizedIncome(address) returns (uint256)
         getReserveData(address) returns ((uint256),uint128,uint128,uint128,uint128,uint128,uint40,uint16,address,address,address,address,uint128,uint128,uint128) envfree => CONSTANT
+        _SymbolicLendingPool.getATokenAddress() returns (address) envfree
+        _SymbolicLendingPool.reserveIsActive() returns (bool) envfree
+        _SymbolicLendingPool.assetIsPaused() returns (bool) envfree
+        _SymbolicLendingPool.reserveIsFrozen() returns (bool) envfree
 	
     // rewards controller
 	// ------------------

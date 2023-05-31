@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import {IERC20} from '../../../lib/aave-v3-core/contracts/dependencies/openzeppelin/contracts/IERC20.sol';
 import {IAToken} from "../../../lib/aave-v3-core/contracts/interfaces/IAToken.sol";
+import {DataTypes} from "../../../lib/aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
 
 contract SymbolicLendingPool {
     // an underlying asset in the pool
@@ -12,6 +13,10 @@ contract SymbolicLendingPool {
     // This index is used to convert the underlying token to its matching
     // AToken inside the pool, and vice versa.
     mapping (uint256 => uint256) public liquidityIndex;
+
+    //DataTypes.ReserveData public reserveData;
+    // Workaround, since the above triggers stack too deep issue
+    uint256 configurationData;
 
     /**
      * @dev Deposits underlying token in the Atoken's contract on behalf of the user,
@@ -75,5 +80,48 @@ contract SymbolicLendingPool {
         returns (uint256)
     {
         return liquidityIndex[block.timestamp];
+    }
+
+    function reserveIsActive()
+        external
+        view
+        returns(bool)
+    {
+        return (configurationData & (1  << 56) != 0);
+    }
+
+    function reserveIsFrozen()
+        external
+        view
+        returns(bool)
+    {
+        return (configurationData & (1  << 57) != 0);
+    }
+
+    function assetIsPaused()
+        external
+        view
+        returns(bool)
+    {
+        return (configurationData & (1  << 60) != 0);
+    }
+
+    function getReserveData(address)
+        external
+        view
+
+        returns(DataTypes.ReserveData memory r)
+    {
+        r.configuration.data = configurationData;
+        r.aTokenAddress = address(aToken);
+        return r;
+    }
+
+    function getATokenAddress()
+        external
+        view
+        returns(address)
+    {
+        return address(aToken);
     }
 }
