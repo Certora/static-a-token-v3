@@ -171,3 +171,21 @@ rule MintShouldIncreaseTotalSupplyByCorrectAmount(
     assert _totalSupply + shares == totalSupply_ || _totalSupply + shares == totalSupply_ - 1,
        "totalSupply was not increased by the correct amount";
 }
+
+rule NoVariationInConvertToShares(
+    env e0,
+    env e1,
+    uint256 amount
+) {
+    require e0.block.timestamp == e1.block.timestamp;
+    assert convertToShares(e0, amount) == convertToShares(e1, amount), "Variation in convertToShares";
+}
+
+rule NoVariationInConvertToAssets(
+    env e0,
+    env e1,
+    uint256 shares
+) {
+    require e0.block.timestamp == e1.block.timestamp;
+    assert convertToAssets(e0, shares) == convertToAssets(e1, shares), "Variation in convertToShares";
+}
