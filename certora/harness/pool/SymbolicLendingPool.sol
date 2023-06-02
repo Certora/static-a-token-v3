@@ -14,7 +14,7 @@ contract SymbolicLendingPool {
     // AToken inside the pool, and vice versa.
     mapping (uint256 => uint256) public liquidityIndex;
 
-    //DataTypes.ReserveData public reserveData;
+    // DataTypes.ReserveData public reserveData;
     // Workaround, since the above triggers stack too deep issue
     uint256 configurationData;
 

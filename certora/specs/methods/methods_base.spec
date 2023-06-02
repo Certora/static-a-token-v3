@@ -169,6 +169,7 @@ methods
         require _DummyERC20_rewardToken != user;
         require _SymbolicLendingPool != user;
         require _TransferStrategy != user;
-        require _TransferStrategy != user;
+        require _TransferStrategy != e.msg.sender;
         require getReserveData_AToken() == _AToken;
+        //require _AToken == _SymbolicLendingPool.getATokenAddress();
     }
