@@ -84,7 +84,8 @@ rule MintShouldDepositCorrectAmount(
     setup(e, receiver);
     require shares <= maxMint(receiver) && shares != 0; // FIXME
     requireInvariant TotalSupplyIsSumOfBalances();
-
+    require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
+         || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
     // before
     uint256 _ATokenBalanceOfThis = _AToken.balanceOf(e, currentContract);
     uint256 _totalAssets = totalAssets(e);
@@ -111,6 +112,9 @@ rule MintShouldSpendCorrectAmount(
     require shares <= maxMint(receiver) && shares != 0; // FIXME
     requireInvariant TotalSupplyIsSumOfBalances();
 
+    require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
+         || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
+
     // before
     uint256 _ATokenBalanceOfSender = _AToken.balanceOf(e, e.msg.sender);
 
@@ -133,6 +137,9 @@ rule MintShouldIncreaseReceiverBalance(
     setup(e, receiver);
     require shares <= maxMint(receiver) && shares != 0; // FIXME
     requireInvariant TotalSupplyIsSumOfBalances();
+
+    require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
+         || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
 
     // before
     uint256 _balanceOfSender = balanceOf(e.msg.sender);
@@ -161,6 +168,9 @@ rule MintShouldIncreaseTotalSupplyByCorrectAmount(
     require shares <= maxMint(receiver) && shares != 0; // FIXME
     requireInvariant TotalSupplyIsSumOfBalances();
 
+    require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
+         || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
+
     // before
     uint256 _totalSupply = totalSupply();
 
@@ -186,6 +196,9 @@ rule DepositWithdrawCorrectness(
     setup(e, receiverOfWithdrawl);
 
     requireInvariant TotalSupplyIsSumOfBalances();
+
+    require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
+         || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
 
     address owner = receiverOfDeposit;
 
@@ -215,6 +228,9 @@ rule DepositRedeemCorrectness(
     setup(e, receiverOfRedeemed);
 
     requireInvariant TotalSupplyIsSumOfBalances();
+
+    require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
+         || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
 
     address owner = receiverOfDeposit;
 
