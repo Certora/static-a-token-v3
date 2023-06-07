@@ -1,0 +1,24 @@
+[
+    {
+        "importFilesToOrigRelpaths": {
+            ".certora_internal/23_06_07_21_40_57_918/.certora_config/0_erc20.spec.spec": "certora/specs/methods/erc20.spec",
+            ".certora_internal/23_06_07_21_40_57_918/.certora_config/0_erc4626_base.spec.spec": "certora/specs/erc4626/erc4626_base.spec",
+            ".certora_internal/23_06_07_21_40_57_918/.certora_config/0_methods_base.spec.spec": "certora/specs/methods/methods_base.spec"
+        },
+        "primary_contract": "StaticATokenLMHarness",
+        "specfile": ".certora_internal/23_06_07_21_40_57_918/.certora_config/0_erc4626_verified.spec.spec",
+        "specfileOrigRelpath": "certora/specs/erc4626/erc4626_verified.spec",
+        "specfilesToImportDecls": {
+            ".certora_internal/23_06_07_21_40_57_918/.certora_config/0_erc4626_base.spec.spec": [
+                "../methods/methods_base.spec"
+            ],
+            ".certora_internal/23_06_07_21_40_57_918/.certora_config/0_erc4626_verified.spec.spec": [
+                "erc4626_base.spec"
+            ],
+            ".certora_internal/23_06_07_21_40_57_918/.certora_config/0_methods_base.spec.spec": [
+                "erc20.spec"
+            ]
+        },
+        "type": "spec"
+    }
+]

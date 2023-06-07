@@ -1,0 +1,2 @@
+Redundant use of argument optimistic_loop and setting assumeUnwindCond
+Redundant use of argument optimistic_hashing and setting optimisticUnboundedHashing with value false

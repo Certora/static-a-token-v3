@@ -1,0 +1,233 @@
+{
+    "CLI_version": "3.6.8.post3",
+    "branch": "certora-contest",
+    "conf": {
+        "cloud": "",
+        "files": [
+            "certora/harness/StaticATokenLMHarness.sol:StaticATokenLMHarness",
+            "certora/harness/pool/SymbolicLendingPool.sol:SymbolicLendingPool",
+            "certora/harness/rewards/RewardsControllerHarness.sol:RewardsControllerHarness",
+            "certora/harness/rewards/TransferStrategyHarness.sol:TransferStrategyHarness",
+            "certora/harness/tokens/DummyERC20_aTokenUnderlying.sol:DummyERC20_aTokenUnderlying",
+            "certora/harness/tokens/DummyERC20_rewardToken.sol:DummyERC20_rewardToken",
+            "lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol:AToken"
+        ],
+        "link": [
+            "SymbolicLendingPool:aToken=AToken",
+            "SymbolicLendingPool:underlyingToken=DummyERC20_aTokenUnderlying",
+            "TransferStrategyHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness",
+            "TransferStrategyHarness:REWARD=DummyERC20_rewardToken",
+            "AToken:POOL=SymbolicLendingPool",
+            "AToken:_incentivesController=RewardsControllerHarness",
+            "AToken:_underlyingAsset=DummyERC20_aTokenUnderlying",
+            "StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness",
+            "StaticATokenLMHarness:POOL=SymbolicLendingPool",
+            "StaticATokenLMHarness:_aToken=AToken",
+            "StaticATokenLMHarness:_aTokenUnderlying=DummyERC20_aTokenUnderlying",
+            "StaticATokenLMHarness:_reward_A=DummyERC20_rewardToken"
+        ],
+        "loop_iter": "1",
+        "msg": "Rewards related properties",
+        "optimistic_hashing": true,
+        "optimistic_loop": true,
+        "packages": [
+            "@aave/core-v3=lib/aave-v3-core",
+            "aave-v3-core=lib/aave-v3-core",
+            "aave-v3-periphery=lib/aave-v3-periphery",
+            "openzeppelin-contracts=lib/openzeppelin-contracts",
+            "solidity-utils=lib/solidity-utils/src"
+        ],
+        "process": "emv",
+        "run_source": "VSCODE",
+        "send_only": true,
+        "settings": [
+            "-assumeUnwindCond",
+            "-b=1",
+            "-optimisticUnboundedHashing=true"
+        ],
+        "solc": "solc",
+        "solc_args": [],
+        "verify": [
+            "StaticATokenLMHarness:certora/specs/staticATokenLM/StaticATokenLM_verified.spec"
+        ]
+    },
+    "context": {
+        "address": {},
+        "assert_autofinder_success": false,
+        "assert_contracts": null,
+        "build_dir": null,
+        "build_only": false,
+        "bytecode_jsons": null,
+        "bytecode_spec": null,
+        "cache": null,
+        "check_args": false,
+        "cloud": "",
+        "coinbaseMode": false,
+        "commit_sha1": null,
+        "conf_file": "last_conf_08_06_2023__02_40_53.conf",
+        "contract_to_file": {
+            "AToken": "lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol",
+            "DummyERC20_aTokenUnderlying": "certora/harness/tokens/DummyERC20_aTokenUnderlying.sol",
+            "DummyERC20_rewardToken": "certora/harness/tokens/DummyERC20_rewardToken.sol",
+            "RewardsControllerHarness": "certora/harness/rewards/RewardsControllerHarness.sol",
+            "StaticATokenLMHarness": "certora/harness/StaticATokenLMHarness.sol",
+            "SymbolicLendingPool": "certora/harness/pool/SymbolicLendingPool.sol",
+            "TransferStrategyHarness": "certora/harness/rewards/TransferStrategyHarness.sol"
+        },
+        "contracts": [
+            "TransferStrategyHarness",
+            "SymbolicLendingPool",
+            "DummyERC20_rewardToken",
+            "DummyERC20_aTokenUnderlying",
+            "RewardsControllerHarness",
+            "AToken",
+            "StaticATokenLMHarness"
+        ],
+        "debug": false,
+        "debug_topics": null,
+        "delay_fetch_output_seconds": null,
+        "disableLocalTypeChecking": false,
+        "disable_auto_cache_key_gen": false,
+        "domain": "https://prover.certora.com",
+        "dynamic_bound": null,
+        "dynamic_dispatch": false,
+        "expected_file": "expected.json",
+        "file_paths": [
+            "lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol",
+            "certora/harness/pool/SymbolicLendingPool.sol",
+            "certora/harness/StaticATokenLMHarness.sol",
+            "certora/harness/rewards/TransferStrategyHarness.sol",
+            "certora/harness/tokens/DummyERC20_rewardToken.sol",
+            "certora/harness/tokens/DummyERC20_aTokenUnderlying.sol",
+            "certora/harness/rewards/RewardsControllerHarness.sol"
+        ],
+        "file_to_contract": {
+            "certora/harness/StaticATokenLMHarness.sol": [
+                "StaticATokenLMHarness"
+            ],
+            "certora/harness/pool/SymbolicLendingPool.sol": [
+                "SymbolicLendingPool"
+            ],
+            "certora/harness/rewards/RewardsControllerHarness.sol": [
+                "RewardsControllerHarness"
+            ],
+            "certora/harness/rewards/TransferStrategyHarness.sol": [
+                "TransferStrategyHarness"
+            ],
+            "certora/harness/tokens/DummyERC20_aTokenUnderlying.sol": [
+                "DummyERC20_aTokenUnderlying"
+            ],
+            "certora/harness/tokens/DummyERC20_rewardToken.sol": [
+                "DummyERC20_rewardToken"
+            ],
+            "lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol": [
+                "AToken"
+            ]
+        },
+        "files": [
+            "certora/harness/StaticATokenLMHarness.sol:StaticATokenLMHarness",
+            "certora/harness/pool/SymbolicLendingPool.sol:SymbolicLendingPool",
+            "certora/harness/rewards/RewardsControllerHarness.sol:RewardsControllerHarness",
+            "certora/harness/rewards/TransferStrategyHarness.sol:TransferStrategyHarness",
+            "certora/harness/tokens/DummyERC20_aTokenUnderlying.sol:DummyERC20_aTokenUnderlying",
+            "certora/harness/tokens/DummyERC20_rewardToken.sol:DummyERC20_rewardToken",
+            "lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol:AToken"
+        ],
+        "get_conf": null,
+        "hashing_length_bound": null,
+        "include_empty_fallback": false,
+        "internal_funcs": null,
+        "jar": null,
+        "java_args": null,
+        "link": [
+            "SymbolicLendingPool:aToken=AToken",
+            "SymbolicLendingPool:underlyingToken=DummyERC20_aTokenUnderlying",
+            "TransferStrategyHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness",
+            "TransferStrategyHarness:REWARD=DummyERC20_rewardToken",
+            "AToken:POOL=SymbolicLendingPool",
+            "AToken:_incentivesController=RewardsControllerHarness",
+            "AToken:_underlyingAsset=DummyERC20_aTokenUnderlying",
+            "StaticATokenLMHarness:INCENTIVES_CONTROLLER=RewardsControllerHarness",
+            "StaticATokenLMHarness:POOL=SymbolicLendingPool",
+            "StaticATokenLMHarness:_aToken=AToken",
+            "StaticATokenLMHarness:_aTokenUnderlying=DummyERC20_aTokenUnderlying",
+            "StaticATokenLMHarness:_reward_A=DummyERC20_rewardToken"
+        ],
+        "local": false,
+        "log_branch": null,
+        "log_query_frequency_seconds": null,
+        "loop_iter": "1",
+        "max_attempts_to_fetch_output": null,
+        "max_graph_depth": null,
+        "max_poll_minutes": null,
+        "method": null,
+        "mode": "Mode.CONF",
+        "msg": "Rewards related properties",
+        "multi_assert_check": false,
+        "multi_example": null,
+        "no_calltrace_storage_information": false,
+        "no_compare": false,
+        "optimistic_hashing": true,
+        "optimistic_loop": true,
+        "optimize": null,
+        "optimize_map": null,
+        "package_name_to_path": {
+            "@aave/core-v3": "lib/aave-v3-core",
+            "aave-v3-core": "lib/aave-v3-core",
+            "aave-v3-periphery": "lib/aave-v3-periphery",
+            "openzeppelin-contracts": "lib/openzeppelin-contracts",
+            "solidity-utils": "lib/solidity-utils/src"
+        },
+        "packages": [
+            "@aave/core-v3=lib/aave-v3-core",
+            "aave-v3-core=lib/aave-v3-core",
+            "aave-v3-periphery=lib/aave-v3-periphery",
+            "openzeppelin-contracts=lib/openzeppelin-contracts",
+            "solidity-utils=lib/solidity-utils/src"
+        ],
+        "packages_path": "/Users/dev1644/workspace/workspace-west/aave-certora/node_modules",
+        "path": "/Users/dev1644/workspace/workspace-west/aave-certora",
+        "process": "emv",
+        "prototype": null,
+        "queue_wait_minutes": null,
+        "rule": null,
+        "rule_sanity": null,
+        "run_source": "VSCODE",
+        "send_only": true,
+        "settings": [
+            "-assumeUnwindCond",
+            "-b=1",
+            "-optimisticUnboundedHashing=true"
+        ],
+        "short_output": true,
+        "show_debug_topics": false,
+        "skip_payable_envfree_check": false,
+        "smt_timeout": null,
+        "solc": "/Users/dev1644/.pyenv/versions/3.10.3/bin/solc",
+        "solc_args": [],
+        "solc_map": null,
+        "spec_files": [
+            "certora/specs/staticATokenLM/StaticATokenLM_verified.spec"
+        ],
+        "staging": null,
+        "struct_link": null,
+        "tool_output": null,
+        "typecheck_only": false,
+        "user_defined_cache": false,
+        "verified_contract_files": [
+            "certora/harness/StaticATokenLMHarness.sol"
+        ],
+        "verify": [
+            "StaticATokenLMHarness:certora/specs/staticATokenLM/StaticATokenLM_verified.spec"
+        ]
+    },
+    "cwd_relative": ".",
+    "dirty": true,
+    "origin": "git@github.com:dev1644/static-a-token-v3.git",
+    "raw_args": [
+        "/Users/dev1644/.pyenv/versions/3.10.3/bin/certoraRun",
+        "certora/conf/verify_staticatokenlm_verified.conf"
+    ],
+    "revision": "79e4d79d7b013bc758fe7c055b0c4a73830ec715",
+    "timestamp": "1686152454.208823"
+}

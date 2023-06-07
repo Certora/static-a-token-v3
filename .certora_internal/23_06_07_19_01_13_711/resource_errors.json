@@ -1,0 +1,13 @@
+{
+    "topics": [
+        {
+            "name": "type_check",
+            "messages": [
+                {
+                    "message": "certora/specs/erc4626/erc4626_verified.spec:49:1: Syntax error: unexpected token near )",
+                    "location": []
+                }
+            ]
+        }
+    ]
+}
