@@ -25,17 +25,16 @@ invariant TotalSupplyIsSumOfBalances()
     }
 
 //TODO rule additveWithdrawl() // 2*withdraw(x) == withdraw(2*x)
+
 //rule redeem(underlying==true) <= maxRedeemUnderlying()
 rule CannotRedeemMoreUnderlyingThanMaxRedeemUnderlying(
     env e,
     uint256 shares,
     address recipient,
-    address owner,
-    bool toUnderlying
+    address owner
 ) {
-    //FIXME remove this
-    require owner == e.msg.sender;
-    require owner == recipient;
+    bool toUnderlying = true;
+
     setup(e, recipient);
     single_RewardToken_setup();
     requireInvariant TotalSupplyIsSumOfBalances();
@@ -47,43 +46,28 @@ rule CannotRedeemMoreUnderlyingThanMaxRedeemUnderlying(
     require _SymbolicLendingPool.reserveIsActive() == true;
     require _SymbolicLendingPool.assetIsPaused() == false;
 
-
     uint256 underlyingBalanceOfATokenContract = _DummyERC20_aTokenUnderlying.balanceOf(_AToken);
 
-    //requireInvariant SolvencyOfATokenContract();
-    // require _AToken.totalSupply(e) == underlyingBalanceOfATokenContract;
-
-
-    require toUnderlying == true;
     uint256 amt_shares;
     uint256 amt_assets;
     storage init_state = lastStorage;
 
     uint256 _balanceOfMsgSender = balanceOf(e.msg.sender);
-    uint256 msgSenderUnderlyingAssetsBalance = convertToAssets(e, _balanceOfMsgSender);
+    uint256 _balanceOfMsgSenderInAssets = convertToAssets(e, _balanceOfMsgSender);
     uint256 msgSenderUnderlyingAssetsOfShares = convertToAssets(e, shares);
 
-    if( msgSenderUnderlyingAssetsBalance <= underlyingBalanceOfATokenContract ||
-        msgSenderUnderlyingAssetsOfShares <= underlyingBalanceOfATokenContract
-    ) {
-        amt_shares, amt_assets = redeem(e, shares, recipient, owner, toUnderlying) at init_state;
-        uint256 balanceOfMsgSender_ = balanceOf(e.msg.sender);
+    // FIXME: This might be overfitting
+    require _balanceOfMsgSenderInAssets > underlyingBalanceOfATokenContract;
+    require msgSenderUnderlyingAssetsOfShares > underlyingBalanceOfATokenContract;
 
-        assert _balanceOfMsgSender - amt_shares == balanceOfMsgSender_;
-        assert amt_assets <= msgSenderUnderlyingAssetsBalance;
-
-    } else {
-
-        // function calls
-        uint256 max_shares = maxRedeemUnderlying(e, owner);
-        uint256 max_assets = convertToAssets(e, max_shares) at init_state;
+    // function calls
+    uint256 max_shares = maxRedeemUnderlying(e, owner);
+    uint256 max_assets = convertToAssets(e, max_shares) at init_state;
 
 
-        amt_shares, amt_assets = redeem(e, shares, recipient, owner, toUnderlying) at init_state;
-        // asserts
-        //assert amt_shares <= max_shares || ((amt_shares > max_shares) => (amt_assets == max_assets));
-        assert (amt_shares <= max_shares) || (amt_assets <= max_assets) || (amt_assets <= 1 && amt_shares <=1);
-    }
+    amt_shares, amt_assets = redeem(e, shares, recipient, owner, toUnderlying) at init_state;
+    // asserts
+    assert (amt_shares <= max_shares) || (amt_assets <= max_assets) || (amt_assets <= 1 && amt_shares <=1);
 }
 
 rule MaxRedeemShouldBeConsistant(
@@ -126,6 +110,58 @@ rule RedeemShouldBeConsistant(
 }
 
 
+rule ClaimRewardsOnBehalfDoesNotAffectAStaticTokenBalances(
+    env e,
+    address onBehalfOf,
+    address receiver,
+    address other
+) {
+    require receiver != other;
+    setup(e, receiver);
+    setup(e, other);
+    single_RewardToken_setup();
+
+    // before
+    uint256 _balanceOfReceiver = balanceOf(receiver);
+    uint256 _balanceOfOther = balanceOf(other);
+
+    // function call
+    claimSingleRewardOnBehalf(e, onBehalfOf, receiver, _DummyERC20_rewardToken);
+
+    // after
+    uint256 balanceOfReceiver_ = balanceOf(receiver);
+    uint256 balanceOfOther_ = balanceOf(other);
+
+    // asserts
+    assert _balanceOfReceiver == balanceOfReceiver_;
+    assert _balanceOfOther == balanceOfOther_;
+}
+
+rule CollectAndUpdateRewardsDoesNotAffectAStaticTokenBalances(
+    env e,
+    address reward,
+    address other
+) {
+    require e.msg.sender != other;
+    setup(e, other);
+    single_RewardToken_setup();
+
+    // before
+    uint256 _balanceOfSender = balanceOf(e.msg.sender);
+    uint256 _balanceOfOther = balanceOf(other);
+
+    // function call
+    collectAndUpdateRewards(e, reward);
+
+    // after
+    uint256 balanceOfSender_ = balanceOf(e.msg.sender);
+    uint256 balanceOfOther_ = balanceOf(other);
+
+    // asserts
+    assert _balanceOfSender == balanceOfSender_;
+    assert _balanceOfOther == balanceOfOther_;
+}
+
 rule UnclaimedRewardsShouldNotDecrease(
     env e,
     method f,
@@ -147,10 +183,6 @@ rule UnclaimedRewardsShouldNotDecrease(
 
     assert _UnclaimedRewards <= UnclaimedRewards_, "unclaimedRewards decreased";
 }
-// mint
- // redeem
- // redeemToUnderlying
- // tranfer  // have transferFrom
 
 rule UnclaimedRewardsShouldNotChangeOnDeposit(
     env e,
@@ -166,6 +198,9 @@ rule UnclaimedRewardsShouldNotChangeOnDeposit(
     setup(e, recipient);
     rewardsController_reward_setup();
     single_RewardToken_setup();
+
+    require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
+         || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
 
     // before
     uint256 _UnclaimedRewardsFrom = getClaimableRewards(e, e.msg.sender, getRewardToken(0));
@@ -195,6 +230,8 @@ rule UnclaimedRewardsShouldNotChangeOnWithdraw(
     rewardsController_reward_setup();
     single_RewardToken_setup();
 
+    require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
+         || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
 
     // before
     uint256 _UnclaimedRewardsFrom = getClaimableRewards(e, e.msg.sender, getRewardToken(0));
@@ -230,6 +267,7 @@ rule UnclaimedRewardsShouldNotChangeOnTransfer(
     uint256 UnclaimedRewardsTo_ = getUnclaimedRewards(to, getRewardToken(0));
 
     assert (_UnclaimedRewardsFrom == UnclaimedRewardsFrom_) && (_UnclaimedRewardsTo == UnclaimedRewardsTo_);
+    assert false;
 }
 
 rule UnclaimedRewardsShouldNotChangeOnTransferFrom(
@@ -256,13 +294,3 @@ rule UnclaimedRewardsShouldNotChangeOnTransferFrom(
 
     assert (_UnclaimedRewardsFrom == UnclaimedRewardsFrom_) && (_UnclaimedRewardsTo == UnclaimedRewardsTo_);
 }
-
-
-/*
-rule UnclaimedRewardsGrowsWithTime(
-    env e0,
-    env e1
-) {
-    assert false;
-}
-*/

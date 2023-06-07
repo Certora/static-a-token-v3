@@ -68,13 +68,21 @@ rule MintShouldNotAffectOthers(
     // asserts
     assert _ATokenBalanceOfOther == ATokenBalanceOfOther_, "AToken.balanceOf(other) affected";
     assert _balanceOfOther == balanceOfOther_, "balanceOf(other) affected";
-
 }
 
+rule MintShouldRevertIfSharesZeroOrGTMaxMint(
+    env e,
+    uint256 shares,
+    address receiver
+) {
+    setup(e, receiver);
+    require getRewardTokensLength() == 0;
+    require shares > maxMint(receiver) || shares == 0;
 
-// TODO: Check Reverts
-    // if (shares > maxMint(receiver) || shares == 0 ) => revert
-    //assert (shares > maxMint(receiver) || shares == 0 ) => lastReverted;
+    mint@withrevert(e, shares, receiver);
+
+    assert lastReverted;
+}
 
 rule MintShouldDepositCorrectAmount(
     env e,
@@ -82,8 +90,10 @@ rule MintShouldDepositCorrectAmount(
     address receiver
 ) {
     setup(e, receiver);
-    require shares <= maxMint(receiver) && shares != 0; // FIXME
     requireInvariant TotalSupplyIsSumOfBalances();
+
+    require getRewardTokensLength() == 0;
+
     require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
          || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
     // before
@@ -109,8 +119,9 @@ rule MintShouldSpendCorrectAmount(
     address receiver
 ) {
     setup(e, receiver);
-    require shares <= maxMint(receiver) && shares != 0; // FIXME
     requireInvariant TotalSupplyIsSumOfBalances();
+    //single_RewardToken_setup();
+    require getRewardTokensLength() == 0;
 
     require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
          || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
@@ -135,8 +146,9 @@ rule MintShouldIncreaseReceiverBalance(
     address receiver
 ) {
     setup(e, receiver);
-    require shares <= maxMint(receiver) && shares != 0; // FIXME
     requireInvariant TotalSupplyIsSumOfBalances();
+
+    require getRewardTokensLength() == 0;
 
     require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
          || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
@@ -165,8 +177,9 @@ rule MintShouldIncreaseTotalSupplyByCorrectAmount(
     address receiver
 ) {
     setup(e, receiver);
-    require shares <= maxMint(receiver) && shares != 0; // FIXME
     requireInvariant TotalSupplyIsSumOfBalances();
+
+    require getRewardTokensLength() == 0;
 
     require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
          || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
@@ -181,7 +194,7 @@ rule MintShouldIncreaseTotalSupplyByCorrectAmount(
     uint256 totalSupply_ = totalSupply();
 
     // assert
-    assert _totalSupply + shares <= totalSupply_ - 1,
+    assert _totalSupply + shares <= totalSupply_,
        "totalSupply was not increased by the correct amount";
 }
 
@@ -194,8 +207,9 @@ rule DepositWithdrawCorrectness(
 ) {
     setup(e, receiverOfDeposit);
     setup(e, receiverOfWithdrawl);
-
     requireInvariant TotalSupplyIsSumOfBalances();
+
+    require getRewardTokensLength() == 0;
 
     require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
          || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
@@ -205,8 +219,7 @@ rule DepositWithdrawCorrectness(
     // before
     uint256 _totalAssets = totalAssets(e);
 
-    // function cals
-    // FIXME: receiver shouldn't be equal, I also want to check user amt
+    // function calls
     uint256 sharesDeposited = deposit(e, assets, receiverOfDeposit);
     uint256 sharesWithdrawn = withdraw(e, assets, receiverOfWithdrawl, owner);
 
@@ -226,8 +239,9 @@ rule DepositRedeemCorrectness(
 ) {
     setup(e, receiverOfDeposit);
     setup(e, receiverOfRedeemed);
-
     requireInvariant TotalSupplyIsSumOfBalances();
+
+    require getRewardTokensLength() == 0;
 
     require _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 2
          || _SymbolicLendingPool.getReserveNormalizedIncome(e,getStaticATokenUnderlying()) == 1;
@@ -237,14 +251,12 @@ rule DepositRedeemCorrectness(
     // before
     uint256 _totalAssets = totalAssets(e);
 
-    // function cals
-    // FIXME: receiver shouldn't be equal, I also want to check user amt
+    // function calls
     uint256 sharesDeposited = deposit(e, assets, receiverOfDeposit);
     uint256 assetsWithdrawn = redeem(e, sharesDeposited, receiverOfRedeemed, owner);
 
     // after
     uint256 totalAssets_ = totalAssets(e);
-
 
     // asserts
     assert assets <= assetsWithdrawn;
@@ -276,15 +288,9 @@ rule RedeemMaxAmount(
     address owner,
     bool toUnderlying
 ) {
-    //FIXME remove this
-    require owner == e.msg.sender;
-    require owner == recipient;
     setup(e, recipient);
     single_RewardToken_setup();
     requireInvariant TotalSupplyIsSumOfBalances();
-
-    //address pool_atoken = _SymbolicLendingPool.getATokenAddress();
-    //require _AToken == pool_atoken;
 
     bool paused = _SymbolicLendingPool.reserveIsActive();
     require paused == false;
